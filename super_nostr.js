@@ -231,7 +231,7 @@ var super_nostr = {
         if ( !socket ) {
             var socket = new WebSocket( relay );
             socket.addEventListener( 'message', handleFunction );
-            socket.addEventListener( 'open', ()=>{listen( socket );} );
+            socket.addEventListener( 'open', ()=>{listenFunction( socket );} );
             socketReplacerFunction( socket_id, socket );
         }
         if ( socket.readyState === 1 ) {
