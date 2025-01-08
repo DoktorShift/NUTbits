@@ -119,6 +119,58 @@ var super_nostr = {
         event.sig = await nobleSecp256k1.schnorr.sign( event.id, privkey );
         return event;
     },
+    //"alt_encrypt" and "alt_decrypt" functions are
+    //alternatives to the default; I think they are
+    //better because they eliminate the dependency
+    //on browserify-cypher, but they are asynchronous
+    //and I already made so much stuff with this library
+    //that assumes synchronicity, I don't want to change
+    //it all
+    alt_encrypt: async ( privkey, pubkey, text ) => {
+        var msg = ( new TextEncoder() ).encode( text );
+        var iv = window.crypto.getRandomValues( new Uint8Array( 16 ) );
+        var key_raw = hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
+        var key = await window.crypto.subtle.importKey(
+            "raw",
+            key_raw,
+            "AES-CBC",
+            false,
+            [ "encrypt", "decrypt" ],
+        );
+        var emsg = await window.crypto.subtle.encrypt(
+            {
+                name: "AES-CBC",
+                iv,
+            },
+            key,
+            msg,
+        )
+        emsg = new Uint8Array( emsg );
+        var arr = emsg;
+        emsg = hexToBase64( bytesToHex( emsg ) ) + "?iv=" + btoa( String.fromCharCode.apply( null, iv ) );
+        return emsg;
+    },
+    alt_decrypt: async ( privkey, pubkey, ciphertext ) => {
+        var [ emsg, iv ] = ciphertext.split( "?iv=" );
+        var key_raw = hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
+        var key = await window.crypto.subtle.importKey(
+            "raw",
+            key_raw,
+            "AES-CBC",
+            false,
+            [ "encrypt", "decrypt" ],
+        );
+        var decrypted = await window.crypto.subtle.decrypt(
+            {
+                name: "AES-CBC",
+                iv: base64ToBytes( iv ),
+            },
+            key,
+            base64ToBytes( emsg ),
+        );
+        var msg = ( new TextDecoder() ).decode( decrypted );
+        return msg;
+    },
     encrypt: ( privkey, pubkey, text ) => {
         var key = nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 );
         var iv = window.crypto.getRandomValues( new Uint8Array( 16 ) );
@@ -141,6 +193,19 @@ var super_nostr = {
         dmsg = decryptedMessage + decipher.final( "utf8" );
         return dmsg;
     },
+    //var listenFunction = async socket => {
+    //    var subId = super_nostr.bytesToHex( crypto.getRandomValues( new Uint8Array( 8 ) ) );
+    //    var filter  = {}
+    //    filter.kinds = [ 1 ];
+    //    filter.since = Math.floor( Date.now() / 1000 );
+    //    var subscription = [ "REQ", subId, filter ];
+    //    socket.send( JSON.stringify( subscription ) );
+    //}
+    //var handleFunction = async message => {
+    //    var [ type, subId, event ] = JSON.parse( message.data );
+    //    if ( !event || event === true ) return;
+    //    console.log( event );
+    //}
     newPermanentConnection: ( relay, listenFunction, handleFunction ) => {
         var socket_id = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
         super_nostr.sockets[ socket_id ] = {socket: null, connection_failure: false}
