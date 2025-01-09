@@ -5,6 +5,7 @@ var super_nostr = {
     sockets: {},
     hexToBytes: hex => Uint8Array.from( hex.match( /.{1,2}/g ).map( byte => parseInt( byte, 16 ) ) ),
     bytesToHex: bytes => bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" ),
+    hexToBase64: hex => btoa( hex.match( /\w{2}/g ).map( a => String.fromCharCode( parseInt( a, 16 ) ) ).join( "" ) ),
     base64ToHex: str => {
         var raw = atob( str );
         var result = '';
@@ -13,6 +14,12 @@ var super_nostr = {
             result += hex.length % 2 ? '0' + hex : hex;
         }
         return result.toLowerCase();
+    },
+    base64ToBytes: str => {
+        var raw = atob( str );
+        var result = [];
+        var i; for ( i=0; i<raw.length; i++ ) result.push( raw.charCodeAt( i ) );
+        return new Uint8Array( result );
     },
     getPrivkey: () => super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ),
     getPubkey: privkey => nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ),
@@ -119,17 +126,17 @@ var super_nostr = {
         event.sig = await nobleSecp256k1.schnorr.sign( event.id, privkey );
         return event;
     },
-    //"alt_encrypt" and "alt_decrypt" functions are
-    //alternatives to the default; I think they are
+    //the "alt_encrypt" and "alt_decrypt" functions are
+    //alternatives to the defaults; I think they are
     //better because they eliminate the dependency
-    //on browserify-cypher, but they are asynchronous
+    //on browserify-cipher, but they are asynchronous
     //and I already made so much stuff with this library
     //that assumes synchronicity, I don't want to change
     //it all
     alt_encrypt: async ( privkey, pubkey, text ) => {
         var msg = ( new TextEncoder() ).encode( text );
         var iv = window.crypto.getRandomValues( new Uint8Array( 16 ) );
-        var key_raw = hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
+        var key_raw = super_nostr.hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
         var key = await window.crypto.subtle.importKey(
             "raw",
             key_raw,
@@ -147,12 +154,12 @@ var super_nostr = {
         )
         emsg = new Uint8Array( emsg );
         var arr = emsg;
-        emsg = hexToBase64( bytesToHex( emsg ) ) + "?iv=" + btoa( String.fromCharCode.apply( null, iv ) );
+        emsg = super_nostr.hexToBase64( super_nostr.bytesToHex( emsg ) ) + "?iv=" + btoa( String.fromCharCode.apply( null, iv ) );
         return emsg;
     },
     alt_decrypt: async ( privkey, pubkey, ciphertext ) => {
         var [ emsg, iv ] = ciphertext.split( "?iv=" );
-        var key_raw = hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
+        var key_raw = super_nostr.hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
         var key = await window.crypto.subtle.importKey(
             "raw",
             key_raw,
@@ -163,10 +170,10 @@ var super_nostr = {
         var decrypted = await window.crypto.subtle.decrypt(
             {
                 name: "AES-CBC",
-                iv: base64ToBytes( iv ),
+                iv: super_nostr.base64ToBytes( iv ),
             },
             key,
-            base64ToBytes( emsg ),
+            super_nostr.base64ToBytes( emsg ),
         );
         var msg = ( new TextDecoder() ).decode( decrypted );
         return msg;
