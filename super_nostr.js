@@ -86,7 +86,7 @@ var super_nostr = {
         return await loop();
     },
     prepEvent: async ( privkey, msg, kind, tags ) => {
-        pubkey = super_nostr.getPubkey( privkey );
+        var pubkey = super_nostr.getPubkey( privkey );
         if ( !tags ) tags = [];
         var event = {
             "content": msg,
