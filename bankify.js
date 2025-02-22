@@ -793,11 +793,11 @@ var bankify = {
         var reply = await bankify.send( mymint, invoice, amnt_for_amountless_invoice, app_pubkey );
         alert( reply );
     },
-    receiveLN: async () => {
+    receiveLN: async amount => {
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
         var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
         var mymint = bankify.state.nostr_state.nwc_info[ app_pubkey ].mymint;
-        var amount = prompt( `enter how much you want in satoshis` );
+        if ( !amount ) amount = prompt( `enter how much you want in satoshis` );
         if ( !amount || isNaN( amount ) ) return;
         amount = Number( amount );
         var invoice_data = await bankify.getLNInvoice( mymint, amount );
