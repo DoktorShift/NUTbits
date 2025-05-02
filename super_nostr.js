@@ -204,7 +204,8 @@ var super_nostr = {
     //    var subId = super_nostr.bytesToHex( crypto.getRandomValues( new Uint8Array( 8 ) ) );
     //    var filter  = {}
     //    filter.kinds = [ 1 ];
-    //    filter.since = Math.floor( Date.now() / 1000 );
+    //    filter.limit = 1;
+    //    filter.since = Math.floor( Date.now() / 1000 ) - 86400;
     //    var subscription = [ "REQ", subId, filter ];
     //    socket.send( JSON.stringify( subscription ) );
     //}
