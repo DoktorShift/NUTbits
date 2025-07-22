@@ -131,6 +131,58 @@ var super_nostr = {
         event.sig = await nobleSecp256k1.schnorr.sign( event.id, privkey );
         return event;
     },
+        //the "alt_encrypt" and "alt_decrypt" functions are
+    //alternatives to the defaults; I think they are
+    //better because they eliminate the dependency
+    //on browserify-cipher, but they are asynchronous
+    //and I already made so much stuff with this library
+    //that assumes synchronicity, I don't want to change
+    //it all
+    alt_encrypt: async ( privkey, pubkey, text ) => {
+        var msg = ( new TextEncoder() ).encode( text );
+        var iv = window.crypto.getRandomValues( new Uint8Array( 16 ) );
+        var key_raw = super_nostr.hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
+        var key = await window.crypto.subtle.importKey(
+            "raw",
+            key_raw,
+            "AES-CBC",
+            false,
+            [ "encrypt", "decrypt" ],
+        );
+        var emsg = await window.crypto.subtle.encrypt(
+            {
+                name: "AES-CBC",
+                iv,
+            },
+            key,
+            msg,
+        )
+        emsg = new Uint8Array( emsg );
+        var arr = emsg;
+        emsg = super_nostr.hexToBase64( super_nostr.bytesToHex( emsg ) ) + "?iv=" + btoa( String.fromCharCode.apply( null, iv ) );
+        return emsg;
+    },
+    alt_decrypt: async ( privkey, pubkey, ciphertext ) => {
+        var [ emsg, iv ] = ciphertext.split( "?iv=" );
+        var key_raw = super_nostr.hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
+        var key = await window.crypto.subtle.importKey(
+            "raw",
+            key_raw,
+            "AES-CBC",
+            false,
+            [ "encrypt", "decrypt" ],
+        );
+        var decrypted = await window.crypto.subtle.decrypt(
+            {
+                name: "AES-CBC",
+                iv: super_nostr.base64ToBytes( iv ),
+            },
+            key,
+            super_nostr.base64ToBytes( emsg ),
+        );
+        var msg = ( new TextDecoder() ).decode( decrypted );
+        return msg;
+    },
     encrypt: ( privkey, pubkey, text ) => {
         var key = nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 );
         var iv = crypto.getRandomValues( new Uint8Array( 16 ) );
