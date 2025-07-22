@@ -1,5 +1,5 @@
 // dependencies:
-// npm i bolt11 @gandlaf21/blind-signature ws browserify-cipher noble-secp256k1
+// npm i bolt11 @gandlaf21/blind-signature ws browserify-cipher noble-secp256k1 crypto
 var bolt11 = require( 'bolt11' );
 var crypto = require( 'crypto' );
 var nobleSecp256k1 = require( 'noble-secp256k1' );
@@ -140,16 +140,16 @@ var super_nostr = {
     //it all
     alt_encrypt: async ( privkey, pubkey, text ) => {
         var msg = ( new TextEncoder() ).encode( text );
-        var iv = window.crypto.getRandomValues( new Uint8Array( 16 ) );
+        var iv = crypto.getRandomValues( new Uint8Array( 16 ) );
         var key_raw = super_nostr.hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
-        var key = await window.crypto.subtle.importKey(
+        var key = await crypto.subtle.importKey(
             "raw",
             key_raw,
             "AES-CBC",
             false,
             [ "encrypt", "decrypt" ],
         );
-        var emsg = await window.crypto.subtle.encrypt(
+        var emsg = await crypto.subtle.encrypt(
             {
                 name: "AES-CBC",
                 iv,
@@ -165,14 +165,14 @@ var super_nostr = {
     alt_decrypt: async ( privkey, pubkey, ciphertext ) => {
         var [ emsg, iv ] = ciphertext.split( "?iv=" );
         var key_raw = super_nostr.hexToBytes( nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 ) );
-        var key = await window.crypto.subtle.importKey(
+        var key = await crypto.subtle.importKey(
             "raw",
             key_raw,
             "AES-CBC",
             false,
             [ "encrypt", "decrypt" ],
         );
-        var decrypted = await window.crypto.subtle.decrypt(
+        var decrypted = await crypto.subtle.decrypt(
             {
                 name: "AES-CBC",
                 iv: super_nostr.base64ToBytes( iv ),
