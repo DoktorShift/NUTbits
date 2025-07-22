@@ -212,6 +212,20 @@ var super_nostr = {
         dmsg = decryptedMessage + decipher.final( "utf8" );
         return dmsg;
     },
+    //var listenFunction = async socket => {
+    //    var subId = super_nostr.bytesToHex( crypto.getRandomValues( new Uint8Array( 8 ) ) );
+    //    var filter  = {}
+    //    filter.kinds = [ 1 ];
+    //    filter.limit = 1;
+    //    filter.since = Math.floor( Date.now() / 1000 ) - 86400;
+    //    var subscription = [ "REQ", subId, filter ];
+    //    socket.send( JSON.stringify( subscription ) );
+    //}
+    //var handleFunction = async message => {
+    //    var [ type, subId, event ] = JSON.parse( message.data );
+    //    if ( !event || event === true ) return;
+    //    console.log( event );
+    //}
     newPermanentConnection: ( relay, listenFunction, handleFunction ) => {
         var socket_id = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
         super_nostr.sockets[ socket_id ] = {socket: null, connection_failure: false}
