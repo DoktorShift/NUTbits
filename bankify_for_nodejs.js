@@ -27,6 +27,12 @@ var super_nostr = {
         }
         return result.toLowerCase();
     },
+    base64ToBytes: str => {
+        var raw = atob( str );
+        var result = [];
+        var i; for ( i=0; i<raw.length; i++ ) result.push( raw.charCodeAt( i ) );
+        return new Uint8Array( result );
+    },
     getPrivkey: () => super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ),
     getPubkey: privkey => nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ),
     sha256: async text_or_bytes => {if ( typeof text_or_bytes === "string" ) text_or_bytes = ( new TextEncoder().encode( text_or_bytes ) );return super_nostr.bytesToHex( await nobleSecp256k1.utils.sha256( text_or_bytes ) )},
