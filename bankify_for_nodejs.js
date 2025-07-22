@@ -131,7 +131,7 @@ var super_nostr = {
         event.sig = await nobleSecp256k1.schnorr.sign( event.id, privkey );
         return event;
     },
-        //the "alt_encrypt" and "alt_decrypt" functions are
+    //the "alt_encrypt" and "alt_decrypt" functions are
     //alternatives to the defaults; I think they are
     //better because they eliminate the dependency
     //on browserify-cipher, but they are asynchronous
