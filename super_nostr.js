@@ -222,17 +222,17 @@ var super_nostr = {
     },
     connectionLoop: async ( tries = 0, relay, socket_id, listenFunction, handleFunction ) => {
         var socketRetrieverFunction = socket_id => {
-            return super_nostr.sockets[ socket_id ][ "socket" ];
+            if ( super_nostr.sockets.hasOwnProperty( socket_id ) ) return super_nostr.sockets[ socket_id ][ "socket" ];
         }
         var socketReplacerFunction = ( socket_id, socket ) => {
-            super_nostr.sockets[ socket_id ][ "socket" ] = socket;
-            super_nostr.sockets[ socket_id ][ "connection_failure" ] = false;
+            if ( super_nostr.sockets.hasOwnProperty( socket_id ) ) super_nostr.sockets[ socket_id ][ "socket" ] = socket;
+            if ( super_nostr.sockets.hasOwnProperty( socket_id ) ) super_nostr.sockets[ socket_id ][ "connection_failure" ] = false;
         }
         var socketFailureCheckerFunction = socket_id => {
-            return super_nostr.sockets[ socket_id ][ "connection_failure" ];
+            if ( super_nostr.sockets.hasOwnProperty( socket_id ) ) return super_nostr.sockets[ socket_id ][ "connection_failure" ];
         }
         var socketFailureSetterFunction = socket_id => {
-            return super_nostr.sockets[ socket_id ][ "connection_failure" ] = true;
+            if ( super_nostr.sockets.hasOwnProperty( socket_id ) ) return super_nostr.sockets[ socket_id ][ "connection_failure" ] = true;
         }
         if ( socketFailureCheckerFunction( socket_id ) ) return alert( `your connection to nostr failed and could not be restarted, please refresh the page` );
         var socket = socketRetrieverFunction( socket_id );
