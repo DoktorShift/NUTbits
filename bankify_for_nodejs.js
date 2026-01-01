@@ -36,6 +36,7 @@ var super_nostr = {
     getPrivkey: () => super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ),
     getPubkey: privkey => nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ),
     sha256: async text_or_bytes => {if ( typeof text_or_bytes === "string" ) text_or_bytes = ( new TextEncoder().encode( text_or_bytes ) );return super_nostr.bytesToHex( await nobleSecp256k1.utils.sha256( text_or_bytes ) )},
+    waitSomeTime: num => new Promise( resolve => setTimeout( resolve, num ) ),
     waitSomeSeconds: num => {
         var num = num.toString() + "000";
         num = Number( num );
