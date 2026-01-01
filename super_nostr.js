@@ -114,6 +114,36 @@ var super_nostr = {
         }
         return event.id;
     },
+    alt_sendEvent: async ( event, relay ) => {
+        var promiseA = async () => {
+            await super_nostr.waitSomeTime( 2_000 );
+            return "unknown error";
+        }
+        var promiseB = new Promise( resolve => {
+            var socket = new WebSocket( relay );
+            socket.addEventListener( 'message', async m => {
+                if ( !m.data ) return;
+                try {
+                    var json = JSON.parse( m.data );
+                    if ( !json[ 0 ] || json[ 0 ] !== "OK" || json[ 1 ] !== event.id ) return;
+                    if ( json[ 2 ] ) resolve( json[ 1 ] );
+                    else if ( json[ 3 ] ) resolve( json[ 3 ] );
+                    else resolve( 'unknown error' ); 
+                } catch ( e ) {}
+            });
+            socket.addEventListener( 'open', async () => {
+                var loop = async () => {
+                    if ( socket.readyState === 1 ) return;
+                    await super_nostr.Time( 10 );
+                    return await loop();
+                }
+                await loop();
+                socket.send( JSON.stringify( [ "EVENT", event ] ) );
+            });
+            setTimeout( () => {socket.close();}, 2_000 );
+        });
+        return await Promise.any( [ promiseA(), promiseB ] );
+    },
     getSignedEvent: async ( event, privkey ) => {
         var eventData = JSON.stringify([
             0,
