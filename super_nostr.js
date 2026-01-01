@@ -86,12 +86,12 @@ var super_nostr = {
         }
         return await loop();
     },
-    prepEvent: async ( privkey, msg, kind, tags ) => {
+    prepEvent: async ( privkey, msg, kind, tags, timestamp ) => {
         var pubkey = super_nostr.getPubkey( privkey );
         if ( !tags ) tags = [];
         var event = {
             "content": msg,
-            "created_at": Math.floor( Date.now() / 1000 ),
+            "created_at": timestamp || Math.floor( Date.now() / 1000 ),
             "kind": kind,
             "tags": tags,
             "pubkey": pubkey,
