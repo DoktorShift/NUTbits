@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 240" fill="none">
+  <rect width="840" height="240" rx="10" fill="#0d1117"/>
+
+  <!-- ══════════ Panel 1: Normal ══════════ -->
+  <rect x="14" y="14" width="258" height="182" rx="8" fill="#0b1215" stroke="#1c3a2a" stroke-width="1"/>
+  <!-- Header bar -->
+  <rect x="14" y="14" width="258" height="30" rx="8" fill="#122b1e"/>
+  <rect x="14" y="36" width="258" height="8" fill="#122b1e"/>
+  <circle cx="30" cy="29" r="4" fill="#27c93f" opacity="0.6"/>
+  <text x="44" y="33" font-family="monospace" font-size="11" fill="#27c93f" font-weight="bold">Normal operation</text>
+
+  <!-- Client -->
+  <rect x="83" y="58" width="120" height="26" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="143" y="76" text-anchor="middle" font-family="monospace" font-size="11" fill="#7d8590">Your App</text>
+
+  <!-- NWC line -->
+  <line x1="143" y1="84" x2="143" y2="98" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="162" y="95" font-family="monospace" font-size="8" fill="#c084fc" opacity="0.7">NWC</text>
+
+  <!-- NUTbits node -->
+  <rect x="105" y="100" width="76" height="22" rx="4" fill="#1a1038" stroke="#c084fc" stroke-width="1"/>
+  <text x="143" y="115" text-anchor="middle" font-family="monospace" font-size="10" fill="#c084fc" font-weight="bold">NUTbits</text>
+
+  <!-- Active line to Mint A -->
+  <line x1="143" y1="122" x2="143" y2="142" stroke="#27c93f" stroke-width="2"/>
+
+  <!-- Mint A active -->
+  <rect x="73" y="144" width="140" height="26" rx="5" fill="#0f2618" stroke="#27c93f" stroke-width="1.5"/>
+  <circle cx="90" cy="157" r="5" fill="#27c93f"/>
+  <text x="152" y="162" text-anchor="middle" font-family="monospace" font-size="11" fill="#27c93f" font-weight="bold">Mint A</text>
+
+  <!-- Mint B standby -->
+  <rect x="93" y="178" width="100" height="10" rx="3" fill="#161b22" stroke="#30363d" stroke-width="0.5"/>
+  <circle cx="105" cy="183" r="2.5" fill="#30363d"/>
+  <text x="152" y="186" text-anchor="middle" font-family="monospace" font-size="8" fill="#30363d">Mint B standby</text>
+
+  <!-- ══════════ Panel 2: Failover ══════════ -->
+  <rect x="291" y="14" width="258" height="182" rx="8" fill="#150d0e" stroke="#3a1c1e" stroke-width="1"/>
+  <!-- Header bar -->
+  <rect x="291" y="14" width="258" height="30" rx="8" fill="#2b1216"/>
+  <rect x="291" y="36" width="258" height="8" fill="#2b1216"/>
+  <circle cx="307" cy="29" r="4" fill="#ff5f56" opacity="0.6"/>
+  <text x="321" y="33" font-family="monospace" font-size="11" fill="#ff5f56" font-weight="bold">Mint A goes down</text>
+
+  <!-- Client -->
+  <rect x="360" y="58" width="120" height="26" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="420" y="76" text-anchor="middle" font-family="monospace" font-size="11" fill="#7d8590">Your App</text>
+
+  <!-- NWC line (unchanged) -->
+  <line x1="420" y1="84" x2="420" y2="98" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="439" y="95" font-family="monospace" font-size="8" fill="#c084fc" opacity="0.7">NWC</text>
+
+  <!-- NUTbits node -->
+  <rect x="382" y="100" width="76" height="22" rx="4" fill="#1a1038" stroke="#c084fc" stroke-width="1"/>
+  <text x="420" y="115" text-anchor="middle" font-family="monospace" font-size="10" fill="#c084fc" font-weight="bold">NUTbits</text>
+
+  <!-- Broken line to Mint A -->
+  <line x1="405" y1="122" x2="380" y2="142" stroke="#ff5f56" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+  <!-- Active line to Mint B -->
+  <line x1="435" y1="122" x2="460" y2="142" stroke="#ffbd2e" stroke-width="2"/>
+
+  <!-- Mint A down -->
+  <rect x="310" y="144" width="100" height="26" rx="5" fill="#1f0d0e" stroke="#ff5f56" stroke-width="1" stroke-dasharray="3 2"/>
+  <circle cx="327" cy="157" r="5" fill="#ff5f56"/>
+  <text x="370" y="162" text-anchor="middle" font-family="monospace" font-size="11" fill="#ff5f56">Mint A</text>
+
+  <!-- Mint B now active -->
+  <rect x="430" y="144" width="100" height="26" rx="5" fill="#1f1a06" stroke="#ffbd2e" stroke-width="1.5"/>
+  <circle cx="447" cy="157" r="5" fill="#ffbd2e"/>
+  <text x="490" y="162" text-anchor="middle" font-family="monospace" font-size="11" fill="#ffbd2e" font-weight="bold">Mint B</text>
+
+  <!-- Switch label -->
+  <text x="420" y="188" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffbd2e" opacity="0.8">automatic switch</text>
+
+  <!-- ══════════ Panel 3: Recovery ══════════ -->
+  <rect x="568" y="14" width="258" height="182" rx="8" fill="#0d1219" stroke="#1c2a3a" stroke-width="1"/>
+  <!-- Header bar -->
+  <rect x="568" y="14" width="258" height="30" rx="8" fill="#11202e"/>
+  <rect x="568" y="36" width="258" height="8" fill="#11202e"/>
+  <circle cx="584" cy="29" r="4" fill="#58a6ff" opacity="0.6"/>
+  <text x="598" y="33" font-family="monospace" font-size="11" fill="#58a6ff" font-weight="bold">Mint A recovers</text>
+
+  <!-- Client -->
+  <rect x="637" y="58" width="120" height="26" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="697" y="76" text-anchor="middle" font-family="monospace" font-size="11" fill="#7d8590">Your App</text>
+
+  <!-- NWC line (unchanged) -->
+  <line x1="697" y1="84" x2="697" y2="98" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="716" y="95" font-family="monospace" font-size="8" fill="#c084fc" opacity="0.7">NWC</text>
+
+  <!-- NUTbits node -->
+  <rect x="659" y="100" width="76" height="22" rx="4" fill="#1a1038" stroke="#c084fc" stroke-width="1"/>
+  <text x="697" y="115" text-anchor="middle" font-family="monospace" font-size="10" fill="#c084fc" font-weight="bold">NUTbits</text>
+
+  <!-- Active line back to Mint A -->
+  <line x1="697" y1="122" x2="697" y2="142" stroke="#27c93f" stroke-width="2"/>
+
+  <!-- Mint A back -->
+  <rect x="627" y="144" width="140" height="26" rx="5" fill="#0f2618" stroke="#27c93f" stroke-width="1.5"/>
+  <circle cx="644" cy="157" r="5" fill="#27c93f"/>
+  <text x="706" y="162" text-anchor="middle" font-family="monospace" font-size="11" fill="#27c93f" font-weight="bold">Mint A</text>
+
+  <!-- Mint B back to standby -->
+  <rect x="647" y="178" width="100" height="10" rx="3" fill="#161b22" stroke="#30363d" stroke-width="0.5"/>
+  <circle cx="659" cy="183" r="2.5" fill="#30363d"/>
+  <text x="706" y="186" text-anchor="middle" font-family="monospace" font-size="8" fill="#30363d">Mint B standby</text>
+
+  <!-- ══════════ Bottom message ══════════ -->
+  <rect x="240" y="204" width="360" height="26" rx="13" fill="#1a1038" stroke="#c084fc" stroke-width="0.5" opacity="0.6"/>
+  <text x="420" y="222" text-anchor="middle" font-family="monospace" font-size="11" fill="#c084fc">NWC connection string never changes</text>
+</svg>

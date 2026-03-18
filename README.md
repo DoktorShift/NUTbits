@@ -95,9 +95,7 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
 ## How It Works
 
-```
-LNbits ──NWC (NIP-47)──> NUTbits ──Cashu NUTs──> Mint ──Lightning──> Network
-```
+<img src="assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Cashu NUTs → Mint → Lightning → Network" width="100%">
 
 1. NUTbits generates a keypair and creates an NWC connection string
 2. It subscribes to NWC request events (kind 23194) on configured Nostr relays
@@ -129,11 +127,13 @@ NUTbits supports optional multi-mint failover for higher reliability. Configure 
 NUTBITS_MINT_URLS=https://your-primary-mint.com,https://your-backup-mint.com
 ```
 
-**How it works:**
+<img src="assets/Inline_Explaining/failover-5-panels.svg" alt="Multi-Mint Failover: Normal → Failover → Recovery" width="100%">
+
 - On startup, NUTbits tries mints in order until one responds
-- If the active mint goes down during an operation, it automatically fails over to the next healthy mint
-- A background health check runs every 60s (configurable). When a higher-priority mint recovers, NUTbits switches back to it
+- If the active mint goes down, it automatically fails over to the next healthy mint
+- A background health check runs every 60s. When the primary mint recovers, NUTbits switches back
 - In-flight invoices are checked against the mint that created them, even during failover
+- **Your NWC connection string stays the same throughout**
 
 ### Trade-offs
 

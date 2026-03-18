@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 180" fill="none">
+  <rect width="840" height="180" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Time arrow -->
+  <line x1="40" y1="155" x2="790" y2="155" stroke="#30363d" stroke-width="1"/>
+  <polygon points="790,151 800,155 790,159" fill="#30363d"/>
+  <text x="810" y="159" font-family="monospace" font-size="10" fill="#484f58">time</text>
+
+  <!-- Column 1: Normal -->
+  <text x="140" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#27c93f">Normal</text>
+  <text x="140" y="56" text-anchor="middle" font-family="monospace" font-size="11" fill="#8b949e">Client</text>
+  <line x1="140" y1="62" x2="140" y2="82" stroke="#27c93f" stroke-width="2"/>
+  <rect x="90" y="84" width="100" height="28" rx="5" fill="#161b22" stroke="#27c93f" stroke-width="1.5"/>
+  <circle cx="104" cy="98" r="4" fill="#27c93f"/>
+  <text x="148" y="103" text-anchor="middle" font-family="monospace" font-size="12" fill="#c9d1d9" font-weight="bold">Mint A</text>
+  <rect x="90" y="120" width="100" height="28" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <circle cx="104" cy="134" r="4" fill="#484f58"/>
+  <text x="148" y="139" text-anchor="middle" font-family="monospace" font-size="12" fill="#484f58">Mint B</text>
+
+  <!-- Column 2: Failover -->
+  <text x="420" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#ff5f56">Failover</text>
+  <text x="420" y="56" text-anchor="middle" font-family="monospace" font-size="11" fill="#8b949e">Client</text>
+  <line x1="420" y1="62" x2="420" y2="118" stroke="#ffbd2e" stroke-width="2"/>
+  <rect x="370" y="84" width="100" height="28" rx="5" fill="#161b22" stroke="#ff5f56" stroke-width="1.5"/>
+  <circle cx="384" cy="98" r="4" fill="#ff5f56"/>
+  <text x="428" y="103" text-anchor="middle" font-family="monospace" font-size="12" fill="#ff5f56">Mint A</text>
+  <rect x="370" y="120" width="100" height="28" rx="5" fill="#161b22" stroke="#ffbd2e" stroke-width="1.5"/>
+  <circle cx="384" cy="134" r="4" fill="#ffbd2e"/>
+  <text x="428" y="139" text-anchor="middle" font-family="monospace" font-size="12" fill="#c9d1d9" font-weight="bold">Mint B</text>
+
+  <!-- Column 3: Recovery -->
+  <text x="700" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#58a6ff">Recovery</text>
+  <text x="700" y="56" text-anchor="middle" font-family="monospace" font-size="11" fill="#8b949e">Client</text>
+  <line x1="700" y1="62" x2="700" y2="82" stroke="#27c93f" stroke-width="2"/>
+  <rect x="650" y="84" width="100" height="28" rx="5" fill="#161b22" stroke="#27c93f" stroke-width="1.5"/>
+  <circle cx="664" cy="98" r="4" fill="#27c93f"/>
+  <text x="708" y="103" text-anchor="middle" font-family="monospace" font-size="12" fill="#c9d1d9" font-weight="bold">Mint A</text>
+  <rect x="650" y="120" width="100" height="28" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <circle cx="664" cy="134" r="4" fill="#484f58"/>
+  <text x="708" y="139" text-anchor="middle" font-family="monospace" font-size="12" fill="#484f58">Mint B</text>
+</svg>
