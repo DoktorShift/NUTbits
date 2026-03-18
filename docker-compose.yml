@@ -1,0 +1,11 @@
+services:
+  nutbits:
+    build: .
+    restart: always
+    env_file: .env
+    volumes:
+      - nutbits-data:/data
+    # No ports needed — communicates via Nostr relays only
+
+volumes:
+  nutbits-data:

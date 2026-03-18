@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+nutbits_state.enc
+nutbits_state.enc.tmp
+nutbits_state.enc.migrated
+nutbits.db
+nutbits.db-wal
+nutbits.db-shm
+.git
+.claude
+*.md
+.nojekyll
+assets

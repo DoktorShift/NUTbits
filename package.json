@@ -1,0 +1,44 @@
+{
+  "name": "nutbits",
+  "version": "0.7.0",
+  "description": "Cashu ecash to NWC bridge — use any Cashu mint as a Lightning funding source for LNbits",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "nutbits.js",
+  "scripts": {
+    "start": "node nutbits.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DoktorShift/nutbits"
+  },
+  "homepage": "https://github.com/DoktorShift/nutbits#readme",
+  "bugs": {
+    "url": "https://github.com/DoktorShift/nutbits/issues"
+  },
+  "author": "DoktorShift",
+  "keywords": [
+    "cashu",
+    "ecash",
+    "nostr",
+    "nwc",
+    "nip-47",
+    "lightning",
+    "lnbits",
+    "bitcoin",
+    "wallet-connect"
+  ],
+  "dependencies": {
+    "@cashu/cashu-ts": "^3.6.1",
+    "bolt11": "^1.4.1",
+    "dotenv": "^16.4.5",
+    "nostr-core": "^0.7.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.0.0",
+    "mysql2": "^3.11.0"
+  }
+}

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 340" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="sCircle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1430"/><stop offset="100%" stop-color="#150e22"/>
+    </linearGradient>
+    <linearGradient id="sSuccess" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2918"/><stop offset="100%" stop-color="#0a1a10"/>
+    </linearGradient>
+  </defs>
+  <rect width="840" height="340" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="420" y="32" text-anchor="middle" font-size="16" fill="#c9d1d9" font-weight="bold">Sending a Payment</text>
+  <text x="420" y="50" text-anchor="middle" font-size="10" fill="#484f58">LNbits and the Cashu mint work together — NUTbits connects them</text>
+
+  <!-- ── Step 1 ── -->
+  <circle cx="80" cy="100" r="18" fill="url(#sCircle)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="80" y="105" text-anchor="middle" font-size="13" fill="#c084fc" font-weight="bold">1</text>
+  <text x="118" y="96" font-size="12" fill="#c9d1d9" font-weight="bold">LNbits requests a payment</text>
+  <text x="118" y="112" font-size="10" fill="#8b949e">A user or app triggers "pay this invoice" — LNbits sends it via NWC</text>
+
+  <!-- ── Step 2 ── -->
+  <circle cx="80" cy="158" r="18" fill="url(#sCircle)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="80" y="163" text-anchor="middle" font-size="13" fill="#c084fc" font-weight="bold">2</text>
+  <text x="118" y="154" font-size="12" fill="#c9d1d9" font-weight="bold">NUTbits prepares the ecash</text>
+  <text x="118" y="170" font-size="10" fill="#8b949e">Selects the right ecash proofs from the balance to cover the amount</text>
+
+  <!-- ── Step 3 ── -->
+  <circle cx="80" cy="216" r="18" fill="url(#sCircle)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="80" y="221" text-anchor="middle" font-size="13" fill="#c084fc" font-weight="bold">3</text>
+  <text x="118" y="212" font-size="12" fill="#c9d1d9" font-weight="bold">The mint settles over Lightning</text>
+  <text x="118" y="228" font-size="10" fill="#8b949e">NUTbits hands the ecash to the mint, which routes the payment</text>
+
+  <!-- ── Step 4 ── -->
+  <circle cx="80" cy="274" r="18" fill="url(#sSuccess)" stroke="#27c93f" stroke-width="1.2"/>
+  <text x="80" y="279" text-anchor="middle" font-size="13" fill="#27c93f" font-weight="bold">4</text>
+  <text x="118" y="270" font-size="12" fill="#27c93f" font-weight="bold">Done — everyone's in sync</text>
+  <text x="118" y="286" font-size="10" fill="#8b949e">Recipient got paid, balance updated, LNbits gets the confirmation.</text>
+
+  <!-- Vertical connector -->
+  <line x1="80" y1="118" x2="80" y2="140" stroke="#21262d" stroke-width="1"/>
+  <line x1="80" y1="176" x2="80" y2="198" stroke="#21262d" stroke-width="1"/>
+  <line x1="80" y1="234" x2="80" y2="256" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Bottom note -->
+  <text x="420" y="326" text-anchor="middle" font-size="10" fill="#484f58">Ecash meets Lightning — each part does what it's best at.</text>
+</svg>

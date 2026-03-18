@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment (contains passphrase, seed, secrets)
+.env
+.env.*
+!.env.example
+
+# State files (contains ecash proofs = real money)
+nutbits_state.enc
+nutbits_state.enc.tmp
+nutbits_state.enc.migrated
+*.enc
+*.enc.tmp
+*.enc.migrated
+
+# SQLite database (contains encrypted proofs + keys)
+*.db
+*.db-wal
+*.db-shm
+
+# Claude Code
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
