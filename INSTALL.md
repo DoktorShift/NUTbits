@@ -77,9 +77,7 @@ The NWC connection string appears in the logs on first run.
 4. Paste the NWC connection string
 5. Save and restart LNbits
 
-```
-LNbits ──NWC (NIP-47)──> NUTbits ──Cashu NUTs──> Mint ──Lightning──> Network
-```
+<img src="assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Mint → Lightning → Network" width="100%">
 
 ## Funding Your Wallet
 

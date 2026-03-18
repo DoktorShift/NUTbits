@@ -22,13 +22,13 @@ These two worlds can't talk to each other natively. NUTbits bridges the gap.
 ## The Flow
 
 <p align="center">
-  <img src="assets/inline_explaining/inline_how-it-works-flow.svg" alt="NUTbits flow diagram" width="100%">
+  <img src="assets/Inline_Explaining/inline_how-it-works-flow.svg" alt="NUTbits flow diagram" width="100%">
 </p>
 
 ## What Happens When You Send a Payment
 
 <p align="center">
-  <img src="assets/inline_explaining/inline_how-it-works-send.svg" alt="Send payment sequence" width="100%">
+  <img src="assets/Inline_Explaining/inline_how-it-works-send.svg" alt="Send payment sequence" width="100%">
 </p>
 
 Each part does what it's best at — LNbits manages wallets and users, the mint handles Lightning, NUTbits connects them.
@@ -36,7 +36,7 @@ Each part does what it's best at — LNbits manages wallets and users, the mint 
 ## What Happens When You Receive a Payment
 
 <p align="center">
-  <img src="assets/inline_explaining/inline_how-it-works-receive.svg" alt="Receive payment sequence" width="100%">
+  <img src="assets/Inline_Explaining/inline_how-it-works-receive.svg" alt="Receive payment sequence" width="100%">
 </p>
 
 ## What Does This Unlock?
@@ -87,11 +87,12 @@ When NUTbits needs to create a Lightning invoice (to receive) or pay one (to sen
 - **LNbits operators** looking for a new funding source option
 - **Cashu enthusiasts** who want to put their ecash to work with LNbits
 - **Developers** building NWC-compatible apps who want to test against a real wallet
-- **Anyone** curious about combining ecash and Lightning
+- **Anyone** curious about combining ecash, Lightning, and Nostr Wallet Connect
 
 ## Related Reading
 
 - [INSTALL.md](INSTALL.md) — Get NUTbits running in 5 minutes
 - [README.md](README.md) — Full technical reference
+- [LNbits](https://lnbits.com) — Lightning accounts system that NUTbits was built to power
 - [Cashu protocol](https://cashu.space) — Learn about ecash for Bitcoin
 - [NIP-47 spec](https://github.com/nostr-protocol/nips/blob/master/47.md) — The NWC protocol NUTbits implements
