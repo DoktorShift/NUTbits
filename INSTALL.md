@@ -31,6 +31,10 @@ NUTBITS_STATE_PASSPHRASE=your-strong-passphrase-here
 
 # Optional: use SQLite for concurrent access (recommended for LNbits)
 # NUTBITS_STATE_BACKEND=sqlite
+
+# Optional: charge a service fee on outgoing payments (disabled by default)
+# NUTBITS_SERVICE_FEE_PPM=10000    # 1% (parts per million)
+# NUTBITS_SERVICE_FEE_BASE=1       # +1 sat per payment
 ```
 
 > Need SQLite or MySQL? Install the driver: `npm install better-sqlite3` or `npm install mysql2`
@@ -51,6 +55,28 @@ nostr+walletconnect://abc123...?relay=wss://nostrue.com&secret=xyz789...
 
 Copy this string. You'll need it to connect LNbits or any NWC client.
 
+### Management Console (optional)
+
+Make the `nutbits` command available:
+
+```bash
+npm link
+```
+
+Then open a second terminal (while the service is running):
+
+```bash
+nutbits              # interactive TUI dashboard
+nutbits balance      # check balance
+nutbits connections  # list NWC connections
+```
+
+No extra configuration — the CLI finds the running service and authenticates automatically.
+
+> Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
+
+See **[CLI.md](CLI.md)** for the full setup and command reference.
+
 ## Docker
 
 ```bash
@@ -68,6 +94,27 @@ docker compose logs -f
 ```
 
 The NWC connection string appears in the logs on first run.
+
+### CLI access from the host
+
+The CLI needs access to the management socket. Two options:
+
+**Option A: HTTP API (simpler)**
+
+Uncomment the port mapping in `docker-compose.yml` and set `NUTBITS_API_PORT=7777` in your `.env`:
+
+```bash
+# From the host
+nutbits --http http://localhost:7777 status
+```
+
+**Option B: Socket volume mount (already configured)**
+
+The `nutbits-sock` volume is shared. Find the socket path and connect:
+
+```bash
+nutbits --socket /var/lib/docker/volumes/nutbits_nutbits-sock/_data/nutbits.sock status
+```
 
 ## Connect to LNbits
 

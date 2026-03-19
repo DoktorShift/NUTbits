@@ -11,6 +11,7 @@ import {
 } from 'nostr-core';
 import { Wallet, sumProofs, MintQuoteState, NetworkError, HttpResponseError, MintOperationError, hasValidDleq } from '@cashu/cashu-ts';
 import { createStore } from './store/index.js';
+import { startApiServer } from './api/server.js';
 import bolt11Lib from 'bolt11';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -36,6 +37,12 @@ var config = {
     sqlitePath:          process.env.NUTBITS_SQLITE_PATH || null,
     mysqlUrl:            process.env.NUTBITS_MYSQL_URL || null,
     seed:                process.env.NUTBITS_SEED || null,
+    serviceFeePpm:       Math.max(0, Math.floor(Number(process.env.NUTBITS_SERVICE_FEE_PPM || 0))),
+    serviceFeeBase:      Math.max(0, Math.floor(Number(process.env.NUTBITS_SERVICE_FEE_BASE || 0))),
+    apiEnabled:          process.env.NUTBITS_API_ENABLED !== 'false',
+    apiSocket:           process.env.NUTBITS_API_SOCKET || null,
+    apiPort:             process.env.NUTBITS_API_PORT || null,
+    apiToken:            process.env.NUTBITS_API_TOKEN || null,
 };
 // Backward compat: mintUrl = first configured mint
 config.mintUrl = config.mintUrls[0];
@@ -60,6 +67,14 @@ var log = {
 // ── Utilities ──────────────────────────────────────────────────────────────
 
 var wait = ms => new Promise(r => setTimeout(r, ms));
+
+// Service fee calculation (outgoing payments only)
+var calcServiceFee = (amountSats, connState) => {
+    var ppm = connState?.service_fee_ppm ?? config.serviceFeePpm;
+    var base = connState?.service_fee_base ?? config.serviceFeeBase;
+    if (!ppm && !base) return 0;
+    return Math.floor(amountSats * ppm / 1_000_000) + base;
+};
 
 var validateMintUrl = url => {
     try {
@@ -356,21 +371,26 @@ var nutbits = {
         log.info('NWC notification sent', { type: notificationType, nip44: useNip44, relaysSent: sent });
     },
 
-    formatTx: tx => ({
-        type: tx.type,
-        state: tx.err_msg ? 'failed' : tx.settled_at ? 'settled' : 'pending',
-        invoice: tx.invoice,
-        description: tx.description || '',
-        description_hash: tx.description_hash || '',
-        preimage: tx.preimage || '',
-        payment_hash: tx.payment_hash,
-        amount: tx.amount,
-        fees_paid: tx.fees_paid || 0,
-        created_at: tx.created_at,
-        expires_at: tx.expires_at,
-        settled_at: tx.settled_at || null,
-        metadata: tx.metadata || {},
-    }),
+    formatTx: tx => {
+        var result = {
+            type: tx.type,
+            state: tx.err_msg ? 'failed' : tx.settled_at ? 'settled' : 'pending',
+            invoice: tx.invoice,
+            description: tx.description || '',
+            description_hash: tx.description_hash || '',
+            preimage: tx.preimage || '',
+            payment_hash: tx.payment_hash,
+            amount: tx.amount,
+            fees_paid: tx.fees_paid || 0,
+            created_at: tx.created_at,
+            expires_at: tx.expires_at,
+            settled_at: tx.settled_at || null,
+            metadata: tx.metadata || {},
+        };
+        // Optional: include service_fee if present (non-standard NIP-47 extension)
+        if (tx.service_fee) result.service_fee = tx.service_fee;
+        return result;
+    },
 
     // ── Cashu Wallet (via cashu-ts SDK) ────────────────────────────────
 
@@ -710,16 +730,14 @@ var nutbits = {
             log.debug('NWC response published', { relaysSent: sent, responseId: event.id });
         };
 
-        // ── Daily spend tracking ───────────────────────────────────────
-        var dailySpend = { date: '', sats: 0 };
-        var trackSpend = amountSats => {
+        // ── Daily spend tracking (persisted to store) ────────────────
+        var trackSpend = async amountSats => {
             var today = new Date().toISOString().slice(0, 10);
-            if (dailySpend.date !== today) { dailySpend.date = today; dailySpend.sats = 0; }
-            dailySpend.sats += amountSats;
+            await store.addDailySpend(app_pubkey, today, amountSats);
         };
-        var getDailySpend = () => {
+        var getDailySpend = async () => {
             var today = new Date().toISOString().slice(0, 10);
-            return dailySpend.date === today ? dailySpend.sats : 0;
+            return await store.getDailySpend(app_pubkey, today);
         };
 
         // ── Handle NWC Events ──────────────────────────────────────────
@@ -771,7 +789,8 @@ var nutbits = {
                         var bhr = await fetch(`https://mempool.space/api/block-height/${blockheight}`, { signal: AbortSignal.timeout(5000) });
                         blockhash = await bhr.text();
                     } catch (e) { log.debug('blockheight fetch failed', { error: e.message }); }
-                    return await sendNWCResponse(state, nwcResult(command.method, {
+                    // Build response — standard NIP-47 fields + optional service_fee metadata
+                    var infoResult = {
                         alias: 'NUTbits',
                         color: '',
                         pubkey: '',
@@ -780,7 +799,21 @@ var nutbits = {
                         block_hash: blockhash,
                         methods: state.permissions,
                         notifications: ['payment_received', 'payment_sent'],
-                    }), event.pubkey, event.id, evtAppPubkey);
+                    };
+
+                    // Optional: advertise service fee policy so clients can display it
+                    var connFeePpm = state.service_fee_ppm ?? config.serviceFeePpm;
+                    var connFeeBase = state.service_fee_base ?? config.serviceFeeBase;
+                    if (connFeePpm || connFeeBase) {
+                        infoResult.service_fee = {
+                            ppm: connFeePpm || 0,
+                            base_msat: (connFeeBase || 0) * 1000,
+                            applies_to: 'outgoing',
+                        };
+                    }
+
+                    return await sendNWCResponse(state, nwcResult(command.method, infoResult),
+                        event.pubkey, event.id, evtAppPubkey);
                 }
 
                 // ── get_balance ────────────────────────────────────────
@@ -897,6 +930,13 @@ var nutbits = {
                     var pmthash = getInvoicePmthash(invoice);
                     var invoice_amt = decodedInvoice.satoshis;
 
+                    // Reject duplicate payment for same invoice
+                    if (state.tx_history[pmthash]?.paid) {
+                        return await sendNWCResponse(state,
+                            nwcResult(command.method, { preimage: state.tx_history[pmthash].preimage, fees_paid: state.tx_history[pmthash].fees_paid || 0 }),
+                            event.pubkey, event.id, evtAppPubkey);
+                    }
+
                     // Store tx
                     state.tx_history[pmthash] = {
                         type: 'outgoing',
@@ -924,22 +964,33 @@ var nutbits = {
                             event.pubkey, event.id, evtAppPubkey);
                     }
 
-                    // Spend limits
-                    if (config.maxPaymentSats && invoice_amt > config.maxPaymentSats) {
+                    // Spend limits — enforce both global AND per-connection limits (stricter wins)
+                    var effectiveMaxPayment = config.maxPaymentSats || 0;
+                    var connMaxPayment = state.max_payment_sats || 0;
+                    if (connMaxPayment && (!effectiveMaxPayment || connMaxPayment < effectiveMaxPayment)) effectiveMaxPayment = connMaxPayment;
+                    if (effectiveMaxPayment && invoice_amt > effectiveMaxPayment) {
                         return await sendNWCResponse(state,
-                            nwcError(command.method, 'QUOTA_EXCEEDED', `exceeds per-payment limit of ${config.maxPaymentSats} sats`),
-                            event.pubkey, event.id, evtAppPubkey);
-                    }
-                    if (config.dailyLimitSats && (getDailySpend() + invoice_amt) > config.dailyLimitSats) {
-                        return await sendNWCResponse(state,
-                            nwcError(command.method, 'QUOTA_EXCEEDED', `exceeds daily limit of ${config.dailyLimitSats} sats`),
+                            nwcError(command.method, 'QUOTA_EXCEEDED', `exceeds per-payment limit of ${effectiveMaxPayment} sats`),
                             event.pubkey, event.id, evtAppPubkey);
                     }
 
-                    // Fee reserve check
+                    var effectiveDailyLimit = config.dailyLimitSats || 0;
+                    var connDailyLimit = state.max_daily_sats || 0;
+                    if (connDailyLimit && (!effectiveDailyLimit || connDailyLimit < effectiveDailyLimit)) effectiveDailyLimit = connDailyLimit;
+                    if (effectiveDailyLimit && ((await getDailySpend()) + invoice_amt) > effectiveDailyLimit) {
+                        return await sendNWCResponse(state,
+                            nwcError(command.method, 'QUOTA_EXCEEDED', `exceeds daily limit of ${effectiveDailyLimit} sats`),
+                            event.pubkey, event.id, evtAppPubkey);
+                    }
+
+                    // Service fee (outgoing only — 0 by default)
+                    var serviceFee = calcServiceFee(invoice_amt, state);
+                    var totalNeededWithFee = invoice_amt + serviceFee;
+
+                    // Fee reserve check (includes service fee)
                     var maxSpendable = Math.floor((1 - config.feeReservePct) * (await nutbits.getBalanceMsat()));
-                    if (maxSpendable - (invoice_amt * 1000) < 0) {
-                        var err_msg = `insufficient balance (${await nutbits.getBalance()} sats available, ${invoice_amt} sats + fees needed)`;
+                    if (maxSpendable - (totalNeededWithFee * 1000) < 0) {
+                        var err_msg = `insufficient balance (${await nutbits.getBalance()} sats available, ${totalNeededWithFee} sats needed${serviceFee ? ` incl. ${serviceFee} service fee` : ''})`;
                         state.tx_history[pmthash].err_msg = err_msg;
                         await store.updateTx(evtAppPubkey, pmthash, { err_msg });
                         return await sendNWCResponse(state,
@@ -958,24 +1009,44 @@ var nutbits = {
                             event.pubkey, event.id, evtAppPubkey);
                     }
 
+                    // fees_paid = Lightning routing fees ONLY (from the mint)
+                    // service_fee = our operator fee, separate — never mixed
+                    var routingFees = result.fees_paid || 0;
+                    var serviceFeeMsat = serviceFee * 1000;
+
                     state.tx_history[pmthash].preimage = result.preimage;
                     state.tx_history[pmthash].settled_at = Math.floor(Date.now() / 1000);
                     state.tx_history[pmthash].paid = true;
-                    state.tx_history[pmthash].fees_paid = result.fees_paid;
+                    state.tx_history[pmthash].fees_paid = routingFees;
+                    state.tx_history[pmthash].service_fee = serviceFeeMsat;
                     var bal = await nutbits.getBalanceMsat();
                     state.balance = bal;
-                    await store.updateTx(evtAppPubkey, pmthash, { preimage: result.preimage, settled_at: state.tx_history[pmthash].settled_at, paid: true, fees_paid: result.fees_paid });
+                    await store.updateTx(evtAppPubkey, pmthash, {
+                        preimage: result.preimage,
+                        settled_at: state.tx_history[pmthash].settled_at,
+                        paid: true,
+                        fees_paid: routingFees,
+                        service_fee: serviceFeeMsat,
+                    });
                     await store.updateConnection(evtAppPubkey, { balance: bal });
-                    trackSpend(invoice_amt);
+                    await trackSpend(invoice_amt);
+
+                    if (serviceFee > 0) {
+                        log.info('service fee collected', { sats: serviceFee, payment_hash: pmthash });
+                    }
 
                     // NIP-47 notification: payment_sent
                     nutbits.sendNotification(evtAppPubkey, 'payment_sent', nutbits.formatTx(state.tx_history[pmthash])).catch(e =>
                         log.debug('payment_sent notification failed', { error: e.message })
                     );
 
+                    // NWC response — fees_paid is routing only, service_fee is additional metadata
+                    // Clients that understand service_fee can display the breakdown
+                    // Clients that don't will just see the routing fees (standard NIP-47)
                     return await sendNWCResponse(state, nwcResult('pay_invoice', {
                         preimage: result.preimage,
-                        fees_paid: result.fees_paid,
+                        fees_paid: routingFees,
+                        service_fee: serviceFeeMsat,
                     }), event.pubkey, event.id, evtAppPubkey);
                 }
 
@@ -1306,6 +1377,18 @@ ${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _
         console.log(`\n${c.bold}${nwcString}${c.reset}\n`);
     } else {
         console.log(`\n  ${c.green}NWC connections restored. Ready.${c.reset}\n`);
+    }
+
+    // ── Management API ───────────────────────────────────────────
+    if (config.apiEnabled) {
+        try {
+            await startApiServer({ nutbits, store, mintManager, config, log, startedAt: Date.now() });
+            log.info('management API ready', { socket: config.apiSocket || '~/.nutbits/nutbits.sock' });
+        } catch (e) {
+            log.warn('management API failed to start (non-fatal)', { error: e.message });
+        }
+    } else {
+        log.info('management API disabled (NUTBITS_API_ENABLED=false)');
     }
 })();
 

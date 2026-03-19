@@ -54,7 +54,10 @@ NUTBITS_STATE_PASSPHRASE=your-passphrase
 ```
 proofs        — one row per ecash proof (proof_id, mint_url, amount, proof_enc)
 connections   — one row per NWC connection (app_pubkey, data_enc, balance)
+              includes per-connection: permissions, spending limits, service fee rates
 transactions  — one row per payment (payment_hash, app_pubkey, data_enc)
+              includes: fees_paid (routing), service_fee (operator), settled_at
+daily_spend   — per-connection daily spend tracking (spend_key, sats)
 mints         — configured mints (url, last_healthy)
 config        — key-value settings (active_mint_url, encryption_salt)
 ```

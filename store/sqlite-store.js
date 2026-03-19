@@ -217,6 +217,21 @@ export class SqliteStore {
         this.#db.prepare('INSERT OR REPLACE INTO counters (keyset_id, next_counter) VALUES (?, ?)').run(keysetId, next);
     }
 
+    // ── Daily Spend Tracking ─────────────────────────────────────────
+
+    async getDailySpend(appPubkey, date) {
+        var key = `${appPubkey}:${date}`;
+        var row = this.#db.prepare('SELECT sats FROM daily_spend WHERE spend_key = ?').get(key);
+        return row?.sats || 0;
+    }
+
+    async addDailySpend(appPubkey, date, amountSats) {
+        var key = `${appPubkey}:${date}`;
+        this.#db.prepare('INSERT INTO daily_spend (spend_key, sats) VALUES (?, ?) ON CONFLICT(spend_key) DO UPDATE SET sats = sats + ?').run(key, amountSats, amountSats);
+        // Clean up old dates
+        this.#db.prepare("DELETE FROM daily_spend WHERE spend_key NOT LIKE ?").run(`%:${date}`);
+    }
+
     // ── Bulk ──────────────────────────────────────────────────────────
 
     async saveAll() {
@@ -265,6 +280,10 @@ export class SqliteStore {
             CREATE TABLE IF NOT EXISTS counters (
                 keyset_id TEXT PRIMARY KEY,
                 next_counter INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS daily_spend (
+                spend_key TEXT PRIMARY KEY,
+                sats INTEGER NOT NULL DEFAULT 0
             );
         `);
         this.#db.prepare("INSERT OR IGNORE INTO config (key, value) VALUES ('schema_version', ?)").run(String(SCHEMA_VERSION));

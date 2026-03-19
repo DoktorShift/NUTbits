@@ -43,9 +43,13 @@ All settings in `.env` (see `.env.example`):
 | `NUTBITS_STATE_BACKEND` | `file` | Storage backend: `file`, `sqlite`, or `mysql` |
 | `NUTBITS_SQLITE_PATH` | `./nutbits_state.db` | SQLite database path |
 | `NUTBITS_MYSQL_URL` | _(optional)_ | MySQL connection URL |
+| `NUTBITS_SERVICE_FEE_PPM` | `0` | Service fee in parts per million on outgoing payments (0 = disabled) |
+| `NUTBITS_SERVICE_FEE_BASE` | `0` | Flat base fee in sats per outgoing payment (0 = disabled) |
+| `NUTBITS_API_ENABLED` | `true` | Set to `false` to disable management API/CLI |
 
 > **Storage:** See **[DATABASE.md](DATABASE.md)** for backend comparison, setup, and migration.
 > **Backups:** See **[BACKUP.md](BACKUP.md)** for backup and recovery procedures.
+> **Service fees:** See **[CLI.md](CLI.md#service-fees)** for fee configuration, per-connection overrides, and revenue tracking.
 
 Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
@@ -93,6 +97,10 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 - `payment_received` — sent when an incoming invoice settles
 - `payment_sent` — sent when an outgoing payment completes
 
+**Optional NIP-47 extensions** (non-breaking, clients can ignore or honor):
+- `get_info` response includes `service_fee` object when fees are enabled (ppm, base, applies_to)
+- `pay_invoice` response includes `service_fee` field (msats) separate from `fees_paid` (routing)
+
 ## How It Works
 
 <img src="assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Cashu NUTs → Mint → Lightning → Network" width="100%">
@@ -100,17 +108,37 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 1. NUTbits generates a keypair and creates an NWC connection string
 2. It subscribes to NWC request events (kind 23194) on configured Nostr relays
 3. When a command arrives, it translates to Cashu operations via `@cashu/cashu-ts`:
-   - `pay_invoice` -> wallet melts ecash to pay the Lightning invoice (NUT-5)
-   - `make_invoice` -> wallet requests a mint quote; upon payment, mints new ecash (NUT-4)
+   - `pay_invoice` -> wallet melts ecash to pay the Lightning invoice (NUT-5). Optional service fee deducted if configured.
+   - `make_invoice` -> wallet requests a mint quote; upon payment, mints new ecash (NUT-4). No fees on incoming.
 4. Responses are sent back as NWC events (kind 23195)
 
 State (keys, ecash proofs, transaction history) is encrypted with AES-256-GCM and persisted to disk.
+
+## Management Console
+
+NUTbits includes an interactive management console. Run `nutbits` in a second terminal to get a split-screen dashboard, or use individual commands:
+
+```bash
+nutbits                    # interactive TUI
+nutbits balance            # check balance
+nutbits connections        # list NWC connections
+nutbits connect            # create new connection (guided)
+nutbits pay <invoice>      # pay a Lightning invoice
+nutbits receive <amount>   # create an invoice
+```
+
+Create multiple NWC connections with scoped permissions and spending limits — one for LNbits with full access, another for a POS with pay-only and a daily cap.
+
+See **[CLI.md](CLI.md)** for the full command reference.
+
+> Set `NUTBITS_API_ENABLED=false` in `.env` to disable the management API entirely.
 
 ## Security
 
 - Encrypted state persistence (AES-256-GCM + scrypt)
 - Event deduplication across relays (prevents double-payments)
-- Per-payment and daily spend limits
+- Per-payment and daily spend limits (global + per-connection)
+- Per-connection service fee scoping
 - NWC string masked in logs
 - State file permissions restricted to owner (0600)
 - Atomic state writes (crash-safe)
@@ -156,6 +184,7 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 | Document | Description |
 |----------|-------------|
 | [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
+| [CLI.md](CLI.md) | Management console — TUI, CLI commands, connections |
 | [INSTALL.md](INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
 | [DATABASE.md](DATABASE.md) | Storage backends — file, SQLite, MySQL |
 | [BACKUP.md](BACKUP.md) | Backup, recovery, and encryption details |
@@ -164,6 +193,8 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 ## Trust Model
 
 Ecash is custodial. The mint holds the funds. Standard risks apply: the mint can steal, get shut down, or get hacked. Only use mints you trust, and only with amounts you can afford to lose.
+
+NUTbits operators can optionally enable a service fee on outgoing payments. This fee is transparent — advertised in the NWC `get_info` response and reported separately in every `pay_invoice` response. Receiving payments is always free. By default, no fees are charged.
 
 ## Related Projects
 

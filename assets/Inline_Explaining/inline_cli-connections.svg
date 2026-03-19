@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 300" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="mCircle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1430"/><stop offset="100%" stop-color="#150e22"/>
+    </linearGradient>
+    <linearGradient id="mSuccess" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2918"/><stop offset="100%" stop-color="#0a1a10"/>
+    </linearGradient>
+  </defs>
+  <rect width="840" height="300" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="420" y="30" text-anchor="middle" font-size="16" fill="#c9d1d9" font-weight="bold">Multiple NWC Connections</text>
+  <text x="420" y="48" text-anchor="middle" font-size="10" fill="#484f58">Each connection gets its own permissions and spending limits</text>
+
+  <!-- Step 1 -->
+  <circle cx="80" cy="90" r="18" fill="url(#mCircle)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="80" y="95" text-anchor="middle" font-size="13" fill="#c084fc" font-weight="bold">1</text>
+  <text x="118" y="86" font-size="12" fill="#c9d1d9" font-weight="bold">Create scoped connections</text>
+  <text x="118" y="102" font-size="10" fill="#8b949e">Each gets its own NWC string, permissions, and limits</text>
+
+  <!-- Step 2 -->
+  <circle cx="80" cy="148" r="18" fill="url(#mCircle)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="80" y="153" text-anchor="middle" font-size="13" fill="#c084fc" font-weight="bold">2</text>
+  <text x="118" y="144" font-size="12" fill="#c9d1d9" font-weight="bold">Plug into different apps</text>
+  <text x="118" y="160" font-size="10" fill="#8b949e">LNbits gets full access, a POS gets pay-only with daily cap</text>
+
+  <!-- Step 3 -->
+  <circle cx="80" cy="206" r="18" fill="url(#mCircle)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="80" y="211" text-anchor="middle" font-size="13" fill="#c084fc" font-weight="bold">3</text>
+  <text x="118" y="202" font-size="12" fill="#c9d1d9" font-weight="bold">Monitor and revoke anytime</text>
+  <text x="118" y="218" font-size="10" fill="#8b949e">See per-connection spend, revoke if compromised</text>
+
+  <!-- Connectors -->
+  <line x1="80" y1="108" x2="80" y2="130" stroke="#21262d" stroke-width="1"/>
+  <line x1="80" y1="166" x2="80" y2="188" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Example -->
+  <text x="420" y="262" text-anchor="middle" font-size="10" fill="#484f58">nutbits connect --label "lnbits" --permissions pay,receive,balance</text>
+  <text x="420" y="280" text-anchor="middle" font-size="10" fill="#484f58">nutbits connect --label "pos" --permissions pay,balance --max-daily 5000</text>
+</svg>

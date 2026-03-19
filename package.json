@@ -5,8 +5,12 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "main": "nutbits.js",
+  "bin": {
+    "nutbits": "./bin/nutbits.js"
+  },
   "scripts": {
-    "start": "node nutbits.js"
+    "start": "node nutbits.js",
+    "cli": "node bin/nutbits.js"
   },
   "engines": {
     "node": ">=18"

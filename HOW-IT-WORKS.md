@@ -65,6 +65,8 @@ This means:
 
 For maximum sovereignty, run your own mint (e.g. [Nutshell](https://github.com/cashubtc/nutshell) or [CDK](https://github.com/cashubtc/cdk)).
 
+If an operator charges service fees, these are optional and transparent — advertised in the NWC connection info and reported on each payment. You always know the fee before it's charged.
+
 ## Key Concepts
 
 ### Ecash Proofs
@@ -82,6 +84,16 @@ When NUTbits needs to create a Lightning invoice (to receive) or pay one (to sen
 - **Mint quote (NUT-4):** "I want to receive X sats" → the mint creates a Lightning invoice. When it gets paid, NUTbits mints new ecash.
 - **Melt quote (NUT-5):** "I want to pay this invoice" → NUTbits gives ecash to the mint, and the mint pays the Lightning invoice.
 
+### Service Fees (optional)
+
+NUTbits can optionally charge a small fee on outgoing payments. This is disabled by default — NUTbits takes zero cut unless you turn it on.
+
+When enabled, the fee is deducted from the sender's balance on each outgoing payment. The fee stays as ecash in the operator's balance. **Receiving payments is always free** — no fee is ever taken on incoming.
+
+The fee is transparent: NWC clients that support it can read the fee policy from the `get_info` response and see the exact fee on each payment. Clients that don't support it simply ignore the extra field — nothing breaks.
+
+This makes it possible to run NUTbits as a service for others, covering costs or earning a small margin. See **[CLI.md](CLI.md#service-fees)** for setup.
+
 ## Who Is This For?
 
 - **LNbits operators** looking for a new funding source option
@@ -89,9 +101,23 @@ When NUTbits needs to create a Lightning invoice (to receive) or pay one (to sen
 - **Developers** building NWC-compatible apps who want to test against a real wallet
 - **Anyone** curious about combining ecash, Lightning, and Nostr Wallet Connect
 
+## Managing NUTbits
+
+Once NUTbits is running, you can manage it from a second terminal:
+
+```bash
+nutbits              # interactive dashboard
+nutbits balance      # check your balance
+nutbits connections  # see your NWC connections
+nutbits connect      # create a new connection
+```
+
+The management console lets you create multiple NWC connections with different permissions — one for LNbits with full access, another for a POS terminal with just pay and a daily spending cap. See **[CLI.md](CLI.md)** for the full guide.
+
 ## Related Reading
 
 - [INSTALL.md](INSTALL.md) — Get NUTbits running in 5 minutes
+- [CLI.md](CLI.md) — Management console reference
 - [README.md](README.md) — Full technical reference
 - [LNbits](https://lnbits.com) — Lightning accounts system that NUTbits was built to power
 - [Cashu protocol](https://cashu.space) — Learn about ecash for Bitcoin

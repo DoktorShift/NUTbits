@@ -5,7 +5,7 @@ import fs from 'fs';
 import { encryptState, decryptState } from './crypto-utils.js';
 
 export class FileStore {
-    #state = { mints: {}, nostr_state: { nwc_info: {} }, activeMintUrl: null, counters: {} };
+    #state = { mints: {}, nostr_state: { nwc_info: {} }, activeMintUrl: null, counters: {}, dailySpend: {} };
     #passphrase;
     #stateFile;
     #writeLock = Promise.resolve();
@@ -27,6 +27,7 @@ export class FileStore {
             this.#state.activeMintUrl = restored.activeMintUrl || null;
             this.#state.nostr_state.nwc_info = restored.nostr_state?.nwc_info || {};
             this.#state.counters = restored.counters || {};
+            this.#state.dailySpend = restored.dailySpend || {};
             // Migration: old flat proofs format
             var flatProofs = restored.proofs || restored.utxos || [];
             var hasMintProofs = Object.values(this.#state.mints).some(m => m.proofs?.length > 0);
@@ -64,6 +65,7 @@ export class FileStore {
             activeMintUrl: activeMint,
             nostr_state: { nwc_info: nwcInfoClean },
             counters: this.#state.counters,
+            dailySpend: this.#state.dailySpend,
         };
         var blob = encryptState(this.#passphrase, JSON.stringify(stateToSave));
         var tmpFile = this.#stateFile + '.tmp';
@@ -212,6 +214,26 @@ export class FileStore {
     async setCounter(keysetId, next) {
         return this.#withLock(() => {
             this.#state.counters[keysetId] = next;
+            this.#flush();
+        });
+    }
+
+    // ── Daily Spend Tracking ─────────────────────────────────────────
+
+    async getDailySpend(appPubkey, date) {
+        var key = `${appPubkey}:${date}`;
+        return this.#state.dailySpend[key] || 0;
+    }
+
+    async addDailySpend(appPubkey, date, amountSats) {
+        return this.#withLock(() => {
+            var key = `${appPubkey}:${date}`;
+            this.#state.dailySpend[key] = (this.#state.dailySpend[key] || 0) + amountSats;
+            // Clean up old dates (keep only today and yesterday)
+            for (var k of Object.keys(this.#state.dailySpend)) {
+                var d = k.split(':').pop();
+                if (d < date) delete this.#state.dailySpend[k];
+            }
             this.#flush();
         });
     }

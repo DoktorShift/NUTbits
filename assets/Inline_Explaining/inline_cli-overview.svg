@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 240" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="cService" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2332"/><stop offset="100%" stop-color="#141d2b"/>
+    </linearGradient>
+    <linearGradient id="cApi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#231a2e"/><stop offset="100%" stop-color="#1a1425"/>
+    </linearGradient>
+    <linearGradient id="cCli" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2918"/><stop offset="100%" stop-color="#0a1a10"/>
+    </linearGradient>
+  </defs>
+  <rect width="840" height="240" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Service -->
+  <rect x="30" y="30" width="200" height="64" rx="10" fill="url(#cService)" stroke="#58a6ff" stroke-width="1.2"/>
+  <text x="130" y="58" text-anchor="middle" font-size="14" fill="#58a6ff" font-weight="bold">NUTbits Service</text>
+  <text x="130" y="76" text-anchor="middle" font-size="9" fill="#484f58">npm start</text>
+
+  <!-- Arrow -->
+  <line x1="230" y1="62" x2="290" y2="62" stroke="#c084fc" stroke-width="1.5"/>
+  <polygon points="286,57 298,62 286,67" fill="#c084fc"/>
+  <text x="264" y="54" text-anchor="middle" font-size="8" fill="#c084fc">socket</text>
+
+  <!-- API -->
+  <rect x="298" y="30" width="200" height="64" rx="10" fill="url(#cApi)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="398" y="58" text-anchor="middle" font-size="14" fill="#c084fc" font-weight="bold">Management API</text>
+  <text x="398" y="76" text-anchor="middle" font-size="9" fill="#484f58">~/.nutbits/nutbits.sock</text>
+
+  <!-- Arrows to CLI and TUI -->
+  <line x1="498" y1="48" x2="560" y2="38" stroke="#27c93f" stroke-width="1.5"/>
+  <polygon points="556,33 568,38 556,43" fill="#27c93f"/>
+
+  <line x1="498" y1="76" x2="560" y2="86" stroke="#27c93f" stroke-width="1.5"/>
+  <polygon points="556,81 568,86 556,91" fill="#27c93f"/>
+
+  <!-- TUI -->
+  <rect x="568" y="14" width="240" height="48" rx="10" fill="url(#cCli)" stroke="#27c93f" stroke-width="1.2"/>
+  <text x="688" y="36" text-anchor="middle" font-size="13" fill="#27c93f" font-weight="bold">Interactive TUI</text>
+  <text x="688" y="50" text-anchor="middle" font-size="9" fill="#484f58">nutbits</text>
+
+  <!-- CLI -->
+  <rect x="568" y="70" width="240" height="48" rx="10" fill="url(#cCli)" stroke="#27c93f" stroke-width="1.2"/>
+  <text x="688" y="92" text-anchor="middle" font-size="13" fill="#27c93f" font-weight="bold">CLI Commands</text>
+  <text x="688" y="106" text-anchor="middle" font-size="9" fill="#484f58">nutbits balance, nutbits pay, ...</text>
+
+  <!-- Summary -->
+  <text x="420" y="156" text-anchor="middle" font-size="12" fill="#8b949e">The service runs your wallet. The API exposes it locally.</text>
+  <text x="420" y="174" text-anchor="middle" font-size="12" fill="#8b949e">The TUI and CLI are two ways to interact — same data, your choice.</text>
+
+  <!-- Security note -->
+  <text x="420" y="210" text-anchor="middle" font-size="10" fill="#484f58">All communication is local. Disable with NUTBITS_API_ENABLED=false</text>
+</svg>

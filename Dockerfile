@@ -17,17 +17,23 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application
-COPY package.json LICENSE ./
+COPY package.json ./
 COPY nutbits.js ./
 COPY store/ ./store/
+COPY api/ ./api/
+COPY cli/ ./cli/
+COPY bin/ ./bin/
 
 # Data volume for state persistence
-RUN mkdir -p /data
+RUN mkdir -p /data /home/nutbits/.nutbits
+
 ENV NUTBITS_STATE_FILE=/data/nutbits_state.enc
 ENV NUTBITS_SQLITE_PATH=/data/nutbits.db
+# Socket inside the container — mount for host CLI access
+ENV NUTBITS_API_SOCKET=/home/nutbits/.nutbits/nutbits.sock
 
 # Don't run as root
-RUN adduser -D nutbits && chown -R nutbits:nutbits /data
+RUN adduser -D nutbits && chown -R nutbits:nutbits /data /home/nutbits/.nutbits
 USER nutbits
 
 CMD ["node", "nutbits.js"]

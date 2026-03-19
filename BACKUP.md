@@ -12,13 +12,21 @@ Your NUTbits state contains **ecash proofs (real money)** and **NWC private keys
 | `sqlite` | `nutbits_state.db` | Single database file |
 | `mysql` | Database dump | Use `mysqldump` |
 
-**Always back up your `.env` file too** — it contains `NUTBITS_STATE_PASSPHRASE` which is required to decrypt everything.
+**Always back up your `.env` file too** — it contains `NUTBITS_STATE_PASSPHRASE` (required to decrypt everything), your seed, and service fee configuration.
 
 > Store the passphrase and the data separately. One without the other is useless.
 
 ## Quick Backup
 
-### File backend
+### Using the CLI (recommended)
+
+```bash
+nutbits backup                           # auto-named with timestamp
+nutbits backup --out ./my-backup.enc     # custom path
+nutbits verify ./my-backup.enc           # check a backup
+```
+
+### File backend (manual)
 
 ```bash
 cp nutbits_state.enc "backups/nutbits_$(date +%Y%m%d_%H%M%S).enc"
@@ -67,6 +75,13 @@ Ecash proofs are **single-use**. If you restore an old backup, proofs that were 
 ## Seed Recovery (NUT-09 + NUT-13)
 
 This is your **last resort** when you have no backup but still have your seed. It recovers ecash proofs directly from the mint.
+
+### Using the CLI
+
+```bash
+nutbits restore                  # recover from all configured mints
+nutbits restore --mint <url>     # recover from a specific mint
+```
 
 ### How it works
 

@@ -24,6 +24,9 @@ When decrypted, the state is a JSON object:
   "counters": {
     "keyset_id_hex": 42
   },
+  "dailySpend": {
+    "app_pubkey:2026-03-19": 1500
+  },
   "nostr_state": {
     "nwc_info": {
       "app_pubkey_hex": {
@@ -34,6 +37,10 @@ When decrypted, the state is a JSON object:
         "app_pubkey": "hex...",
         "user_pubkey": "hex...",
         "balance": 50000,
+        "max_daily_sats": 10000,
+        "max_payment_sats": 1000,
+        "service_fee_ppm": 10000,
+        "service_fee_base": 1,
         "tx_history": {}
       }
     }
@@ -49,7 +56,10 @@ When decrypted, the state is a JSON object:
 | `counters` | NUT-13 deterministic secret counters per keyset | Restored automatically from mint via NUT-09 |
 | `nwc_info.*.app_privkey` | NWC service signing key | NWC connection string stops working |
 | `nwc_info.*.nwc_string` | The connection string you gave to LNbits | Need to generate a new one |
-| `nwc_info.*.tx_history` | Payment records | History lost, but funds are safe |
+| `nwc_info.*.tx_history` | Payment records (incl. service_fee per tx) | History lost, but funds are safe |
+| `nwc_info.*.service_fee_ppm` | Per-connection service fee rate | Falls back to global config |
+| `nwc_info.*.max_daily_sats` | Per-connection daily spending limit | Falls back to global config |
+| `dailySpend` | Per-connection daily spend counters | Resets naturally at midnight |
 | `activeMintUrl` | Which mint is currently active | Defaults to first configured mint |
 
 ## Encryption Format

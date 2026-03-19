@@ -230,7 +230,7 @@ export class MysqlStore {
         if (filters.limit) { sql += ' LIMIT ?'; params.push(Number(filters.limit)); }
         if (filters.offset) { sql += ' OFFSET ?'; params.push(Number(filters.offset)); }
 
-        var [rows] = await this.#pool.execute(sql, params);
+        var [rows] = await this.#pool.query(sql, params);
         return rows.map(r => JSON.parse(decryptValue(this.#key, r.data_enc)));
     }
 
@@ -246,6 +246,24 @@ export class MysqlStore {
             'INSERT INTO counters (keyset_id, next_counter) VALUES (?, ?) ON DUPLICATE KEY UPDATE next_counter = ?',
             [keysetId, next, next]
         );
+    }
+
+    // ── Daily Spend Tracking ─────────────────────────────────────────
+
+    async getDailySpend(appPubkey, date) {
+        var key = `${appPubkey}:${date}`;
+        var [rows] = await this.#pool.execute('SELECT sats FROM daily_spend WHERE spend_key = ?', [key]);
+        return rows[0] ? Number(rows[0].sats) : 0;
+    }
+
+    async addDailySpend(appPubkey, date, amountSats) {
+        var key = `${appPubkey}:${date}`;
+        await this.#pool.execute(
+            'INSERT INTO daily_spend (spend_key, sats) VALUES (?, ?) ON DUPLICATE KEY UPDATE sats = sats + ?',
+            [key, amountSats, amountSats]
+        );
+        // Clean up old dates
+        await this.#pool.execute("DELETE FROM daily_spend WHERE spend_key NOT LIKE ?", [`%:${date}`]);
     }
 
     // ── Bulk ──────────────────────────────────────────────────────────
@@ -306,6 +324,12 @@ export class MysqlStore {
             CREATE TABLE IF NOT EXISTS counters (
                 keyset_id VARCHAR(128) PRIMARY KEY,
                 next_counter INT NOT NULL DEFAULT 0
+            )
+        `);
+        await this.#pool.execute(`
+            CREATE TABLE IF NOT EXISTS daily_spend (
+                spend_key VARCHAR(200) PRIMARY KEY,
+                sats INT NOT NULL DEFAULT 0
             )
         `);
     }
