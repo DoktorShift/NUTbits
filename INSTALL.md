@@ -95,25 +95,29 @@ docker compose logs -f
 
 The NWC connection string appears in the logs on first run.
 
-### CLI access from the host
+### Using the CLI with Docker
 
-The CLI needs access to the management socket. Two options:
-
-**Option A: HTTP API (simpler)**
-
-Uncomment the port mapping in `docker-compose.yml` and set `NUTBITS_API_PORT=7777` in your `.env`:
+The CLI is inside the container. Just exec into it:
 
 ```bash
-# From the host
-nutbits --http http://localhost:7777 status
+docker compose exec nutbits nutbits              # interactive TUI
+docker compose exec nutbits nutbits balance       # single command
+docker compose exec nutbits nutbits connections    # list connections
+docker compose exec nutbits nutbits connect        # create new connection
 ```
 
-**Option B: Socket volume mount (already configured)**
-
-The `nutbits-sock` volume is shared. Find the socket path and connect:
+For quick access, add an alias to your shell:
 
 ```bash
-nutbits --socket /var/lib/docker/volumes/nutbits_nutbits-sock/_data/nutbits.sock status
+alias nutbits="docker compose exec nutbits nutbits"
+```
+
+Then use it like normal:
+
+```bash
+nutbits balance
+nutbits fees
+nutbits history
 ```
 
 ## Connect to LNbits

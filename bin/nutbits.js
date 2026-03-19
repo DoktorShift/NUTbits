@@ -21,6 +21,7 @@ var commands = {
     mints:       () => import('../cli/commands/mints.js'),
     nuts:        () => import('../cli/commands/nuts.js'),
     relays:      () => import('../cli/commands/relays.js'),
+    export:      () => import('../cli/commands/export.js'),
     backup:      () => import('../cli/commands/backup.js'),
     verify:      () => import('../cli/commands/verify.js'),
     restore:     () => import('../cli/commands/restore.js'),
@@ -58,6 +59,9 @@ var { values: flags, positionals } = parseArgs({
         from:         { type: 'string' },
         until:        { type: 'string' },
         unpaid:       { type: 'boolean', default: false },
+        format:       { type: 'string' },
+        id:           { type: 'string' },
+        'include-revoked': { type: 'boolean', default: false },
         out:          { type: 'string' },
         file:         { type: 'string' },
         'from-seed':  { type: 'boolean', default: false },
@@ -155,6 +159,7 @@ function printHelp() {
     ${c.green}nuts${c.reset}              NUT support matrix
     ${c.green}relays${c.reset}            relay status
 
+    ${c.green}export${c.reset}            export history, connections, or mints
     ${c.green}backup${c.reset}            export encrypted backup
     ${c.green}verify${c.reset} <file>     verify a backup file
     ${c.green}restore${c.reset}           recover proofs from seed

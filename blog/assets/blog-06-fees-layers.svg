@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g6" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent6" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffbd2e"/>
+      <stop offset="50%" stop-color="#ff5f56"/>
+      <stop offset="100%" stop-color="#ffbd2e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g6)"/>
+
+  <!-- Title — left side, top -->
+  <text x="80" y="160" font-size="42" fill="#c9d1d9" font-weight="bold">Put the Fees in Front</text>
+  <text x="80" y="215" font-size="42" fill="#c9d1d9" font-weight="bold">of LNbits, Not Inside It</text>
+
+  <text x="80" y="270" font-size="17" fill="#8b949e">Two layers. Clean separation. Infrastructure costs</text>
+  <text x="80" y="295" font-size="17" fill="#8b949e">covered before they hit your platform.</text>
+
+  <!-- Visual — right side: two stacked layer boxes -->
+  <rect x="740" y="170" width="380" height="90" rx="10" fill="#1a1e24" stroke="#ffbd2e" stroke-width="2"/>
+  <text x="760" y="200" font-size="15" fill="#ffbd2e" font-weight="bold">Layer 1 — NUTbits</text>
+  <text x="760" y="225" font-size="12" fill="#8b949e">Infrastructure fee: 1% + 1 sat</text>
+  <text x="760" y="245" font-size="11" fill="#484f58">collected as ecash before routing</text>
+
+  <!-- Connector -->
+  <line x1="930" y1="260" x2="930" y2="300" stroke="#30363d" stroke-width="1.5"/>
+  <text x="940" y="285" font-size="11" fill="#484f58">funds flow down</text>
+
+  <rect x="740" y="300" width="380" height="90" rx="10" fill="#1a1e24" stroke="#58a6ff" stroke-width="2"/>
+  <text x="760" y="330" font-size="15" fill="#58a6ff" font-weight="bold">Layer 2 — LNbits</text>
+  <text x="760" y="355" font-size="12" fill="#8b949e">Platform margin: extensions, accounts</text>
+  <text x="760" y="375" font-size="11" fill="#484f58">no need to front routing costs</text>
+
+  <!-- Bottom left: fee breakdown example -->
+  <rect x="80" y="390" width="520" height="110" rx="8" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="100" y="420" font-size="14" fill="#8b949e">Example: user pays</text>
+  <text x="290" y="420" font-size="14" fill="#c9d1d9" font-weight="bold">1,000 sats</text>
+
+  <text x="100" y="450" font-size="12" fill="#484f58">NUTbits keeps</text>
+  <text x="230" y="450" font-size="12" fill="#ffbd2e" font-weight="bold">11 sats</text>
+  <text x="310" y="450" font-size="12" fill="#484f58">(1% + 1 base)</text>
+
+  <text x="100" y="475" font-size="12" fill="#484f58">LNbits receives</text>
+  <text x="250" y="475" font-size="12" fill="#58a6ff" font-weight="bold">989 sats</text>
+  <text x="340" y="475" font-size="12" fill="#484f58">(minus routing)</text>
+
+  <text x="100" y="492" font-size="10" fill="#30363d">merchant gets the rest. everyone's costs are covered.</text>
+
+  <rect width="1200" height="4" fill="url(#accent6)"/>
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

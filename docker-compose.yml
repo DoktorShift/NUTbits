@@ -5,15 +5,8 @@ services:
     env_file: .env
     volumes:
       - nutbits-data:/data
-      # Mount socket directory for host CLI access
-      - nutbits-sock:/home/nutbits/.nutbits
     # No ports needed — communicates via Nostr relays only
-    # Uncomment to enable HTTP API (for CLI access without socket mount):
-    # ports:
-    #   - "127.0.0.1:7777:7777"
-    # environment:
-    #   - NUTBITS_API_PORT=7777
+    # CLI access: docker compose exec nutbits nutbits
 
 volumes:
   nutbits-data:
-  nutbits-sock:

@@ -31,14 +31,15 @@ export async function run(client, args) {
         process.stdout.write('\x1b[2J\x1b[H');
 
         var d = status;
-        print(`  ${c.purple}${c.bold}NUTbits${c.reset} ${c.dim}v${d.version}${c.reset}                     ${d.mint.healthy ? c.dot.ok : c.dot.err} ${c.muted}running${c.reset}         ${c.dim}uptime: ${uptime(d.uptime_ms)}${c.reset}`);
-        print(`  ${c.dim}${'─'.repeat(70)}${c.reset}`);
+        var w = Math.min((process.stdout.columns || 80) - 4, 76);
+        print(`  ${c.purple}${c.bold}NUTbits LIVE${c.reset} ${c.dim}v${d.version}${c.reset}                  ${d.mint.healthy ? c.dot.ok : c.dot.err} ${c.muted}running${c.reset}         ${c.dim}uptime: ${uptime(d.uptime_ms)}${c.reset}`);
+        print(`  ${c.dim}${'─'.repeat(w)}${c.reset}`);
         print('');
         print(`  ${c.muted}Balance${c.reset}    ${sats(d.balance_sats)}              ${c.muted}Mint${c.reset}       ${d.mint.healthy ? c.dot.ok : c.dot.err} ${c.white}${d.mint.name}${c.reset}`);
         print(`  ${c.muted}Relays${c.reset}     ${d.relays.connected}/${d.relays.total}                     ${c.muted}Storage${c.reset}    ${d.storage}`);
         print(`  ${c.muted}Conns${c.reset}      ${d.connections_count} active               ${c.muted}Seed${c.reset}       ${d.seed_configured ? c.dot.ok : c.dot.err} ${d.seed_configured ? 'configured' : 'not set'}`);
         print('');
-        print(`  ${c.dim}── Live ${'─'.repeat(62)}${c.reset}`);
+        print(`  ${c.dim}── Live ${'─'.repeat(Math.max(10, w - 10))}${c.reset}`);
         print('');
 
         if (liveFeed.length > 0) {
@@ -53,11 +54,11 @@ export async function run(client, args) {
                 print(`  ${c.dim}${time}${c.reset} ${arrow} ${tx.type.padEnd(8)}  ${c.yellow}${c.bold}${amt.toLocaleString().padStart(8)}${c.reset} ${c.muted}sats${c.reset}   ${statusStr}   ${c.dim}${tx.connection_label || '—'}${c.reset}`);
             }
             if (history.transactions.length === 0) {
-                print(`  ${c.dim}No transactions yet. Waiting...${c.reset}`);
+                print(`  ${c.dim}No transactions yet. Send or receive sats to see them here.${c.reset}`);
             }
         }
 
-        print(`\n  ${c.dim}Ctrl+C to exit${c.reset}`);
+        print(`\n  ${c.dim}Updates every 2s · Ctrl+C to exit${c.reset}`);
     };
 
     // Initial draw + self-rescheduling loop (safe on errors)

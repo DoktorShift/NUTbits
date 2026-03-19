@@ -17,6 +17,7 @@ export async function run(client, args) {
     }
 
     var lastTs = 0;
+    var cols = process.stdout.columns || 120;
 
     var fetch = async () => {
         var d = await client.get('/api/v1/logs', { level, limit: '50' });
@@ -27,10 +28,17 @@ export async function run(client, args) {
             var time = new Date(entry.ts).toLocaleTimeString('en-US', { hour12: false });
             var lvl = entry.level.toUpperCase().padEnd(5);
             var color = LEVEL_COLORS[entry.level] || c.muted;
-            var data = entry.data ? `  ${c.dim}${JSON.stringify(entry.data)}${c.reset}` : '';
+            var dataStr = entry.data ? JSON.stringify(entry.data) : '';
+            if (dataStr.length > cols - 40) dataStr = dataStr.slice(0, cols - 43) + '...';
+            var data = dataStr ? `  ${c.dim}${dataStr}${c.reset}` : '';
             print(`  ${c.dim}${time}${c.reset} ${color}[${lvl}]${c.reset}  ${entry.msg}${data}`);
         }
     };
+
+    if (follow) {
+        print(`  ${c.muted}Streaming ${level}+ logs. ${c.white}Ctrl+C${c.muted} to stop.${c.reset}`);
+        print('');
+    }
 
     await fetch().catch(e => { print(`  ${c.red}${e.message}${c.reset}`); });
 

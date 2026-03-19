@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g8" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent8" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff5f56"/>
+      <stop offset="33%" stop-color="#ffbd2e"/>
+      <stop offset="66%" stop-color="#27c93f"/>
+      <stop offset="100%" stop-color="#58a6ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g8)"/>
+
+  <!-- Visual: Vertical stack diagram -->
+  <rect x="720" y="140" width="380" height="70" rx="8" fill="#1a1e24" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="910" y="170" text-anchor="middle" font-size="15" fill="#58a6ff" font-weight="bold">LNbits</text>
+  <text x="910" y="192" text-anchor="middle" font-size="11" fill="#484f58">accounts · extensions · API</text>
+
+  <text x="910" y="230" text-anchor="middle" font-size="14" fill="#30363d">|</text>
+
+  <rect x="720" y="240" width="380" height="70" rx="8" fill="#1a1e24" stroke="#c084fc" stroke-width="2"/>
+  <text x="910" y="270" text-anchor="middle" font-size="15" fill="#c084fc" font-weight="bold">NUTbits</text>
+  <text x="910" y="292" text-anchor="middle" font-size="11" fill="#484f58">NWC bridge · fees · failover</text>
+
+  <text x="910" y="330" text-anchor="middle" font-size="14" fill="#30363d">|</text>
+
+  <rect x="720" y="340" width="380" height="70" rx="8" fill="#1a1e24" stroke="#ffbd2e" stroke-width="1.5"/>
+  <text x="910" y="370" text-anchor="middle" font-size="15" fill="#ffbd2e" font-weight="bold">Cashu Mint</text>
+  <text x="910" y="392" text-anchor="middle" font-size="11" fill="#484f58">ecash · proofs · privacy</text>
+
+  <text x="910" y="430" text-anchor="middle" font-size="14" fill="#30363d">|</text>
+
+  <rect x="720" y="440" width="380" height="70" rx="8" fill="#1a1e24" stroke="#27c93f" stroke-width="1.5"/>
+  <text x="910" y="470" text-anchor="middle" font-size="15" fill="#27c93f" font-weight="bold">Lightning Network</text>
+  <text x="910" y="492" text-anchor="middle" font-size="11" fill="#484f58">instant settlement · global reach</text>
+
+  <!-- Side annotations -->
+  <text x="700" y="180" text-anchor="end" font-size="11" fill="#484f58">user-facing</text>
+  <text x="700" y="280" text-anchor="end" font-size="11" fill="#484f58">glue</text>
+  <text x="700" y="380" text-anchor="end" font-size="11" fill="#484f58">value store</text>
+  <text x="700" y="480" text-anchor="end" font-size="11" fill="#484f58">settlement</text>
+
+  <!-- Title -->
+  <text x="80" y="180" font-size="42" fill="#c9d1d9" font-weight="bold">The Stack</text>
+  <text x="80" y="235" font-size="42" fill="#c9d1d9" font-weight="bold">Nobody Expected</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="295" font-size="17" fill="#8b949e">LNbits + NUTbits + Cashu + Lightning.</text>
+  <text x="80" y="320" font-size="17" fill="#8b949e">Each layer does one thing well.</text>
+  <text x="80" y="345" font-size="17" fill="#8b949e">Together, a complete payment stack.</text>
+
+  <rect width="1200" height="4" fill="url(#accent8)"/>
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

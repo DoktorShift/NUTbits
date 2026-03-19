@@ -9,27 +9,61 @@ export async function run(client, args) {
         return await setConfig(client, args);
     }
 
-    // Default: show config
-    var d = await client.get('/api/v1/config');
-    if (args?.json) return jsonOut(d);
+    // Default: show all .env options
+    if (args?.json) {
+        var d = await client.get('/api/v1/config');
+        return jsonOut(d);
+    }
 
-    print(heading('Running Configuration'));
-    print(kv('Mint URLs', ''));
-    for (var url of d.mint_urls) print(`  ${' '.repeat(14)}${c.dim}${url}${c.reset}`);
-    print(kv('Active mint', `${c.white}${d.active_mint}${c.reset}`));
-    print(kv('Relays', ''));
-    for (var r of d.relays) print(`  ${' '.repeat(14)}${c.dim}${r}${c.reset}`);
-    print(kv('Storage', d.storage));
-    print(kv('Log level', d.log_level));
-    print(kv('Fee reserve', `${d.fee_reserve_pct}%`));
-    print(kv('Max payment', d.max_payment_sats ? `${d.max_payment_sats.toLocaleString()} sats` : 'no limit'));
-    print(kv('Daily limit', d.daily_limit_sats ? `${d.daily_limit_sats.toLocaleString()} sats` : 'no limit'));
-    print(kv('Health check', `${d.health_check_interval_ms / 1000}s`));
-    print(kv('Failover cd', `${d.failover_cooldown_ms / 1000}s`));
-    print(kv('Seed', d.seed_configured ? `${c.green}configured${c.reset}` : `${c.red}not set${c.reset}`));
+    var env = await client.get('/api/v1/config/env');
+
+    print(heading('Configuration'));
+    print(`  ${c.muted}Settings from your .env file. Edit interactively or directly.${c.reset}`);
     print('');
-    print(`  ${c.dim}Hot-reloadable: ${d.reloadable.join(', ')}${c.reset}`);
-    print(`  ${c.dim}Other settings require a restart.${c.reset}`);
+
+    if (!env.file_exists) {
+        print(`  ${c.red}No .env file found.${c.reset}`);
+        print(`  ${c.muted}Create one with: ${c.white}cp .env.example .env${c.reset}`);
+        print('');
+        return;
+    }
+
+    // Group options by category for clarity
+    var categories = {
+        'Mint & Relays':  ['MINT_URL', 'MINT_URLS', 'RELAYS'],
+        'Security':       ['STATE_PASSPHRASE', 'SEED', 'API_TOKEN'],
+        'Storage':        ['STATE_BACKEND', 'SQLITE_PATH', 'MYSQL_URL', 'STATE_FILE'],
+        'Limits & Fees':  ['MAX_PAYMENT_SATS', 'DAILY_LIMIT_SATS', 'FEE_RESERVE_PCT', 'SERVICE_FEE_PPM', 'SERVICE_FEE_BASE'],
+        'API':            ['API_ENABLED', 'API_SOCKET', 'API_PORT'],
+        'Tuning':         ['LOG_LEVEL', 'HEALTH_CHECK_INTERVAL_MS', 'FAILOVER_COOLDOWN_MS', 'INVOICE_CHECK_MAX_RETRIES', 'INVOICE_CHECK_INTERVAL_SECS', 'FETCH_TIMEOUT_MS'],
+    };
+
+    var optMap = {};
+    for (var opt of (env.options || [])) {
+        optMap[opt.key.replace('NUTBITS_', '')] = opt;
+    }
+
+    for (var [catName, keys] of Object.entries(categories)) {
+        var catOpts = keys.map(k => optMap[k]).filter(Boolean);
+        if (catOpts.length === 0) continue;
+
+        print(`  ${c.purple}${c.bold}${catName}${c.reset}`);
+        for (var opt of catOpts) {
+            var status = opt.active ? `${c.green}●${c.reset}` : `${c.dim}○${c.reset}`;
+            var val = opt.value || '';
+            if (opt.sensitive && val) val = '***';
+            var liveTag = opt.restart ? '' : ` ${c.blue}live${c.reset}`;
+            var shortKey = opt.key.replace('NUTBITS_', '');
+
+            print(`  ${status} ${c.white}${shortKey.padEnd(30)}${c.reset}${liveTag} ${c.dim}${val || '(not set)'}${c.reset}`);
+        }
+        print('');
+    }
+
+    print(`  ${c.green}●${c.reset} ${c.dim}= active${c.reset}    ${c.dim}○ = inactive/commented${c.reset}    ${c.blue}live${c.reset} ${c.dim}= applies without restart${c.reset}`);
+    print('');
+    print(`  ${c.muted}To change a setting:${c.reset}  ${c.white}nutbits config set${c.reset}  ${c.dim}(interactive)${c.reset}`);
+    print(`  ${c.muted}Or directly:${c.reset}          ${c.white}nutbits config set LOG_LEVEL debug${c.reset}`);
     print('');
 }
 
@@ -39,31 +73,82 @@ async function setConfig(client, args) {
 
     // Interactive mode
     if (!key) {
-        var d = await client.get('/api/v1/config');
-        var options = [
-            { label: 'Log level', hint: `currently: ${d.log_level}`, value: 'log_level' },
-            { label: 'Max per payment', hint: d.max_payment_sats ? `currently: ${d.max_payment_sats.toLocaleString()} sats` : 'currently: no limit', value: 'max_payment_sats' },
-            { label: 'Daily limit', hint: d.daily_limit_sats ? `currently: ${d.daily_limit_sats.toLocaleString()} sats` : 'currently: no limit', value: 'daily_limit_sats' },
-            { label: 'Fee reserve', hint: `currently: ${d.fee_reserve_pct}%`, value: 'fee_reserve_pct' },
-        ];
+        var env = await client.get('/api/v1/config/env');
+        var editableOptions = (env.options || []).filter(o => !o.sensitive);
+
+        var options = editableOptions.map(o => {
+            var shortKey = o.key.replace('NUTBITS_', '');
+            var status = o.active ? `${c.green}●${c.reset}` : `${c.dim}○${c.reset}`;
+            var liveTag = o.restart ? '' : ` ${c.blue}live${c.reset}`;
+            return {
+                label: `${status} ${shortKey}${liveTag}`,
+                hint: o.value ? `current: ${o.value}` : o.desc,
+                value: o.key,
+                envOpt: o,
+            };
+        });
 
         print('');
         var choice = await select({
-            message: 'Which setting?',
+            message: 'Which setting do you want to change?',
+            description: 'Changes are saved to .env. "live" settings apply immediately.',
             options,
         });
-        key = choice.value;
+        if (choice === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
 
-        if (key === 'log_level') {
+        var envKey = choice.value;
+        var envOpt = choice.envOpt;
+        var shortKey = envKey.replace('NUTBITS_', '');
+
+        // Special handling for known enum types
+        if (envKey === 'NUTBITS_LOG_LEVEL') {
             var lvl = await select({
                 message: 'Log level:',
-                options: ['error', 'warn', 'info', 'debug'].map(l => ({ label: l, value: l })),
-                initial: ['error', 'warn', 'info', 'debug'].indexOf(d.log_level),
+                description: 'Controls how much detail appears in logs.',
+                options: [
+                    { label: 'error', hint: 'critical issues only' },
+                    { label: 'warn', hint: 'warnings and errors' },
+                    { label: 'info', hint: 'standard operation (recommended)' },
+                    { label: 'debug', hint: 'verbose — includes all details' },
+                ].map(l => ({ ...l, value: l.label })),
             });
+            if (lvl === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
             value = lvl.value;
+        } else if (envKey === 'NUTBITS_STATE_BACKEND') {
+            var backend = await select({
+                message: 'Storage backend:',
+                description: 'Where NUTbits stores proofs and connections.',
+                options: [
+                    { label: 'file', hint: 'encrypted JSON file (default)', value: 'file' },
+                    { label: 'sqlite', hint: 'SQLite database (recommended for production)', value: 'sqlite' },
+                    { label: 'mysql', hint: 'MySQL/MariaDB (requires mysql2)', value: 'mysql' },
+                ],
+            });
+            if (backend === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
+            value = backend.value;
+        } else if (envKey === 'NUTBITS_API_ENABLED') {
+            var enabled = await select({
+                message: 'Management API:',
+                description: 'The API is required for the CLI to work.',
+                options: [
+                    { label: 'Enabled', hint: 'CLI + TUI access (recommended)', value: 'true' },
+                    { label: 'Disabled', hint: 'NWC-only mode, no CLI', value: 'false' },
+                ],
+            });
+            if (enabled === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
+            value = enabled.value;
         } else {
-            value = await input({ message: `New value for ${key}:`, validate: v => isNaN(Number(v)) ? 'Enter a number' : null });
+            var currentVal = envOpt.value || '';
+            value = await input({
+                message: `${shortKey}:`,
+                placeholder: currentVal || 'enter value',
+                description: envOpt.desc || '',
+            });
+            if (value === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
         }
+
+        // Map NUTBITS_ env key to config API key
+        key = shortKey.toLowerCase();
     }
 
     // Map CLI-friendly names to API keys
@@ -75,10 +160,19 @@ async function setConfig(client, args) {
     };
     key = keyMap[key] || key;
 
-    var result = await client.post('/api/v1/config', { key, value });
-
-    print('');
-    print(`  ${c.ok} ${c.white}${result.key}${c.reset} updated: ${c.dim}${result.old_value}${c.reset} → ${c.green}${result.new_value}${c.reset}`);
-    print(`  ${c.dim}Applied immediately (no restart needed)${c.reset}`);
+    // Try hot-reload first, fall back to env-only persistence
+    try {
+        var result = await client.post('/api/v1/config', { key, value });
+        print('');
+        print(`  ${c.ok} ${c.white}${result.key}${c.reset} updated: ${c.dim}${result.old_value}${c.reset} → ${c.green}${result.new_value}${c.reset}`);
+        print(`  ${c.dim}Applied immediately + saved to .env${c.reset}`);
+    } catch (e) {
+        // Not hot-reloadable — save to .env only
+        var envKey = 'NUTBITS_' + key.toUpperCase();
+        await client.post('/api/v1/config/env', { key: envKey, value });
+        print('');
+        print(`  ${c.ok} ${c.white}${envKey}${c.reset} saved to .env: ${c.green}${value}${c.reset}`);
+        print(`  ${c.yellow}Restart NUTbits for this to take effect.${c.reset}`);
+    }
     print('');
 }

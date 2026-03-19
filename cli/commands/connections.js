@@ -13,14 +13,14 @@ export async function run(client, args) {
         return;
     }
 
-    var headers = ['ID', 'Label', 'Permissions', 'Balance', 'Txs', 'Created'];
+    var headers = ['ID', 'Label', 'Permissions', 'Balance', 'Tx', 'Created'];
     var rows = d.connections.map(conn => {
         var permShort = (conn.permissions || []).map(p => {
             if (p === 'pay_invoice') return 'pay';
-            if (p === 'make_invoice') return 'receive';
-            if (p === 'get_balance') return 'balance';
-            if (p === 'list_transactions') return 'history';
-            if (p === 'lookup_invoice') return 'history';
+            if (p === 'make_invoice') return 'recv';
+            if (p === 'get_balance') return 'bal';
+            if (p === 'list_transactions') return 'hist';
+            if (p === 'lookup_invoice') return 'hist';
             if (p === 'get_info') return 'info';
             return p;
         }).filter((v, i, a) => a.indexOf(v) === i).join(' ');
@@ -37,7 +37,9 @@ export async function run(client, args) {
         ];
     });
 
-    print(heading('Connections'));
+    print(heading('NWC Connections'));
     print(table(headers, rows, { alignRight: [3, 4] }));
+    print('');
+    print(`  ${c.dim}${d.connections.length} active.${c.reset}  ${c.dim}Manage: ${c.white}nutbits connect${c.dim} (new) · ${c.white}nutbits revoke${c.dim} (remove) · ${c.white}nutbits export connections${c.dim} (NWC strings)${c.reset}`);
     print('');
 }

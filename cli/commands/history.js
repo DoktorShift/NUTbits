@@ -22,14 +22,22 @@ export async function run(client, args) {
 
     if (d.transactions.length === 0) {
         print(heading('Transactions'));
-        print(`  ${c.muted}No transactions yet.${c.reset}\n`);
+        if (args.unpaid) {
+            print(`  ${c.muted}No pending invoices.${c.reset}`);
+        } else if (args.type) {
+            print(`  ${c.muted}No ${args.type} transactions found.${c.reset}`);
+        } else {
+            print(`  ${c.muted}No transactions yet.${c.reset}`);
+            print(`  ${c.dim}Start with: ${c.white}nutbits receive 1000${c.dim}  to receive your first sats.${c.reset}`);
+        }
+        print('');
         return;
     }
 
     var headers = ['Time', 'Type', 'Amount', 'Status', 'Connection', 'Hash'];
     var rows = d.transactions.map(tx => {
         var time = tx.created_at ? relativeTime(tx.created_at * 1000) : '—';
-        var type = tx.type === 'incoming' ? `${c.green}incoming${c.reset}` : `${c.red}outgoing${c.reset}`;
+        var type = tx.type === 'incoming' ? `${c.green}← in${c.reset}` : `${c.red}→ out${c.reset}`;
         var amount = sats(Math.floor((tx.amount || 0) / 1000));
         var status = tx.settled_at ? `${c.green}settled${c.reset}`
             : tx.err_msg ? `${c.red}failed${c.reset}`
@@ -41,5 +49,8 @@ export async function run(client, args) {
 
     print(heading('Recent Transactions'));
     print(table(headers, rows, { alignRight: [2] }));
-    print(`\n  ${c.dim}Showing ${d.transactions.length} of ${d.total} transactions${c.reset}\n`);
+    print('');
+    print(`  ${c.dim}Showing ${d.transactions.length} of ${d.total}${c.reset}`);
+    if (d.total > 20) print(`  ${c.dim}Use ${c.white}nutbits export history${c.dim} to download all as CSV/JSON.${c.reset}`);
+    print('');
 }

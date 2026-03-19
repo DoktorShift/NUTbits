@@ -69,6 +69,7 @@ export function registerHandlers(router, ctx) {
             nuts: caps,
             storage: config.stateBackend,
             seed_configured: !!config.seed,
+            seed_in_env: !!ctx.seedFromEnv,
             limits: {
                 max_payment_sats: config.maxPaymentSats,
                 daily_limit_sats: config.dailyLimitSats,
@@ -122,6 +123,42 @@ export function registerHandlers(router, ctx) {
             });
         }
         return { connections: list };
+    });
+
+    // ── GET /api/v1/connections/export ──────────────────────────────────
+    // Returns connection details INCLUDING NWC strings (sensitive!)
+
+    router.get('/api/v1/connections/export', async ({ query }) => {
+        var all = await store.getAllConnections();
+        var includeRevoked = query.include_revoked === 'true';
+        var targetId = query.id || null;
+        var list = [];
+        var idx = 1;
+        for (var [pk, info] of Object.entries(all)) {
+            if (info.revoked && !includeRevoked) { idx++; continue; }
+            if (targetId && idx !== Number(targetId) && info.label !== targetId) { idx++; continue; }
+            var txCount = info.tx_history ? Object.keys(info.tx_history).length : 0;
+            list.push({
+                id: idx,
+                app_pubkey: pk,
+                label: info.label || `connection-${idx}`,
+                nwc_string: info.nwc_string || null,
+                permissions: info.permissions || [],
+                balance_msat: info.balance || 0,
+                tx_count: txCount,
+                relay: info.relay,
+                mint: info.mymint,
+                created_at: info.created_at || null,
+                revoked: !!info.revoked,
+                revoked_at: info.revoked_at || null,
+                max_daily_sats: info.max_daily_sats || 0,
+                max_payment_sats: info.max_payment_sats || 0,
+                service_fee_ppm: info.service_fee_ppm ?? null,
+                service_fee_base: info.service_fee_base ?? null,
+            });
+            idx++;
+        }
+        return { connections: list, exported_at: new Date().toISOString() };
     });
 
     // ── POST /api/v1/connections ─────────────────────────────────────
@@ -245,6 +282,70 @@ export function registerHandlers(router, ctx) {
         return { transactions: allTxs.slice(0, limit), total: allTxs.length };
     });
 
+    // ── GET /api/v1/history/export ──────────────────────────────────────
+
+    router.get('/api/v1/history/export', async ({ query }) => {
+        var type = query.type || null;
+        var connectionId = query.connection || null;
+        var unpaid = query.unpaid === 'true';
+        var includeRevoked = query.include_revoked === 'true';
+        var format = query.format || 'json';
+
+        var allTxs = [];
+        var all = await store.getAllConnections();
+        var connIdx = {};
+        var idx = 1;
+        for (var [pk, info] of Object.entries(all)) {
+            if (info.revoked && !includeRevoked) { idx++; continue; }
+            connIdx[pk] = { id: idx, label: info.label || `connection-${idx}`, revoked: !!info.revoked };
+            idx++;
+        }
+
+        for (var [pk, info] of Object.entries(all)) {
+            if (!connIdx[pk]) continue;
+            if (connectionId && connIdx[pk].id !== Number(connectionId) && connIdx[pk].label !== connectionId) continue;
+            var txs = await store.listTxs(pk, { type, unpaid, limit: 0 });
+            for (var tx of txs) {
+                allTxs.push({
+                    ...tx,
+                    connection_id: connIdx[pk].id,
+                    connection_label: connIdx[pk].label,
+                    connection_revoked: connIdx[pk].revoked,
+                });
+            }
+        }
+
+        allTxs.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+        if (query.from) allTxs = allTxs.filter(tx => tx.created_at >= Number(query.from));
+        if (query.until) allTxs = allTxs.filter(tx => tx.created_at <= Number(query.until));
+
+        if (format === 'csv') {
+            var csvHeader = 'date,time,type,amount_sats,routing_fee_sats,service_fee_sats,status,connection,description,payment_hash';
+            var csvRows = allTxs.map(tx => {
+                var dt = tx.settled_at || tx.created_at;
+                var d = dt ? new Date(dt * 1000) : null;
+                var date = d ? d.toISOString().slice(0, 10) : '';
+                var time = d ? d.toISOString().slice(11, 19) : '';
+                var amountSats = Math.floor((tx.amount || 0) / 1000);
+                var routingFee = Math.floor((tx.fees_paid || 0) / 1000);
+                var serviceFee = Math.floor((tx.service_fee || 0) / 1000);
+                var status = tx.err_msg ? 'failed' : tx.settled_at ? 'settled' : 'pending';
+                var desc = csvEscape(tx.description || '');
+                var hash = tx.payment_hash || '';
+                return `${date},${time},${tx.type || ''},${amountSats},${routingFee},${serviceFee},${status},${csvEscape(tx.connection_label || '')},${desc},${hash}`;
+            });
+            var csv = csvHeader + '\n' + csvRows.join('\n');
+            var filename = `nutbits-export-${new Date().toISOString().slice(0, 10)}.csv`;
+            return { csv, filename, records: allTxs.length };
+        }
+
+        return {
+            transactions: allTxs,
+            total: allTxs.length,
+            exported_at: new Date().toISOString(),
+        };
+    });
+
     // ── GET /api/v1/mints ────────────────────────────────────────────
 
     router.get('/api/v1/mints', async () => {
@@ -339,9 +440,140 @@ export function registerHandlers(router, ctx) {
             health_check_interval_ms: config.healthCheckInterval,
             failover_cooldown_ms: config.failoverCooldown,
             seed_configured: !!config.seed,
+            seed_in_env: !!ctx.seedFromEnv,
             service_fee_ppm: config.serviceFeePpm,
             service_fee_base: config.serviceFeeBase,
             reloadable: ['log_level', 'max_payment_sats', 'daily_limit_sats', 'fee_reserve_pct', 'service_fee_ppm', 'service_fee_base'],
+        };
+    });
+
+    // ── GET /api/v1/config/env — all .env options with state ────────
+
+    var ENV_DESCRIPTIONS = new Map([
+        ['NUTBITS_MINT_URL', { desc: 'Cashu mint URL', restart: true }],
+        ['NUTBITS_MINT_URLS', { desc: 'Comma-separated mint URLs (failover)', restart: true }],
+        ['NUTBITS_RELAYS', { desc: 'Comma-separated Nostr relays', restart: true }],
+        ['NUTBITS_STATE_PASSPHRASE', { desc: 'Encryption passphrase', restart: true, sensitive: true }],
+        ['NUTBITS_SEED', { desc: 'Deterministic seed (NUT-13)', restart: true, sensitive: true }],
+        ['NUTBITS_STATE_BACKEND', { desc: 'Storage backend: file, sqlite, mysql', restart: true }],
+        ['NUTBITS_SQLITE_PATH', { desc: 'SQLite database path', restart: true }],
+        ['NUTBITS_MYSQL_URL', { desc: 'MySQL connection URL', restart: true, sensitive: true }],
+        ['NUTBITS_STATE_FILE', { desc: 'Encrypted state file path', restart: true }],
+        ['NUTBITS_LOG_LEVEL', { desc: 'Log level: error, warn, info, debug', restart: false }],
+        ['NUTBITS_FEE_RESERVE_PCT', { desc: 'Fee reserve percentage (1-50)', restart: false }],
+        ['NUTBITS_MAX_PAYMENT_SATS', { desc: 'Max sats per payment (0 = no limit)', restart: false }],
+        ['NUTBITS_DAILY_LIMIT_SATS', { desc: 'Max sats per day (0 = no limit)', restart: false }],
+        ['NUTBITS_SERVICE_FEE_PPM', { desc: 'Service fee parts per million (0 = disabled)', restart: false }],
+        ['NUTBITS_SERVICE_FEE_BASE', { desc: 'Service fee base in sats (0 = disabled)', restart: false }],
+        ['NUTBITS_HEALTH_CHECK_INTERVAL_MS', { desc: 'Mint health check interval ms', restart: true }],
+        ['NUTBITS_FAILOVER_COOLDOWN_MS', { desc: 'Failover cooldown ms', restart: true }],
+        ['NUTBITS_API_ENABLED', { desc: 'Enable management API (true/false)', restart: true }],
+        ['NUTBITS_API_SOCKET', { desc: 'Unix socket path for API', restart: true }],
+        ['NUTBITS_API_PORT', { desc: 'Optional HTTP port for API', restart: true }],
+        ['NUTBITS_API_TOKEN', { desc: 'API auth token (auto-generated)', restart: true, sensitive: true }],
+        ['NUTBITS_INVOICE_CHECK_MAX_RETRIES', { desc: 'Max retries for invoice polling', restart: true }],
+        ['NUTBITS_INVOICE_CHECK_INTERVAL_SECS', { desc: 'Seconds between invoice checks', restart: true }],
+        ['NUTBITS_FETCH_TIMEOUT_MS', { desc: 'Mint API request timeout ms', restart: true }],
+    ]);
+
+    router.get('/api/v1/config/env', async () => {
+        var envPath = '.env';
+        var options = [];
+
+        try {
+            if (!fs.existsSync(envPath)) return { options, file_exists: false };
+            var content = fs.readFileSync(envPath, 'utf8');
+            var lines = content.split('\n');
+
+            // Track what we've seen from the file
+            var seen = new Set();
+
+            for (var line of lines) {
+                var trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#!')) continue;
+
+                var isComment = trimmed.startsWith('#');
+                var cleanLine = isComment ? trimmed.replace(/^#\s*/, '') : trimmed;
+
+                // Must be a NUTBITS_ key=value line
+                var match = cleanLine.match(/^(NUTBITS_\w+)=(.*)/);
+                if (!match) continue;
+
+                var key = match[1];
+                var value = match[2];
+                var meta = ENV_DESCRIPTIONS.get(key) || { desc: '', restart: true };
+
+                seen.add(key);
+                options.push({
+                    key,
+                    value: meta.sensitive ? (value ? '***' : '') : value,
+                    active: !isComment,
+                    desc: meta.desc,
+                    restart: meta.restart,
+                    sensitive: !!meta.sensitive,
+                });
+            }
+
+            // Add known options that aren't in the file at all
+            for (var [key, meta] of ENV_DESCRIPTIONS) {
+                if (!seen.has(key) && !meta.sensitive) {
+                    options.push({
+                        key,
+                        value: '',
+                        active: false,
+                        desc: meta.desc,
+                        restart: meta.restart,
+                        sensitive: false,
+                        missing: true,
+                    });
+                }
+            }
+        } catch (e) {
+            return { options: [], file_exists: false, error: e.message };
+        }
+
+        return { options, file_exists: true };
+    });
+
+    // ── POST /api/v1/config/env — activate/set a .env option ─────
+
+    router.post('/api/v1/config/env', async ({ body }) => {
+        if (!body?.key || typeof body.key !== 'string') throw apiError(400, 'key is required');
+        if (!body.key.startsWith('NUTBITS_')) throw apiError(400, 'key must start with NUTBITS_');
+        // Whitelist: only allow known config keys
+        if (!ENV_DESCRIPTIONS.has(body.key)) throw apiError(400, 'unknown config key');
+        if (body.value === undefined) throw apiError(400, 'value is required');
+        // Sanitize: strip newlines to prevent env injection
+        var safeValue = String(body.value).replace(/[\r\n]/g, '');
+
+        var meta = ENV_DESCRIPTIONS.get(body.key);
+        if (meta?.sensitive && !body.confirm_sensitive) {
+            throw apiError(400, 'sensitive value — pass confirm_sensitive: true');
+        }
+
+        persistToEnv(body.key, safeValue);
+
+        // If it's hot-reloadable, also apply in-memory via the config reload logic
+        var reloadMap = new Map([
+            ['NUTBITS_LOG_LEVEL', v => { var levels = { error: 0, warn: 1, info: 2, debug: 3 }; if (v in levels) { config.logLevel = v; log._level = levels[v]; } }],
+            ['NUTBITS_MAX_PAYMENT_SATS', v => { var n = Number(v); if (Number.isFinite(n) && n >= 0) config.maxPaymentSats = Math.floor(n); }],
+            ['NUTBITS_DAILY_LIMIT_SATS', v => { var n = Number(v); if (Number.isFinite(n) && n >= 0) config.dailyLimitSats = Math.floor(n); }],
+            ['NUTBITS_FEE_RESERVE_PCT', v => { var n = Number(v); if (Number.isFinite(n) && n >= 0 && n <= 50) config.feeReservePct = n / 100; }],
+            ['NUTBITS_SERVICE_FEE_PPM', v => { var n = Number(v); if (Number.isFinite(n) && n >= 0) config.serviceFeePpm = Math.floor(n); }],
+            ['NUTBITS_SERVICE_FEE_BASE', v => { var n = Number(v); if (Number.isFinite(n) && n >= 0) config.serviceFeeBase = Math.floor(n); }],
+        ]);
+        var reloader = reloadMap.get(body.key);
+        var applied = false;
+        if (reloader) {
+            try { reloader(safeValue); applied = true; } catch (e) { /* non-fatal */ }
+        }
+
+        return {
+            key: body.key,
+            value: meta?.sensitive ? '***' : body.value,
+            persisted: true,
+            applied_live: applied,
+            restart_required: meta?.restart ?? true,
         };
     });
 
@@ -398,7 +630,11 @@ export function registerHandlers(router, ctx) {
 
         reloadable.get(body.key)(body.value);
 
-        return { key: body.key, old_value: oldValue, new_value: body.value, applied: true };
+        // Persist to .env file so the change survives restarts
+        var envKey = 'NUTBITS_' + body.key.toUpperCase();
+        persistToEnv(envKey, String(body.value));
+
+        return { key: body.key, old_value: oldValue, new_value: body.value, applied: true, persisted: true };
     });
 
     // ── GET /api/v1/fees ───────────────────────────────────────────
@@ -608,6 +844,49 @@ export function registerHandlers(router, ctx) {
 }
 
 // ── Error Helper ─────────────────────────────────────────────────────────
+
+// ── .env Persistence ─────────────────────────────────────────────────────
+// Updates or adds a key=value in the .env file
+
+function persistToEnv(key, value) {
+    // Sanitize: prevent newline injection into .env
+    value = String(value).replace(/[\r\n]/g, '');
+    var envPath = '.env';
+    try {
+        if (!fs.existsSync(envPath)) return; // no .env file, skip silently
+        var content = fs.readFileSync(envPath, 'utf8');
+        var lines = content.split('\n');
+        var found = false;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            // Match both active and commented-out versions
+            if (line === `${key}=${value}`) { found = true; break; }
+            if (line.startsWith(`${key}=`) || line.startsWith(`# ${key}=`)) {
+                lines[i] = `${key}=${value}`;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            // Append to end
+            lines.push(`${key}=${value}`);
+        }
+
+        fs.writeFileSync(envPath, lines.join('\n'));
+    } catch (e) {
+        // Non-fatal — in-memory change still applied
+    }
+}
+
+function csvEscape(val) {
+    var s = String(val);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+}
 
 function apiError(statusCode, message) {
     var err = new Error(message);

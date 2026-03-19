@@ -11,21 +11,20 @@ export var getSize = () => ({
 });
 
 // ── Screen Buffer ────────────────────────────────────────────────────────
-// Write to buffer, then flush once — eliminates flicker
 
 export var createBuffer = () => {
     var lines = [];
     return {
         push: line => lines.push(line),
         flush: () => {
-            // Move to top-left and overwrite in-place (no screen clear = no flicker)
+            // Move to top-left, overwrite in-place, clear remainder
             process.stdout.write('\x1b[H' + lines.join('\x1b[K\n') + '\x1b[K\x1b[J');
             lines = [];
         },
     };
 };
 
-// ── Box Drawing Characters ───────────────────────────────────────────────
+// ── Box Drawing ──────────────────────────────────────────────────────────
 
 var B = {
     tl: '┌', tr: '┐', bl: '└', br: '┘',
@@ -33,38 +32,42 @@ var B = {
     tj: '┬', bj: '┴', lj: '├', rj: '┤', x: '┼',
 };
 
-// ── Panel Layout ─────────────────────────────────────────────────────────
+// ── Constants ────────────────────────────────────────────────────────────
 
 export var MENU_WIDTH = 28;
 
-export var drawFrame = (buf, size, menuTitle, contentTitle, footerLeft, footerRight) => {
-    var { cols, rows } = size;
+// ── Top Border with Titles ───────────────────────────────────────────────
+
+export var drawFrame = (buf, size, menuTitle, contentTitle) => {
+    var { cols } = size;
     var mw = MENU_WIDTH;
-    var cw = cols - mw - 1; // content width (minus divider)
+    var cw = cols - mw - 1;
 
-    // Top border
+    var mtPlain = stripAnsi(menuTitle);
+    var ctPlain = stripAnsi(contentTitle);
+
+    var menuFill = Math.max(0, mw - mtPlain.length - 4);
+    var contentFill = Math.max(0, cw - ctPlain.length - 4);
+
     buf.push(
-        `${c.dim}${B.tl}${B.h}${c.reset} ${c.purple}${c.bold}${menuTitle}${c.reset} ` +
-        `${c.dim}${B.h.repeat(Math.max(0, mw - stripAnsi(menuTitle).length - 4))}${B.tj}` +
-        `${B.h}${c.reset} ${c.blue}${c.bold}${contentTitle}${c.reset} ` +
-        `${c.dim}${B.h.repeat(Math.max(0, cw - stripAnsi(contentTitle).length - 4))}${B.tr}${c.reset}`
-    );
-
-    // Middle rows are filled by menu + content
-    // (caller handles rows 1 through rows-3)
-
-    // Bottom border with footer
-    var fl = footerLeft || '';
-    var fr = footerRight || '';
-    var flPlain = stripAnsi(fl);
-    var frPlain = stripAnsi(fr);
-    var footerPad = Math.max(0, cols - 4 - flPlain.length - frPlain.length);
-    buf.push(
-        `${c.dim}${B.bl}${c.reset} ${fl}${' '.repeat(footerPad)}${fr} ${c.dim}${B.br}${c.reset}`
+        `${c.dim}${B.tl}${B.h}${c.reset}` +
+        ` ${c.purple}${c.bold}${menuTitle}${c.reset} ` +
+        `${c.dim}${B.h.repeat(menuFill)}${B.tj}${B.h}${c.reset}` +
+        ` ${c.blue}${contentTitle}${c.reset} ` +
+        `${c.dim}${B.h.repeat(contentFill)}${B.tr}${c.reset}`
     );
 };
 
-// ── Row Builder ──────────────────────────────────────────────────────────
+// ── Title Separator ──────────────────────────────────────────────────────
+
+export var drawTitleSep = (buf, size) => {
+    var { cols } = size;
+    var mw = MENU_WIDTH;
+    var cw = cols - mw - 1;
+    buf.push(`${c.dim}${B.lj}${B.h.repeat(mw)}${B.x}${B.h.repeat(cw)}${B.rj}${c.reset}`);
+};
+
+// ── Content Row ──────────────────────────────────────────────────────────
 
 export var drawRow = (menuContent, panelContent, cols) => {
     var mw = MENU_WIDTH;
@@ -83,12 +86,22 @@ export var drawRow = (menuContent, panelContent, cols) => {
     );
 };
 
-// ── Separator Row ────────────────────────────────────────────────────────
+// ── Footer ───────────────────────────────────────────────────────────────
 
-export var drawSeparator = (cols) => {
+export var drawFooter = (buf, size, footerContent) => {
+    var { cols } = size;
     var mw = MENU_WIDTH;
     var cw = cols - mw - 1;
-    return `${c.dim}${B.lj}${B.h.repeat(mw)}${B.x}${B.h.repeat(cw)}${B.rj}${c.reset}`;
+
+    // Bottom border with ┴ junction where the center divider meets it
+    buf.push(`${c.dim}${B.bl}${B.h.repeat(mw)}${B.bj}${B.h.repeat(cw)}${B.br}${c.reset}`);
+
+    // Footer text below the frame
+    if (footerContent) {
+        var plain = stripAnsi(footerContent);
+        var pad = Math.max(0, cols - 2 - plain.length);
+        buf.push(` ${footerContent}${' '.repeat(pad)}`);
+    }
 };
 
 // ── Text Utilities ───────────────────────────────────────────────────────
@@ -96,8 +109,6 @@ export var drawSeparator = (cols) => {
 export var truncate = (str, maxLen) => {
     var plain = stripAnsi(str);
     if (plain.length <= maxLen) return str;
-    // Safe truncation: walk the plain text, map back to raw string position
-    // Simple fallback: strip ANSI, truncate, reapply reset
     return plain.slice(0, maxLen - 1) + `${c.reset}…`;
 };
 
@@ -107,7 +118,7 @@ export var padRight = (str, width) => {
     return str + ' '.repeat(pad);
 };
 
-// ANSI-aware column formatting — pads based on visible width
+// ANSI-aware column formatting
 export var col = (str, width) => {
     var plain = stripAnsi(str);
     if (plain.length > width) return truncate(str, width);

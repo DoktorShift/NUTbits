@@ -15,8 +15,8 @@ export async function run(client, args) {
         return;
     }
 
-    print(kv('Fee rate', `${d.fee_ppm} ppm (${(d.fee_ppm / 10000).toFixed(2)}%)`));
-    if (d.fee_base_sats) print(kv('Base fee', `${d.fee_base_sats} sats`));
+    print(kv('Fee rate', `${(d.fee_ppm / 10000).toFixed(2)}% ${c.dim}(${d.fee_ppm.toLocaleString()} ppm)${c.reset}`));
+    print(kv('Base fee', d.fee_base_sats ? `${d.fee_base_sats} sats per payment` : `${c.dim}none${c.reset}`));
     print('');
     print(kv('Today', `${c.yellow}${c.bold}${d.today_sats.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
     print(kv('Total earned', `${c.green}${c.bold}${d.total_sats.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
@@ -27,12 +27,12 @@ export async function run(client, args) {
         for (var conn of d.by_connection) {
             var todaySats = Math.floor(conn.today_msat / 1000);
             var totalSats = Math.floor(conn.total_msat / 1000);
-            print(`    ${c.white}${conn.label.padEnd(16)}${c.reset}${c.dim}today:${c.reset} ${todaySats}  ${c.dim}total:${c.reset} ${totalSats}`);
+            print(`    ${c.white}${conn.label.padEnd(16)}${c.reset}${c.dim}today:${c.reset} ${todaySats} sats  ${c.dim}total:${c.reset} ${totalSats} sats`);
         }
     }
 
     print('');
-    print(`  ${c.dim}Fees are collected as ecash and stay in your balance.${c.reset}`);
-    print(`  ${c.dim}Outgoing payments only — receiving is always free.${c.reset}`);
+    print(`  ${c.dim}Fees from outgoing payments stay in your ecash balance.${c.reset}`);
+    print(`  ${c.dim}Receiving is always free.${c.reset}`);
     print('');
 }

@@ -184,7 +184,8 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 | Document | Description |
 |----------|-------------|
 | [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
-| [CLI.md](CLI.md) | Management console — TUI, CLI commands, connections |
+| [CONSOLE.md](CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
+| [CLI.md](CLI.md) | Full command reference — flags, scripting, connections |
 | [INSTALL.md](INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
 | [DATABASE.md](DATABASE.md) | Storage backends — file, SQLite, MySQL |
 | [BACKUP.md](BACKUP.md) | Backup, recovery, and encryption details |

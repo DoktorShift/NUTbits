@@ -4,8 +4,9 @@ import { confirm, spinner } from '../prompts.js';
 
 export async function run(client, args) {
     print(heading('Proof Recovery (NUT-09)'));
-    print(`  ${c.muted}This checks each mint for recoverable proofs using your seed.${c.reset}`);
-    print(`  ${c.muted}Existing proofs are not affected.${c.reset}`);
+    print(`  ${c.muted}Scans each configured mint for ecash proofs that can be${c.reset}`);
+    print(`  ${c.muted}recovered using your deterministic seed. Your existing${c.reset}`);
+    print(`  ${c.muted}proofs and balance are not affected — this only adds.${c.reset}`);
     print('');
 
     if (args?.json) {
@@ -15,8 +16,12 @@ export async function run(client, args) {
     }
 
     if (!args['from-seed'] && !args.force) {
-        var ok = await confirm({ message: 'Start recovery?', initial: true });
-        if (!ok) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
+        var ok = await confirm({
+            message: 'Start recovery scan?',
+            initial: true,
+            description: 'This is safe — it only looks for lost proofs, nothing is deleted.',
+        });
+        if (ok === null || !ok) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
     }
 
     var sp = spinner('Recovering proofs');

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent5" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#27c93f"/>
+      <stop offset="50%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#27c93f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g5)"/>
+
+  <!-- Title — left side -->
+  <text x="80" y="160" font-size="42" fill="#c9d1d9" font-weight="bold">Open Your Mint to</text>
+  <text x="80" y="215" font-size="42" fill="#c9d1d9" font-weight="bold">the LNbits Ecosystem</text>
+
+  <text x="80" y="270" font-size="17" fill="#8b949e">60+ extensions. Point-of-sale, tipping, payments,</text>
+  <text x="80" y="295" font-size="17" fill="#8b949e">community tools. All powered by your ecash.</text>
+
+  <!-- Visual — right side: clean 3x4 grid of extension tiles -->
+  <g transform="translate(700, 160)">
+    <!-- Row 1 -->
+    <rect x="0"   y="0" width="105" height="44" rx="6" fill="#1a1e24" stroke="#27c93f" stroke-width="1.5"/>
+    <text x="52"  y="27" text-anchor="middle" font-size="12" fill="#27c93f" font-weight="bold">TPoS</text>
+    <rect x="120" y="0" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="172" y="27" text-anchor="middle" font-size="12" fill="#8b949e">Paycode</text>
+    <rect x="240" y="0" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="292" y="27" text-anchor="middle" font-size="12" fill="#8b949e">SatsPay</text>
+
+    <!-- Row 2 -->
+    <rect x="0"   y="58" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="52"  y="85" text-anchor="middle" font-size="12" fill="#8b949e">LNURLp</text>
+    <rect x="120" y="58" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="172" y="85" text-anchor="middle" font-size="12" fill="#8b949e">Boltz</text>
+    <rect x="240" y="58" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="292" y="85" text-anchor="middle" font-size="12" fill="#8b949e">Tipjar</text>
+
+    <!-- Row 3 -->
+    <rect x="0"   y="116" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="52"  y="143" text-anchor="middle" font-size="12" fill="#8b949e">Withdraw</text>
+    <rect x="120" y="116" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="172" y="143" text-anchor="middle" font-size="12" fill="#8b949e">Events</text>
+    <rect x="240" y="116" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="292" y="143" text-anchor="middle" font-size="12" fill="#8b949e">Boltcards</text>
+
+    <!-- Row 4 -->
+    <rect x="0"   y="174" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="52"  y="201" text-anchor="middle" font-size="12" fill="#8b949e">Watchonly</text>
+    <rect x="120" y="174" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="172" y="201" text-anchor="middle" font-size="12" fill="#8b949e">Copilot</text>
+    <rect x="240" y="174" width="105" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+    <text x="292" y="201" text-anchor="middle" font-size="12" fill="#484f58">+50 more</text>
+  </g>
+
+  <!-- Source label above grid -->
+  <text x="850" y="145" text-anchor="middle" font-size="11" fill="#484f58">powered by your ecash</text>
+
+  <!-- Bottom left: mint source indicator -->
+  <rect x="80" y="400" width="460" height="90" rx="8" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="100" y="430" font-size="13" fill="#c084fc" font-weight="bold">Your Mint</text>
+  <text x="245" y="430" font-size="13" fill="#484f58">--NUTbits--></text>
+  <text x="400" y="430" font-size="13" fill="#58a6ff" font-weight="bold">LNbits</text>
+  <text x="100" y="460" font-size="12" fill="#484f58">ecash proofs become Lightning payments.</text>
+  <text x="100" y="478" font-size="12" fill="#484f58">every extension works. no node needed.</text>
+
+  <rect width="1200" height="4" fill="url(#accent5)"/>
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

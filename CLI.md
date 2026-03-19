@@ -4,12 +4,12 @@
 
 ## What Is This?
 
-NUTbits runs as a background service — it manages your ecash and handles NWC commands automatically. The management console gives you a window into what's happening and lets you control it.
+This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** — workflows, TUI vs CLI, tips — see **[CONSOLE.md](CONSOLE.md)**.
 
-Two ways to use it:
+NUTbits runs as a background service. The management console gives you a window into what's happening and lets you control it:
 
-- **`nutbits`** — launch the interactive TUI (split-screen, navigable menu)
-- **`nutbits <command>`** — run a single command and get the result
+- **`nutbits`** — interactive TUI dashboard (monitor)
+- **`nutbits <command>`** — single CLI command (act)
 
 Both talk to the same local API. Same data, your choice of interface.
 
@@ -19,56 +19,66 @@ Both talk to the same local API. Same data, your choice of interface.
 
 ## Setup
 
-### 1. Make the command available
+### Bare metal
 
-After cloning and installing NUTbits, you have three options:
+You need two terminals — one runs the service, the other runs the CLI.
 
-```bash
-# Option A: link globally (recommended — works from anywhere)
-npm link
-
-# Option B: use the npm script
-npm run cli
-
-# Option C: run directly
-node bin/nutbits.js
-```
-
-With `npm link`, the `nutbits` command is available system-wide. With options B and C, you need to be in the NUTbits directory.
-
-### 2. Start the service
-
-The CLI talks to a running NUTbits instance. Start the service first:
+**Terminal 1 — start the service:**
 
 ```bash
+cd nutbits
 npm start
 ```
 
-The service automatically starts the management API on a local Unix socket (`~/.nutbits/nutbits.sock`). An auth token is generated and saved next to the socket. The CLI reads this token automatically — no extra configuration needed.
-
-### 3. Open the console
-
-In a second terminal:
+**Terminal 2 — set up and run the CLI:**
 
 ```bash
+cd nutbits
+npm link
 nutbits
 ```
 
-That's it. You'll see the interactive dashboard with a menu on the left and live data on the right. Navigate with arrow keys, press Enter to select.
+That's it. `npm link` makes the `nutbits` command available everywhere on your system. You only need to run it once. After that, just type `nutbits` from any directory.
 
-For single commands:
+The interactive dashboard opens with a menu on the left and live data on the right. Navigate with arrow keys, press Enter to select.
+
+You can also run single commands:
 
 ```bash
 nutbits balance
 nutbits history
-nutbits connections
+nutbits connect
 ```
 
-### If it doesn't connect
+> **Don't want to `npm link`?** You can also use `npm run cli` or `node bin/nutbits.js` from the NUTbits directory.
 
-- **"Cannot connect to NUTbits"** — the service isn't running. Start it with `npm start`.
-- **"No API token found"** — the service is running but the API might be disabled. Check that `NUTBITS_API_ENABLED` is not set to `false` in your `.env`.
-- **Custom socket path** — if you changed `NUTBITS_API_SOCKET` in `.env`, pass it to the CLI: `nutbits --socket /your/path/nutbits.sock`
+### Docker
+
+The CLI is already inside the container. No extra setup:
+
+```bash
+docker compose exec nutbits nutbits              # interactive TUI
+docker compose exec nutbits nutbits balance       # single command
+```
+
+**Tip:** add an alias so it feels native:
+
+```bash
+alias nutbits="docker compose exec nutbits nutbits"
+nutbits balance
+```
+
+### No configuration needed
+
+The CLI connects automatically. When NUTbits starts, it creates a local socket and auth token at `~/.nutbits/`. The CLI finds and reads these on its own — nothing to configure.
+
+### Troubleshooting
+
+| Error | What to do |
+|-------|-----------|
+| "Cannot connect to NUTbits" | The service isn't running. Start it first. |
+| "No API token found" | The API may be disabled. Check `NUTBITS_API_ENABLED` in `.env`. |
+| Custom socket path | Pass it: `nutbits --socket /your/path.sock` |
 
 ## Commands
 
@@ -97,6 +107,7 @@ nutbits connections
 | `nutbits connect` | Create a new NWC connection |
 | `nutbits revoke` | Disconnect an NWC connection |
 | `nutbits config` | View or change settings |
+| `nutbits export` | Export transaction history (CSV/JSON) |
 | `nutbits backup` | Export encrypted backup |
 | `nutbits verify` | Check a backup file |
 | `nutbits restore` | Recover proofs from seed |
@@ -186,6 +197,51 @@ nutbits config set fee-reserve 2
 ```
 
 These take effect immediately. Mint URLs, relays, and storage require a restart.
+
+## Export
+
+Export data from your NUTbits instance. Three export types available:
+
+### Interactive
+
+```bash
+nutbits export                    # choose what to export interactively
+```
+
+### Transaction history
+
+```bash
+nutbits export history --format csv                # all transactions as CSV
+nutbits export history --format json               # all transactions as JSON
+nutbits export history --format csv --out report.csv
+
+# Filters
+nutbits export history --format csv --type outgoing
+nutbits export history --format csv --type incoming
+nutbits export history --format csv --from 1710806400 --until 1711411200
+nutbits export history --format csv --connection "lnbits-main"
+```
+
+CSV columns: `date`, `time`, `type`, `amount_sats`, `routing_fee_sats`, `service_fee_sats`, `status`, `connection`, `description`, `payment_hash`. Includes transactions from revoked connections for complete records.
+
+### NWC connections
+
+```bash
+nutbits export connections                         # interactive — pick one or all
+nutbits export connections --id 2                  # single connection NWC string
+nutbits export connections --format json --out connections.json
+```
+
+Exports NWC connection strings, permissions, spending limits, and per-connection fee settings. Use `--id` to get a single connection's NWC string printed to the terminal.
+
+### Mint info
+
+```bash
+nutbits export mints                               # interactive — view and save
+nutbits export mints --format json --out mints.json
+```
+
+Exports mint details, NUT capabilities, balances, health status, and version info.
 
 ## Backup & Recovery
 

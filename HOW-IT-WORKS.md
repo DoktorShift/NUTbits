@@ -117,7 +117,8 @@ The management console lets you create multiple NWC connections with different p
 ## Related Reading
 
 - [INSTALL.md](INSTALL.md) — Get NUTbits running in 5 minutes
-- [CLI.md](CLI.md) — Management console reference
+- [CONSOLE.md](CONSOLE.md) — How to use the TUI and CLI day-to-day
+- [CLI.md](CLI.md) — Full command reference
 - [README.md](README.md) — Full technical reference
 - [LNbits](https://lnbits.com) — Lightning accounts system that NUTbits was built to power
 - [Cashu protocol](https://cashu.space) — Learn about ecash for Bitcoin

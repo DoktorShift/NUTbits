@@ -46,9 +46,13 @@ export async function statusPanel(client) {
     var d = await client.get('/api/v1/status');
     var lines = [];
 
-    lines.push(`${c.green}${c.bold}NUTbits is running${c.reset}              ${c.dim}uptime: ${fmtUptime(d.uptime_ms)}${c.reset}`);
+    lines.push(`${c.green}${c.bold}NUTbits is running${c.reset}`);
+    lines.push(`${c.dim}uptime: ${fmtUptime(d.uptime_ms)}${c.reset}`);
     lines.push('');
-    lines.push(kv('Mint', `${c.white}${c.bold}${d.mint?.name || 'unknown'}${c.reset}`));
+
+    // Active mint
+    var mintHealth = d.mint?.healthy !== false ? dot.ok : dot.err;
+    lines.push(kv('Mint', `${mintHealth} ${c.white}${c.bold}${d.mint?.name || 'unknown'}${c.reset}`));
     lines.push(kv('', `${c.dim}${d.mint?.url || ''}${c.reset}`));
     lines.push(kv('Version', `${d.mint?.version || '?'}`));
     lines.push(kv('Balance', fmtSats(d.balance_sats)));
@@ -57,6 +61,24 @@ export async function statusPanel(client) {
     lines.push(kv('Seed', d.seed_configured ? `${dot.ok} configured` : `${dot.err} not set`));
     lines.push(kv('Connections', `${d.connections_count} active`));
     lines.push('');
+
+    // Multi-mint failover summary
+    try {
+        var mints = await client.get('/api/v1/mints');
+        if (mints.mints?.length > 1) {
+            var healthy = mints.mints.filter(m => m.healthy !== false).length;
+            var total = mints.mints.length;
+            var failoverDot = healthy === total ? dot.ok : healthy > 0 ? dot.warn : dot.err;
+            lines.push(kv('Failover', `${failoverDot} ${healthy}/${total} mints healthy`));
+            for (var m of mints.mints) {
+                if (m.active) continue; // already shown above
+                var mDot = m.healthy !== false ? dot.ok : dot.err;
+                var mintName = (m.name || m.url.replace(/^https?:\/\//, '').split('/')[0]).slice(0, 28);
+                lines.push(`${c.dim}                ${mDot} ${mintName}  ${fmtSats(m.balance_sats)}${c.reset}`);
+            }
+            lines.push('');
+        }
+    } catch (e) { /* skip — single mint or API error */ }
 
     // NUTs
     if (d.nuts) {
@@ -109,30 +131,30 @@ export async function connectionsPanel(client) {
 
     if (!d.connections?.length) {
         lines.push(`  ${c.muted}No connections yet.${c.reset}`);
-        lines.push(`  ${c.dim}Select "New Connection" from the menu to create one.${c.reset}`);
+        lines.push(`  ${c.dim}Navigate to "New Connection" and press Enter.${c.reset}`);
         return lines;
     }
 
-    lines.push(`  ${c.muted}${'ID'.padEnd(5)}${'Label'.padEnd(16)}${'Permissions'.padEnd(22)}${'Balance'.padEnd(16)}Txs${c.reset}`);
-    lines.push(`  ${c.dim}${'─'.repeat(62)}${c.reset}`);
+    var permLabel = p => {
+        if (p === 'pay_invoice') return `${c.red}pay${c.reset}`;
+        if (p === 'make_invoice') return `${c.green}recv${c.reset}`;
+        if (p === 'get_balance') return `${c.yellow}bal${c.reset}`;
+        if (p === 'list_transactions' || p === 'lookup_invoice') return `${c.muted}hist${c.reset}`;
+        if (p === 'get_info') return `${c.muted}info${c.reset}`;
+        return '';
+    };
 
     for (var conn of d.connections) {
-        var perms = (conn.permissions || []).map(p => {
-            if (p === 'pay_invoice') return 'pay';
-            if (p === 'make_invoice') return 'recv';
-            if (p === 'get_balance') return 'bal';
-            if (p === 'list_transactions' || p === 'lookup_invoice') return 'hist';
-            if (p === 'get_info') return 'info';
-            return '';
-        }).filter((v, i, a) => a.indexOf(v) === i).filter(Boolean).join(' ');
+        var perms = (conn.permissions || [])
+            .map(permLabel)
+            .filter((v, i, a) => a.indexOf(v) === i)
+            .filter(Boolean);
 
-        lines.push(
-            `  ${col(`${c.purple}#${conn.id}${c.reset}`, 5)}` +
-            `${col(`${c.white}${(conn.label || '—').slice(0, 14)}${c.reset}`, 16)}` +
-            `${col(`${c.muted}${perms}${c.reset}`, 22)}` +
-            `${col(fmtSats(Math.floor((conn.balance_msat || 0) / 1000)), 16)}` +
-            `${c.dim}${conn.tx_count || 0}${c.reset}`
-        );
+        lines.push(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${conn.label || '—'}${c.reset}`);
+        lines.push(`     ${perms.join(`${c.dim} | ${c.reset}`)}`);
+        lines.push(`     ${fmtSats(Math.floor((conn.balance_msat || 0) / 1000))}  ${c.dim}${conn.tx_count || 0} transactions${c.reset}`);
+        if (conn.max_daily_sats) lines.push(`     ${c.dim}daily limit: ${conn.max_daily_sats.toLocaleString()} sats${c.reset}`);
+        lines.push('');
     }
 
     return lines;
@@ -165,6 +187,11 @@ export async function historyPanel(client) {
         var connLabel = `${c.dim}${(tx.connection_label || '—').slice(0, 14)}${c.reset}`;
 
         lines.push(`  ${col(time, 12)}${col(arrow, 8)}${col(amt, 16)}${col(status, 10)}${connLabel}`);
+    }
+
+    if (d.total > 15) {
+        lines.push('');
+        lines.push(`  ${c.dim}Showing 15 of ${d.total}. Navigate to "Export History" to download all.${c.reset}`);
     }
 
     return lines;
@@ -235,16 +262,21 @@ export async function nutsPanel(client) {
         lines.push('');
         lines.push(`  ${c.muted}${supported}/${nutIds.length} NUTs supported${c.reset}`);
     } else {
-        // Multi-mint comparison
-        lines.push(`  ${c.muted}${'NUT'.padEnd(6)}${'Name'.padEnd(26)}${mintUrls.map(u => u.replace(/^https?:\/\//, '').split('/')[0].padEnd(16)).join('')}${c.reset}`);
-        lines.push(`  ${c.dim}${'─'.repeat(60)}${c.reset}`);
-        for (var n of nutIds) {
-            var row = `  ${c.muted}${n.padEnd(6)}${c.reset}${c.white}${(nutNames[n] || '').padEnd(26)}${c.reset}`;
-            for (var url of mintUrls) {
-                var ok = d.mints[url]?.nuts?.[n];
-                row += (ok ? `${c.green}✓${c.reset}` : `${c.red}✗${c.reset}`).padEnd(16);
+        // Multi-mint: show each mint separately (scales to any count)
+        for (var url of mintUrls) {
+            var mintNuts = d.mints[url]?.nuts || {};
+            var isActive = d.mints[url]?.active;
+            var mintLabel = url.replace(/^https?:\/\//, '').split('/')[0].slice(0, 30);
+            var statusTag = isActive ? `${c.green}active${c.reset}` : `${c.dim}standby${c.reset}`;
+            var supported = Object.values(mintNuts).filter(Boolean).length;
+
+            lines.push(`  ${c.white}${c.bold}${mintLabel}${c.reset}  ${statusTag}  ${c.dim}(${supported}/${nutIds.length})${c.reset}`);
+            var nutLine = '  ';
+            for (var n of nutIds) {
+                nutLine += (mintNuts[n] ? `${c.green}${n}${c.reset}` : `${c.dim}${n}${c.reset}`) + ' ';
             }
-            lines.push(row);
+            lines.push(nutLine);
+            lines.push('');
         }
     }
 
@@ -272,25 +304,60 @@ export async function relaysPanel(client) {
 // ── Panel: Config ────────────────────────────────────────────────────────
 
 export async function configPanel(client) {
-    var d = await client.get('/api/v1/config');
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Running Configuration${c.reset}`);
+    lines.push(`${c.white}${c.bold}Configuration${c.reset}`);
     lines.push('');
-    lines.push(kv('Active mint', `${c.white}${d.active_mint}${c.reset}`));
-    lines.push(kv('Storage', d.storage));
-    lines.push(kv('Log level', d.log_level));
-    lines.push(kv('Fee reserve', `${d.fee_reserve_pct}%`));
-    lines.push(kv('Max payment', d.max_payment_sats ? `${d.max_payment_sats.toLocaleString()} sats` : `${c.dim}no limit${c.reset}`));
-    lines.push(kv('Daily limit', d.daily_limit_sats ? `${d.daily_limit_sats.toLocaleString()} sats` : `${c.dim}no limit${c.reset}`));
-    lines.push(kv('Health check', `${d.health_check_interval_ms / 1000}s`));
-    lines.push(kv('Seed', d.seed_configured ? `${c.green}configured${c.reset}` : `${c.red}not set${c.reset}`));
-    lines.push('');
-    lines.push(`${c.dim}Relays:${c.reset}`);
-    for (var r of (d.relays || [])) lines.push(`  ${c.dim}${r}${c.reset}`);
-    lines.push('');
-    lines.push(`${c.dim}Hot-reloadable: ${(d.reloadable || []).join(', ')}${c.reset}`);
-    lines.push(`${c.dim}Use CLI: nutbits config set <key> <value>${c.reset}`);
+
+    try {
+        var env;
+        try {
+            env = await client.get('/api/v1/config/env');
+        } catch (envErr) {
+            // Fallback to basic config if env endpoint not available
+            var d = await client.get('/api/v1/config');
+            lines.push(kv('Mint', `${c.dim}${(d.active_mint || '').replace(/^https?:\/\//, '').slice(0, 38)}${c.reset}`));
+            lines.push(kv('Storage', d.storage || 'file'));
+            lines.push(kv('Log level', d.log_level || 'info'));
+            lines.push(kv('Seed', d.seed_configured ? `${c.green}configured${c.reset}` : `${c.red}not set${c.reset}`));
+            lines.push('');
+            lines.push(`  ${c.green}${c.bold}Press Enter to change settings${c.reset}`);
+            return lines;
+        }
+
+        if (!env.file_exists) {
+            lines.push(`  ${c.red}No .env file found${c.reset}`);
+            lines.push(`  ${c.dim}Run: cp .env.example .env${c.reset}`);
+            return lines;
+        }
+
+        for (var opt of (env.options || [])) {
+            var status = opt.active
+                ? `${c.green}ON ${c.reset}`
+                : `${c.dim}OFF${c.reset}`;
+
+            var val = opt.value || `${c.dim}(not set)${c.reset}`;
+            if (opt.sensitive && opt.value) val = `${c.dim}***${c.reset}`;
+
+            // Shorten long values
+            var plainVal = (opt.value || '').replace(/^https?:\/\//, '');
+            if (plainVal.length > 30) val = `${c.dim}${plainVal.slice(0, 28)}..${c.reset}`;
+
+            var restartTag = opt.restart ? '' : `  ${c.blue}live${c.reset}`;
+
+            lines.push(`  ${status}  ${c.white}${opt.key.replace('NUTBITS_', '')}${c.reset}${restartTag}`);
+            lines.push(`        ${val}`);
+            if (opt.desc) lines.push(`        ${c.dim}${opt.desc}${c.reset}`);
+            lines.push('');
+        }
+
+        lines.push(`  ${c.green}${c.bold}Press Enter to change settings${c.reset}`);
+        lines.push(`  ${c.dim}Changes are saved to .env automatically${c.reset}`);
+        lines.push(`  ${c.dim}Settings marked ${c.blue}live${c.dim} apply instantly. Others need restart.${c.reset}`);
+
+    } catch (e) {
+        lines.push(`  ${c.red}Could not load config: ${e.message}${c.reset}`);
+    }
 
     return lines;
 }
@@ -365,99 +432,193 @@ export async function feesPanel(client) {
 
 // ── Panel: Backup ────────────────────────────────────────────────────────
 
-export async function backupPanel() {
+export async function backupPanel(client) {
     var lines = [];
     lines.push(`${c.white}${c.bold}Backup${c.reset}`);
     lines.push('');
-    lines.push(`  Export an encrypted backup of your wallet state.`);
+
+    try {
+        var bal = await client.get('/api/v1/balance');
+        var conns = await client.get('/api/v1/connections');
+        lines.push(`  ${c.muted}Current state:${c.reset}`);
+        lines.push(`    Balance: ${fmtSats(bal.total_sats)}  across ${bal.mints?.length || 0} mint(s)`);
+        lines.push(`    Connections: ${conns.connections?.length || 0}`);
+        lines.push('');
+    } catch (e) { /* skip */ }
+
+    lines.push(`  Export an encrypted backup of your wallet.`);
+    lines.push(`  Encrypted with your state passphrase.`);
     lines.push('');
-    lines.push(`  ${c.muted}Use the CLI command:${c.reset}`);
-    lines.push(`  ${c.green}nutbits backup${c.reset}`);
-    lines.push(`  ${c.green}nutbits backup --out ./my-backup.enc${c.reset}`);
+    lines.push(`  ${c.green}${c.bold}Press Enter to export backup${c.reset}`);
     lines.push('');
-    lines.push(`  ${c.muted}Verify a backup:${c.reset}`);
-    lines.push(`  ${c.green}nutbits verify ./my-backup.enc${c.reset}`);
+    lines.push(`  ${c.dim}Or run directly:  nutbits backup --out ./file.enc${c.reset}`);
+    lines.push(`  ${c.dim}Verify backup:    nutbits verify ./file.enc${c.reset}`);
     return lines;
 }
 
 // ── Panel: Restore ───────────────────────────────────────────────────────
 
-export async function restorePanel() {
+export async function restorePanel(client) {
     var lines = [];
     lines.push(`${c.white}${c.bold}Restore (NUT-09)${c.reset}`);
     lines.push('');
+
+    try {
+        var status = await client.get('/api/v1/status');
+        lines.push(`  ${c.muted}Seed:${c.reset} ${status.seed_configured ? `${c.green}configured${c.reset}` : `${c.red}not set${c.reset}`}`);
+        lines.push('');
+    } catch (e) { /* skip */ }
+
     lines.push(`  Recover ecash proofs from your seed.`);
     lines.push(`  Existing proofs are not affected.`);
+    lines.push(`  The mint must support NUT-09.`);
     lines.push('');
-    lines.push(`  ${c.muted}Use the CLI command:${c.reset}`);
-    lines.push(`  ${c.green}nutbits restore${c.reset}`);
-    lines.push(`  ${c.green}nutbits restore --mint <url>${c.reset}`);
+    lines.push(`  ${c.green}${c.bold}Press Enter to start recovery${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits restore${c.reset}`);
     return lines;
 }
 
 // ── Panel: Pay ───────────────────────────────────────────────────────────
 
-export async function payPanel() {
+export async function payPanel(client) {
     var lines = [];
-    lines.push(`${c.red}${c.bold}Pay Invoice${c.reset}`);
+    lines.push(`${c.purple}${c.bold}Pay Invoice${c.reset}`);
     lines.push('');
+
+    try {
+        var bal = await client.get('/api/v1/balance');
+        lines.push(`  ${c.muted}Available balance:${c.reset} ${fmtSats(bal.total_sats)}`);
+        lines.push('');
+    } catch (e) { /* skip */ }
+
     lines.push(`  Pay a Lightning invoice from your ecash balance.`);
+    lines.push(`  The mint handles the Lightning routing.`);
     lines.push('');
-    lines.push(`  ${c.muted}Use the CLI command:${c.reset}`);
-    lines.push(`  ${c.green}nutbits pay <invoice>${c.reset}`);
-    lines.push(`  ${c.green}nutbits pay${c.reset}  ${c.dim}(interactive)${c.reset}`);
+    lines.push(`  ${c.green}${c.bold}Press Enter to start${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits pay lnbc...${c.reset}`);
     return lines;
 }
 
 // ── Panel: Receive ───────────────────────────────────────────────────────
 
-export async function receivePanel() {
+export async function receivePanel(client) {
     var lines = [];
     lines.push(`${c.green}${c.bold}Receive Payment${c.reset}`);
     lines.push('');
-    lines.push(`  Create a Lightning invoice and wait for payment.`);
+
+    try {
+        var status = await client.get('/api/v1/status');
+        lines.push(`  ${c.muted}Mint:${c.reset} ${status.mint?.name || 'unknown'}`);
+        lines.push(`  ${c.muted}Current balance:${c.reset} ${fmtSats(status.balance_sats)}`);
+        lines.push('');
+    } catch (e) { /* skip */ }
+
+    lines.push(`  Create a Lightning invoice. The mint provides the`);
+    lines.push(`  invoice, and NUTbits mints ecash when it's paid.`);
     lines.push('');
-    lines.push(`  ${c.muted}Use the CLI command:${c.reset}`);
-    lines.push(`  ${c.green}nutbits receive <amount>${c.reset}`);
-    lines.push(`  ${c.green}nutbits receive${c.reset}  ${c.dim}(interactive)${c.reset}`);
+    lines.push(`  ${c.green}${c.bold}Press Enter to start${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits receive 1000${c.reset}`);
     return lines;
 }
 
 // ── Panel: New Connection ────────────────────────────────────────────────
 
-export async function connectPanel() {
+export async function connectPanel(client) {
     var lines = [];
-    lines.push(`${c.purple}${c.bold}New NWC Connection${c.reset}`);
+    lines.push(`${c.blue}${c.bold}New NWC Connection${c.reset}`);
     lines.push('');
+
+    try {
+        var d = await client.get('/api/v1/connections');
+        lines.push(`  ${c.muted}Current connections:${c.reset} ${d.connections?.length || 0}`);
+        lines.push('');
+    } catch (e) { /* skip */ }
+
     lines.push(`  Create a new NWC connection string with`);
     lines.push(`  custom permissions and spending limits.`);
     lines.push('');
-    lines.push(`  ${c.muted}Use the CLI command:${c.reset}`);
-    lines.push(`  ${c.green}nutbits connect${c.reset}  ${c.dim}(guided setup)${c.reset}`);
-    lines.push(`  ${c.green}nutbits connect --label "name" --permissions pay,balance${c.reset}`);
+    lines.push(`  Each connection gets its own NWC string,`);
+    lines.push(`  scoped permissions, and optional fee rate.`);
+    lines.push('');
+    lines.push(`  ${c.green}${c.bold}Press Enter to start guided setup${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits connect --label "name"${c.reset}`);
+    return lines;
+}
+
+// ── Panel: Export History ────────────────────────────────────────────────
+
+export async function exportPanel(client) {
+    var lines = [];
+    lines.push(`${c.yellow}${c.bold}Export Data${c.reset}`);
+    lines.push('');
+
+    try {
+        var d = await client.get('/api/v1/history', { limit: '1', unpaid: 'true' });
+        var cn = await client.get('/api/v1/connections');
+        var mn = await client.get('/api/v1/mints');
+        lines.push(`  ${c.muted}Transactions:${c.reset}  ${c.white}${c.bold}${d.total}${c.reset}`);
+        lines.push(`  ${c.muted}Connections:${c.reset}   ${c.white}${cn.connections?.length || 0}${c.reset} active`);
+        lines.push(`  ${c.muted}Mints:${c.reset}         ${c.white}${mn.mints?.length || 0}${c.reset} configured`);
+        lines.push('');
+    } catch (e) {
+        lines.push('');
+    }
+
+    lines.push(`  ${c.white}${c.bold}Available exports:${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.purple}●${c.reset} ${c.white}Transaction history${c.reset}`);
+    lines.push(`    ${c.dim}All payments as CSV or JSON — amounts, fees,${c.reset}`);
+    lines.push(`    ${c.dim}timestamps, connections, and payment hashes${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.purple}●${c.reset} ${c.white}NWC connections${c.reset}`);
+    lines.push(`    ${c.dim}Connection strings, permissions, spending${c.reset}`);
+    lines.push(`    ${c.dim}limits, and per-connection fee settings${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.purple}●${c.reset} ${c.white}Mint info${c.reset}`);
+    lines.push(`    ${c.dim}Mint details, NUT capabilities, balances,${c.reset}`);
+    lines.push(`    ${c.dim}health status, and version info${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.green}${c.bold}Press Enter to choose what to export${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:${c.reset}`);
+    lines.push(`  ${c.dim}  nutbits export history --format csv${c.reset}`);
+    lines.push(`  ${c.dim}  nutbits export connections${c.reset}`);
+    lines.push(`  ${c.dim}  nutbits export mints${c.reset}`);
     return lines;
 }
 
 // ── Panel: Revoke ────────────────────────────────────────────────────────
 
 export async function revokePanel(client) {
-    var d = await client.get('/api/v1/connections');
     var lines = [];
     lines.push(`${c.red}${c.bold}Revoke Connection${c.reset}`);
     lines.push('');
     lines.push(`  Disconnect an NWC connection permanently.`);
     lines.push(`  Transaction history is kept.`);
     lines.push('');
-    if (d.connections?.length) {
-        lines.push(`  ${c.muted}Active connections:${c.reset}`);
-        for (var conn of d.connections) {
-            lines.push(`  ${c.purple}#${conn.id}${c.reset}  ${c.white}${conn.label}${c.reset}`);
+
+    try {
+        var d = await client.get('/api/v1/connections');
+        if (d.connections?.length) {
+            lines.push(`  ${c.muted}Active connections:${c.reset}`);
+            lines.push('');
+            for (var conn of d.connections) {
+                lines.push(`    ${c.purple}#${conn.id}${c.reset}  ${c.white}${conn.label}${c.reset}  ${c.dim}(${conn.tx_count || 0} txs)${c.reset}`);
+            }
+            lines.push('');
+        } else {
+            lines.push(`  ${c.dim}No active connections to revoke.${c.reset}`);
+            lines.push('');
         }
-        lines.push('');
-    }
-    lines.push(`  ${c.muted}Use the CLI command:${c.reset}`);
-    lines.push(`  ${c.green}nutbits revoke <id>${c.reset}`);
-    lines.push(`  ${c.green}nutbits revoke${c.reset}  ${c.dim}(interactive)${c.reset}`);
+    } catch (e) { /* skip */ }
+
+    lines.push(`  ${c.green}${c.bold}Press Enter to select and revoke${c.reset}`);
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits revoke <id>${c.reset}`);
     return lines;
 }
 
@@ -476,6 +637,7 @@ var PANELS = {
     logs:        logsPanel,
     backup:      backupPanel,
     restore:     restorePanel,
+    export:      exportPanel,
     revoke:      revokePanel,
     pay:         payPanel,
     receive:     receivePanel,

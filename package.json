@@ -43,6 +43,7 @@
   },
   "optionalDependencies": {
     "better-sqlite3": "^11.0.0",
-    "mysql2": "^3.11.0"
+    "mysql2": "^3.11.0",
+    "qrcode-terminal": "^0.12.0"
   }
 }

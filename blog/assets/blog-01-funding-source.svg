@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="50%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g1)"/>
+
+  <!-- Title block — left side, upper area -->
+  <text x="80" y="160" font-size="42" fill="#c9d1d9" font-weight="bold">Ecash as a Funding</text>
+  <text x="80" y="215" font-size="42" fill="#c9d1d9" font-weight="bold">Source for LNbits</text>
+
+  <text x="80" y="270" font-size="17" fill="#8b949e">Your Cashu mint powers LNbits and all 60+ extensions.</text>
+  <text x="80" y="295" font-size="17" fill="#8b949e">No Lightning node required.</text>
+
+  <!-- Visual — right side, vertically centered flow diagram -->
+  <!-- Mint box -->
+  <rect x="730" y="180" width="140" height="60" rx="8" fill="#1a1e24" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="800" y="205" text-anchor="middle" font-size="14" fill="#c084fc" font-weight="bold">Cashu Mint</text>
+  <text x="800" y="225" text-anchor="middle" font-size="11" fill="#484f58">ecash proofs</text>
+
+  <!-- Down arrow 1 -->
+  <line x1="800" y1="240" x2="800" y2="280" stroke="#30363d" stroke-width="1.5"/>
+  <text x="800" y="275" text-anchor="middle" font-size="14" fill="#484f58">v</text>
+
+  <!-- NUTbits box -->
+  <rect x="730" y="285" width="140" height="60" rx="8" fill="#1a1e24" stroke="#c084fc" stroke-width="2"/>
+  <text x="800" y="310" text-anchor="middle" font-size="14" fill="#c084fc" font-weight="bold">NUTbits</text>
+  <text x="800" y="330" text-anchor="middle" font-size="11" fill="#484f58">NWC bridge</text>
+
+  <!-- Down arrow 2 -->
+  <line x1="800" y1="345" x2="800" y2="385" stroke="#30363d" stroke-width="1.5"/>
+  <text x="800" y="380" text-anchor="middle" font-size="14" fill="#484f58">v</text>
+
+  <!-- LNbits box -->
+  <rect x="730" y="390" width="140" height="60" rx="8" fill="#1a1e24" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="800" y="415" text-anchor="middle" font-size="14" fill="#58a6ff" font-weight="bold">LNbits</text>
+  <text x="800" y="435" text-anchor="middle" font-size="11" fill="#484f58">60+ extensions</text>
+
+  <!-- Side extensions branching from LNbits -->
+  <line x1="870" y1="410" x2="940" y2="380" stroke="#21262d" stroke-width="1"/>
+  <text x="950" y="384" font-size="11" fill="#484f58">TPoS</text>
+  <line x1="870" y1="420" x2="940" y2="420" stroke="#21262d" stroke-width="1"/>
+  <text x="950" y="424" font-size="11" fill="#484f58">Paycode</text>
+  <line x1="870" y1="430" x2="940" y2="460" stroke="#21262d" stroke-width="1"/>
+  <text x="950" y="464" font-size="11" fill="#484f58">SatsPay</text>
+
+  <!-- Protocol labels along the flow -->
+  <text x="885" y="268" font-size="10" fill="#484f58">NUTs</text>
+  <text x="885" y="373" font-size="10" fill="#484f58">NWC</text>
+
+  <!-- Bottom left context -->
+  <rect x="80" y="420" width="480" height="80" rx="8" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="100" y="450" font-size="13" fill="#484f58">$</text>
+  <text x="120" y="450" font-size="13" fill="#27c93f">npm start</text>
+  <text x="100" y="478" font-size="12" fill="#484f58">NUTbits is running! Balance: 12,450 sats</text>
+
+  <!-- Top accent bar -->
+  <rect width="1200" height="4" fill="url(#accent1)"/>
+
+  <!-- Watermark -->
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

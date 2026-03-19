@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g7" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent7" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="50%" stop-color="#ffbd2e"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g7)"/>
+
+  <!-- Title — left side -->
+  <text x="80" y="160" font-size="42" fill="#c9d1d9" font-weight="bold">Ecash Was Always</text>
+  <text x="80" y="215" font-size="42" fill="#c9d1d9" font-weight="bold">the Missing Piece</text>
+
+  <text x="80" y="270" font-size="17" fill="#8b949e">Two ecosystems that couldn't talk to each other.</text>
+  <text x="80" y="295" font-size="17" fill="#8b949e">NWC was the protocol. NUTbits is the bridge.</text>
+
+  <!-- Visual — right side: three boxes in a horizontal row with a gap for the middle one -->
+
+  <!-- Cashu box — solid, placed -->
+  <rect x="700" y="200" width="120" height="80" rx="8" fill="#1a1e24" stroke="#30363d" stroke-width="1.5"/>
+  <text x="760" y="235" text-anchor="middle" font-size="14" fill="#8b949e">Cashu</text>
+  <text x="760" y="255" text-anchor="middle" font-size="10" fill="#484f58">private</text>
+  <text x="760" y="268" text-anchor="middle" font-size="10" fill="#484f58">offline-first</text>
+
+  <!-- Connector left -->
+  <line x1="820" y1="240" x2="860" y2="240" stroke="#c084fc" stroke-width="2"/>
+
+  <!-- NUTbits box — highlighted, the missing piece -->
+  <rect x="860" y="190" width="120" height="100" rx="8" fill="#1a1e24" stroke="#c084fc" stroke-width="2.5"/>
+  <text x="920" y="232" text-anchor="middle" font-size="15" fill="#c084fc" font-weight="bold">NUTbits</text>
+  <text x="920" y="255" text-anchor="middle" font-size="10" fill="#c084fc">the bridge</text>
+  <!-- Glow effect -->
+  <rect x="860" y="190" width="120" height="100" rx="8" fill="none" stroke="#c084fc" stroke-width="1" opacity="0.3">
+    <animate attributeName="opacity" values="0.1;0.4;0.1" dur="3s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Connector right -->
+  <line x1="980" y1="240" x2="1020" y2="240" stroke="#ffbd2e" stroke-width="2"/>
+
+  <!-- Lightning box — solid, placed -->
+  <rect x="1020" y="200" width="120" height="80" rx="8" fill="#1a1e24" stroke="#30363d" stroke-width="1.5"/>
+  <text x="1080" y="235" text-anchor="middle" font-size="14" fill="#ffbd2e">Lightning</text>
+  <text x="1080" y="255" text-anchor="middle" font-size="10" fill="#484f58">instant</text>
+  <text x="1080" y="268" text-anchor="middle" font-size="10" fill="#484f58">global reach</text>
+
+  <!-- Before/after comparison below -->
+  <rect x="700" y="340" width="440" height="55" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="720" y="362" font-size="11" fill="#ff5f56">Before</text>
+  <text x="780" y="362" font-size="11" fill="#484f58">Cashu wallets can't pay Lightning invoices.</text>
+  <text x="780" y="380" font-size="11" fill="#484f58">Lightning apps can't hold ecash.</text>
+
+  <rect x="700" y="405" width="440" height="55" rx="6" fill="#1a1e24" stroke="#27c93f" stroke-width="1.5"/>
+  <text x="720" y="427" font-size="11" fill="#27c93f">After</text>
+  <text x="780" y="427" font-size="11" fill="#8b949e">Any mint funds any NWC app. Seamlessly.</text>
+  <text x="780" y="445" font-size="11" fill="#8b949e">Privacy preserved. No node required.</text>
+
+  <!-- Bottom left quote -->
+  <text x="80" y="440" font-size="15" fill="#484f58" font-style="italic">"They were always two halves of the same idea.</text>
+  <text x="80" y="465" font-size="15" fill="#484f58" font-style="italic"> They just needed a way to talk."</text>
+
+  <rect width="1200" height="4" fill="url(#accent7)"/>
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

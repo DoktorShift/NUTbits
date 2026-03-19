@@ -1246,8 +1246,22 @@ ${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _
     var savedLogLevel = log._level;
     log._level = LOG_LEVELS['warn'];
 
+    // ── Relay URL Validation ─────────────────────────────────────
+    for (var relayUrl of config.relays) {
+        try {
+            var parsed = new URL(relayUrl);
+            if (!['ws:', 'wss:'].includes(parsed.protocol)) {
+                console.error(`${c.red}Invalid relay protocol: ${relayUrl} (must be ws:// or wss://)${c.reset}`);
+                process.exit(1);
+            }
+        } catch (e) {
+            console.error(`${c.red}Invalid relay URL: ${relayUrl}${c.reset}`);
+            process.exit(1);
+        }
+    }
+
     // ── Storage ───────────────────────────────────────────────────
-    store = await createStore(config);
+    store = await createStore(config, log);
 
     // ── Wallets ───────────────────────────────────────────────────
     await nutbits.initWallet();
@@ -1382,7 +1396,7 @@ ${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _
     // ── Management API ───────────────────────────────────────────
     if (config.apiEnabled) {
         try {
-            await startApiServer({ nutbits, store, mintManager, config, log, startedAt: Date.now() });
+            await startApiServer({ nutbits, store, mintManager, config, log, startedAt: Date.now(), seedFromEnv: !!process.env.NUTBITS_SEED });
             log.info('management API ready', { socket: config.apiSocket || '~/.nutbits/nutbits.sock' });
         } catch (e) {
             log.warn('management API failed to start (non-fatal)', { error: e.message });

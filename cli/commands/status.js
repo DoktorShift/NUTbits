@@ -26,7 +26,7 @@ export async function run(client, args) {
         kv('Seed', d.seed_configured ? `${c.dot.ok} configured` : `${c.dot.err} not set`),
         kv('Connections', `${d.connections_count} active`),
         '',
-        kv('NUTs', nutList || `${c.dim}(none detected)${c.reset}`),
+        kv('NUTs', (nutList || `${c.dim}(none)${c.reset}`) + `  ${c.dim}(green = supported)${c.reset}`),
     ];
 
     if (d.mint.motd) lines.push('', kv('MOTD', `${c.yellow}"${d.mint.motd}"${c.reset}`));

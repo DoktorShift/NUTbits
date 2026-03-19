@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent4" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="50%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#58a6ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g4)"/>
+
+  <!-- Visual: Hub and spoke — NUTbits center, apps radiating out -->
+  <circle cx="900" cy="340" r="40" fill="#1a1e24" stroke="#c084fc" stroke-width="2"/>
+  <text x="900" y="345" text-anchor="middle" font-size="12" fill="#c084fc" font-weight="bold">NWC</text>
+
+  <!-- Spokes -->
+  <line x1="940" y1="340" x2="1060" y2="240" stroke="#21262d" stroke-width="1.5"/>
+  <line x1="940" y1="340" x2="1080" y2="340" stroke="#21262d" stroke-width="1.5"/>
+  <line x1="940" y1="340" x2="1060" y2="440" stroke="#21262d" stroke-width="1.5"/>
+  <line x1="860" y1="310" x2="780" y2="230" stroke="#21262d" stroke-width="1.5"/>
+  <line x1="860" y1="370" x2="780" y2="450" stroke="#21262d" stroke-width="1.5"/>
+
+  <!-- App nodes -->
+  <rect x="1040" y="218" width="100" height="30" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1090" y="239" text-anchor="middle" font-size="11" fill="#58a6ff">Alby</text>
+
+  <rect x="1060" y="325" width="100" height="30" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1110" y="346" text-anchor="middle" font-size="11" fill="#8b949e">Nostr</text>
+
+  <rect x="1040" y="425" width="100" height="30" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1090" y="446" text-anchor="middle" font-size="11" fill="#8b949e">BuhoGO</text>
+
+  <rect x="720" y="210" width="100" height="30" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="770" y="231" text-anchor="middle" font-size="11" fill="#58a6ff">LNbits</text>
+
+  <rect x="720" y="435" width="100" height="30" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="770" y="456" text-anchor="middle" font-size="11" fill="#8b949e">Zaprite</text>
+
+  <!-- Mint source -->
+  <line x1="860" y1="340" x2="700" y2="340" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <rect x="590" y="322" width="110" height="36" rx="6" fill="#1a1e24" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="645" y="346" text-anchor="middle" font-size="12" fill="#c084fc" font-weight="bold">Your Mint</text>
+
+  <!-- Title -->
+  <text x="80" y="160" font-size="42" fill="#c9d1d9" font-weight="bold">Your Ecash Works</text>
+  <text x="80" y="215" font-size="42" fill="#c9d1d9" font-weight="bold">Everywhere NWC Does</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="270" font-size="17" fill="#8b949e">One mint. One bridge. Every NWC-compatible app.</text>
+  <text x="80" y="295" font-size="17" fill="#8b949e">The protocol handles the rest.</text>
+
+  <rect width="1200" height="4" fill="url(#accent4)"/>
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

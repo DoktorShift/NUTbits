@@ -48,12 +48,16 @@ export async function startApiServer(ctx) {
     // ── Request Handler ──────────────────────────────────────────────
 
     var handler = async (req, res) => {
+        var startTime = Date.now();
+        var urlPath = (req.url || '/').split('?')[0];
+
         res.setHeader('Content-Type', 'application/json');
         // No CORS headers — CLI uses socket/direct HTTP, not browser
         // CORS will be added when the web dashboard is built
 
         // Auth — reject empty tokens
         if (!auth(req)) {
+            ctx.log?.warn?.('API: unauthorized request', { method: req.method, path: urlPath });
             res.writeHead(401);
             res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
             return;
@@ -62,6 +66,7 @@ export async function startApiServer(ctx) {
         // Route
         var match = router.match(req.method, req.url);
         if (!match) {
+            ctx.log?.debug?.('API: route not found', { method: req.method, path: urlPath });
             res.writeHead(404);
             res.end(JSON.stringify({ ok: false, error: 'not found' }));
             return;
@@ -90,12 +95,16 @@ export async function startApiServer(ctx) {
         // Execute handler — namespace params to prevent override
         try {
             var result = await match.handler({ params: match.params, query: match.query, body });
+            var duration = Date.now() - startTime;
+            ctx.log?.debug?.('API: request', { method: req.method, path: urlPath, status: 200, ms: duration });
             res.writeHead(200);
             res.end(JSON.stringify({ ok: true, data: result }));
         } catch (e) {
             var status = e.statusCode || 500;
+            var duration = Date.now() - startTime;
             // Don't leak internal errors — only show message for known API errors
             var message = e.statusCode ? e.message : 'internal error';
+            ctx.log?.warn?.('API: request failed', { method: req.method, path: urlPath, status, error: message, ms: duration });
             res.writeHead(status);
             res.end(JSON.stringify({ ok: false, error: message }));
             if (!e.statusCode) ctx.log?.error?.('API handler error', { error: e.message, stack: e.stack });
