@@ -1,4 +1,4 @@
-// NUTbits API — Handler registry
+// NUTbits API - Handler registry
 // Registers all routes on the router with service context bound
 
 import { sumProofs } from '@cashu/cashu-ts';
@@ -171,7 +171,7 @@ export function registerHandlers(router, ctx) {
         if (typeof body.label !== 'string' || body.label.length > 128) throw apiError(400, 'label must be 1-128 characters');
         if (/[\x00<>]/.test(body.label)) throw apiError(400, 'label contains invalid characters');
 
-        // Validate permissions — reject unknown values
+        // Validate permissions - reject unknown values
         var rawPerms = body.permissions || ['pay', 'receive', 'balance', 'history', 'info', 'lookup'];
         for (var p of rawPerms) {
             if (!ALLOWED_PERMS.has(p)) throw apiError(400, `unknown permission: "${p}"`);
@@ -213,7 +213,16 @@ export function registerHandlers(router, ctx) {
                 service_fee_base: conn.service_fee_base,
             });
 
+            // Calculate the connection's display ID (1-based index of non-revoked connections)
+            var allConns = await store.getAllConnections();
+            var connId = 1;
+            for (var [pk] of Object.entries(allConns)) {
+                if (pk === newPk) break;
+                if (!allConns[pk].revoked) connId++;
+            }
+
             return {
+                id: connId,
                 nwc_string: nwcString,
                 app_pubkey: newPk,
                 label: conn.label,
@@ -447,7 +456,7 @@ export function registerHandlers(router, ctx) {
         };
     });
 
-    // ── GET /api/v1/config/env — all .env options with state ────────
+    // ── GET /api/v1/config/env - all .env options with state ────────
 
     var ENV_DESCRIPTIONS = new Map([
         ['NUTBITS_MINT_URL', { desc: 'Cashu mint URL', restart: true }],
@@ -535,7 +544,7 @@ export function registerHandlers(router, ctx) {
         return { options, file_exists: true };
     });
 
-    // ── POST /api/v1/config/env — activate/set a .env option ─────
+    // ── POST /api/v1/config/env - activate/set a .env option ─────
 
     router.post('/api/v1/config/env', async ({ body }) => {
         if (!body?.key || typeof body.key !== 'string') throw apiError(400, 'key is required');
@@ -548,7 +557,7 @@ export function registerHandlers(router, ctx) {
 
         var meta = ENV_DESCRIPTIONS.get(body.key);
         if (meta?.sensitive && !body.confirm_sensitive) {
-            throw apiError(400, 'sensitive value — pass confirm_sensitive: true');
+            throw apiError(400, 'sensitive value - pass confirm_sensitive: true');
         }
 
         persistToEnv(body.key, safeValue);
@@ -766,7 +775,7 @@ export function registerHandlers(router, ctx) {
     });
 
     // ── GET /api/v1/backup ───────────────────────────────────────────
-    // Returns the already-encrypted state file (AES-256-GCM) — NOT raw proofs
+    // Returns the already-encrypted state file (AES-256-GCM) - NOT raw proofs
     // The passphrase is required to decrypt, and is never sent over the API
 
     router.get('/api/v1/backup', async () => {
@@ -816,7 +825,7 @@ export function registerHandlers(router, ctx) {
 
     // ── GET /api/v1/logs ─────────────────────────────────────────────
 
-    // Log buffer — captures recent logs with sensitive data redacted
+    // Log buffer - captures recent logs with sensitive data redacted
     if (!ctx._logBuffer) {
         ctx._logBuffer = [];
         var maxLogs = 500;
@@ -876,7 +885,7 @@ function persistToEnv(key, value) {
 
         fs.writeFileSync(envPath, lines.join('\n'));
     } catch (e) {
-        // Non-fatal — in-memory change still applied
+        // Non-fatal - in-memory change still applied
     }
 }
 

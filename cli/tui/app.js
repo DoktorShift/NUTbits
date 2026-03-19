@@ -1,6 +1,6 @@
-// NUTbits TUI — Full-screen terminal application
+// NUTbits TUI - Full-screen terminal application
 // Split-panel interface: navigable menu + live content
-// Zero dependencies — raw ANSI + stdin
+// Zero dependencies - raw ANSI + stdin
 
 import { c, stripAnsi } from '../colors.js';
 import { createBuffer, getSize, drawFrame, drawRow, drawTitleSep, drawFooter, MENU_WIDTH } from './layout.js';
@@ -23,7 +23,7 @@ var ACTION_COMMANDS = {
 
 // ── Splash Screen ────────────────────────────────────────────────────────
 
-// Logo: no internal padding — centering handled by showSplash
+// Logo: no internal padding - centering handled by showSplash
 var LOGO_WIDTH = 58; // visual width of the widest logo line
 
 var LOGO = [
@@ -58,7 +58,7 @@ var showSplash = async (client) => {
     }
     await wait(200);
 
-    // Tagline — same left edge as logo content
+    // Tagline - same left edge as logo content
     console.log('');
     console.log(`${indent}${c.yellow}${c.bold}ecash meets Lightning${c.reset}`);
     console.log(`${indent}${c.white}your nuts, your rules${c.reset}`);
@@ -127,7 +127,7 @@ var showSplash = async (client) => {
     checkLine(
         status.seed_configured ? `${c.green}●${c.reset}` : `${c.yellow}●${c.reset}`,
         'Seed',
-        status.seed_configured ? 'configured' : 'not set — recovery unavailable'
+        status.seed_configured ? 'configured' : 'not set - recovery unavailable'
     );
     await wait(300);
 
@@ -462,7 +462,7 @@ export async function startTUI(client) {
         if (!inCommand) render().catch(() => {});
     });
 
-    // Initial render — fetch data for status panel
+    // Initial render - fetch data for status panel
     await render().catch(() => {});
     // Async: fetch fresh data after initial cached render
     renderPanel('status', client).then(lines => {

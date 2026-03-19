@@ -1,5 +1,5 @@
-// NUTbits CLI — Terminal rendering primitives
-// Boxes, tables, key-value pairs — zero dependencies
+// NUTbits CLI - Terminal rendering primitives
+// Boxes, tables, key-value pairs - zero dependencies
 
 import { c, stripAnsi } from './colors.js';
 

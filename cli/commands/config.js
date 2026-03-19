@@ -109,7 +109,7 @@ async function setConfig(client, args) {
                     { label: 'error', hint: 'critical issues only' },
                     { label: 'warn', hint: 'warnings and errors' },
                     { label: 'info', hint: 'standard operation (recommended)' },
-                    { label: 'debug', hint: 'verbose — includes all details' },
+                    { label: 'debug', hint: 'verbose, includes all details' },
                 ].map(l => ({ ...l, value: l.label })),
             });
             if (lvl === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
@@ -167,7 +167,7 @@ async function setConfig(client, args) {
         print(`  ${c.ok} ${c.white}${result.key}${c.reset} updated: ${c.dim}${result.old_value}${c.reset} → ${c.green}${result.new_value}${c.reset}`);
         print(`  ${c.dim}Applied immediately + saved to .env${c.reset}`);
     } catch (e) {
-        // Not hot-reloadable — save to .env only
+        // Not hot-reloadable - save to .env only
         var envKey = 'NUTBITS_' + key.toUpperCase();
         await client.post('/api/v1/config/env', { key: envKey, value });
         print('');

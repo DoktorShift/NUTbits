@@ -9,7 +9,7 @@ try {
     qrGenerate = (text) => new Promise(resolve => {
         qrt.default.generate(text, { small: true }, resolve);
     });
-} catch (e) { /* qrcode-terminal not installed — skip QR */ }
+} catch (e) { /* qrcode-terminal not installed - skip QR */ }
 
 export async function run(client, args) {
     var amount = args._positional?.[0] || null;
@@ -38,7 +38,7 @@ export async function run(client, args) {
     // ── Invoice Presentation ─────────────────────────────────────
 
     print('');
-    print(`  ${c.ok} ${c.green}${c.bold}Invoice created — waiting for payment${c.reset}`);
+    print(`  ${c.ok} ${c.green}${c.bold}Invoice created - waiting for payment${c.reset}`);
     print('');
     print(kv('Amount', `${c.yellow}${c.bold}${amount.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
     print(kv('Mint', `${c.dim}${(result.mint || '').replace(/^https?:\/\//, '')}${c.reset}`));
@@ -103,6 +103,6 @@ export async function run(client, args) {
     }
 
     sp.stop(`${c.dim}Timed out after 10 minutes.${c.reset}`);
-    print(`  ${c.muted}The invoice may still be paid — NUTbits will mint tokens automatically.${c.reset}`);
+    print(`  ${c.muted}The invoice may still be paid. NUTbits will mint tokens automatically.${c.reset}`);
     print(`  ${c.dim}Check with: ${c.white}nutbits history --unpaid${c.reset}\n`);
 }

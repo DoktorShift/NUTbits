@@ -1,4 +1,4 @@
-// Store factory — selects backend based on config
+// Store factory - selects backend based on config
 // Dynamic imports so unused backends don't require their dependencies
 
 import { sumProofs } from '@cashu/cashu-ts';

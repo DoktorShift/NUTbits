@@ -1,4 +1,4 @@
-// MysqlStore — MySQL backend with AES-256-GCM encrypted columns
+// MysqlStore - MySQL backend with AES-256-GCM encrypted columns
 // Uses mysql2/promise for async operations with connection pooling
 
 import crypto from 'crypto';
@@ -269,7 +269,7 @@ export class MysqlStore {
     // ── Bulk ──────────────────────────────────────────────────────────
 
     async saveAll() {
-        // No-op — MySQL persists immediately
+        // No-op - MySQL persists immediately
     }
 
     // ── Internal ──────────────────────────────────────────────────────

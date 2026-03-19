@@ -1,4 +1,4 @@
-// NUTbits TUI — Right-side panel renderers
+// NUTbits TUI - Right-side panel renderers
 // Each function returns an array of lines for the content panel
 
 import { c } from '../colors.js';
@@ -78,7 +78,7 @@ export async function statusPanel(client) {
             }
             lines.push('');
         }
-    } catch (e) { /* skip — single mint or API error */ }
+    } catch (e) { /* skip - single mint or API error */ }
 
     // NUTs
     if (d.nuts) {
@@ -425,7 +425,7 @@ export async function feesPanel(client) {
 
     lines.push('');
     lines.push(`  ${c.dim}Fees stay in your ecash balance.${c.reset}`);
-    lines.push(`  ${c.dim}Outgoing only — receiving is always free.${c.reset}`);
+    lines.push(`  ${c.dim}Outgoing only. Receiving is always free.${c.reset}`);
 
     return lines;
 }
@@ -571,7 +571,7 @@ export async function exportPanel(client) {
     lines.push(`  ${c.white}${c.bold}Available exports:${c.reset}`);
     lines.push('');
     lines.push(`  ${c.purple}●${c.reset} ${c.white}Transaction history${c.reset}`);
-    lines.push(`    ${c.dim}All payments as CSV or JSON — amounts, fees,${c.reset}`);
+    lines.push(`    ${c.dim}All payments as CSV or JSON: amounts, fees,${c.reset}`);
     lines.push(`    ${c.dim}timestamps, connections, and payment hashes${c.reset}`);
     lines.push('');
     lines.push(`  ${c.purple}●${c.reset} ${c.white}NWC connections${c.reset}`);

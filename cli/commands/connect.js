@@ -2,6 +2,15 @@ import { c } from '../colors.js';
 import { box, kv, heading, print, jsonOut } from '../render.js';
 import { input, multiSelect, select, confirm, spinner } from '../prompts.js';
 
+// Try to load QR code renderer (optional dependency)
+var qrGenerate = null;
+try {
+    var qrt = await import('qrcode-terminal');
+    qrGenerate = (text) => new Promise(resolve => {
+        qrt.default.generate(text, { small: true }, resolve);
+    });
+} catch (e) { /* qrcode-terminal not installed - skip QR */ }
+
 // Permission options for the interactive menu
 var PERM_OPTIONS = [
     { label: 'Pay invoices', hint: 'send sats over Lightning', value: 'pay' },
@@ -173,7 +182,20 @@ export async function run(client, args) {
     print(`  ${c.muted}for "${label}"${c.reset}`);
     print('');
 
+    // QR Code (if qrcode-terminal is installed)
+    if (qrGenerate) {
+        print(`  ${c.muted}Scan to connect:${c.reset}`);
+        print('');
+        var qrText = await qrGenerate(result.nwc_string);
+        for (var line of qrText.split('\n')) {
+            if (line.trim()) print('    ' + line);
+        }
+        print('');
+    }
+
     // Wrap the NWC string for readability
+    print(`  ${c.muted}NWC connection string:${c.reset}`);
+    print('');
     var nwc = result.nwc_string;
     var lineWidth = Math.min(68, (process.stdout.columns || 80) - 8);
     for (var i = 0; i < nwc.length; i += lineWidth) {
@@ -189,7 +211,7 @@ export async function run(client, args) {
     print(`    ${c.white}BuhoGO${c.reset}  ${c.dim}→ Add Wallet → NWC${c.reset}`);
     print(`    ${c.muted}...or any NWC-compatible app${c.reset}`);
     print('');
-    print(`  ${c.yellow}${c.bold}Save this now${c.reset} ${c.muted}— it won't be shown again.${c.reset}`);
+    print(`  ${c.yellow}${c.bold}Save this now.${c.reset} ${c.muted}To see it again: ${c.white}nutbits connections ${result.id || result.label}${c.reset}`);
     print('');
 }
 

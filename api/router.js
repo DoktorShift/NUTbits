@@ -1,4 +1,4 @@
-// NUTbits Management API — Lightweight router
+// NUTbits Management API - Lightweight router
 // Maps method + path to handler functions
 
 export class Router {

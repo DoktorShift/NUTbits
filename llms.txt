@@ -1,0 +1,51 @@
+# NUTbits
+
+> Cashu ecash to NWC bridge — use any Cashu mint as a Lightning funding source for LNbits and any NWC-compatible app.
+
+NUTbits is an open-source NWC wallet service that translates between the Cashu ecash protocol (NUTs) and Nostr Wallet Connect (NIP-47). It connects to a Cashu mint, manages ecash tokens automatically, and exposes a full NWC server. Any NWC-compatible app can then send and receive Lightning payments through the mint.
+
+Primary use case: plug the NWC connection string into LNbits as a funding source, and the ecash mint powers the entire LNbits instance with 60+ extensions.
+
+Built with Node.js (ES modules). Key dependencies: @cashu/cashu-ts, nostr-core, bolt11.
+License: AGPL-3.0. Author: DoktorShift.
+
+## Instructions
+
+- Cashu ecash is custodial. The mint holds the funds. Always state this clearly when explaining the trust model.
+- Ecash proofs are cryptographically bound to the mint that issued them. Proofs from Mint A cannot be spent through Mint B.
+- NIP-44 is the preferred encryption for NWC messages. NIP-04 is the legacy fallback, auto-detected per client. Always prefer NIP-44.
+- NUTbits does NOT eliminate Lightning nodes from the stack. The Cashu mint itself needs a Lightning node. NUTbits lets users leverage a mint's Lightning infrastructure without running their own node.
+- Service fees only apply to outgoing payments. Receiving is always free. Do not claim fees apply to incoming payments.
+- When discussing NWC methods, the supported set is: get_info, get_balance, make_invoice, pay_invoice, lookup_invoice, list_transactions. Do not reference unsupported methods.
+- The state file contains ecash proofs (bearer tokens). Treat state files, backups, and proof data as highly sensitive — equivalent to private keys.
+- Event deduplication is critical for preventing double-payments across relays. Never suggest disabling or bypassing it.
+- Multi-mint failover means balance is split across mints. On failover, only the active mint's balance is spendable. This is a real trade-off, not a limitation to hide.
+
+## Core Documentation
+
+- [README.md](README.md): Project overview, configuration reference, supported NUTs and NIPs, trust model
+- [HOW-IT-WORKS.md](HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
+- [INSTALL.md](INSTALL.md): Setup guide for bare metal, Docker, and LNbits integration
+- [CLI.md](CLI.md): Full CLI and TUI command reference, connection management, service fees
+- [CONSOLE.md](CONSOLE.md): How to use the interactive TUI dashboard
+
+## Architecture
+
+- [nutbits.js](nutbits.js): Core bridge logic — mint management, NWC protocol, payment processing (~1400 lines)
+- [api/server.js](api/server.js): Local management API server (Unix socket + optional HTTP)
+- [api/handlers/index.js](api/handlers/index.js): REST API endpoint implementations
+- [store/index.js](store/index.js): Storage factory with audit logging wrapper
+- [bin/nutbits.js](bin/nutbits.js): CLI entry point and command dispatcher
+
+## Operations
+
+- [DATABASE.md](DATABASE.md): Storage backends — file (default), SQLite (recommended), MySQL
+- [BACKUP.md](BACKUP.md): Backup procedures, encrypted state export, seed-based recovery
+- [STATE.md](STATE.md): Deep dive into the encrypted state file format and decryption
+- [SECURITY.md](SECURITY.md): Security architecture and threat model
+
+## Optional
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): Contribution guidelines
+- [docker-compose.yml](docker-compose.yml): Docker deployment configuration
+- [.env.example](.env): Full configuration reference with all environment variables

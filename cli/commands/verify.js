@@ -23,7 +23,7 @@ export async function run(client, args) {
     // Basic validation: min size (salt 16 + iv 12 + tag 16 + at least 1 byte)
     if (buf.length < 45) {
         if (args?.json) return jsonOut({ valid: false, error: 'file too small', size_bytes: buf.length });
-        print(`\n  ${c.fail} ${c.red}Invalid backup — file too small (${buf.length} bytes)${c.reset}\n`);
+        print(`\n  ${c.fail} ${c.red}Invalid backup: file too small (${buf.length} bytes)${c.reset}\n`);
         return;
     }
 

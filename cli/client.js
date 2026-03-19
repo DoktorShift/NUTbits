@@ -1,4 +1,4 @@
-// NUTbits CLI — API client
+// NUTbits CLI - API client
 // Connects to the management API via Unix socket or HTTP
 // Reads auth token from .api-token file
 

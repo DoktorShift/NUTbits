@@ -1,4 +1,4 @@
-// NUTbits Management API — Authentication middleware
+// NUTbits Management API - Authentication middleware
 // Validates Bearer token using timing-safe comparison
 
 import crypto from 'crypto';

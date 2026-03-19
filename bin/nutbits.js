@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// NUTbits CLI — Management console for NUTbits service
+// NUTbits CLI - Management console for NUTbits service
 // Usage: nutbits [command] [options]
 
 import { parseArgs } from 'node:util';
@@ -138,7 +138,7 @@ try {
 
 function printHelp() {
     console.log(`
-  ${c.purple}${c.bold}nutbits${c.reset} — management console for NUTbits
+  ${c.purple}${c.bold}nutbits${c.reset} - management console for NUTbits
 
   ${c.white}${c.bold}Usage${c.reset}
     nutbits                   ${c.dim}launch interactive TUI${c.reset}
@@ -152,6 +152,7 @@ function printHelp() {
     ${c.green}history${c.reset}           recent transactions
 
     ${c.green}connections${c.reset}       list NWC connections
+    ${c.green}connections${c.reset} <id>  show connection details + NWC string + QR
     ${c.green}connect${c.reset}           create a new NWC connection
     ${c.green}revoke${c.reset} <id>       revoke a connection
 

@@ -1,4 +1,4 @@
-// NUTbits TUI — Layout engine
+// NUTbits TUI - Layout engine
 // Handles terminal dimensions, panel drawing, border rendering
 
 import { c, stripAnsi } from '../colors.js';

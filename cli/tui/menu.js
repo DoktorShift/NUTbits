@@ -1,4 +1,4 @@
-// NUTbits TUI — Menu component
+// NUTbits TUI - Menu component
 // Navigable left-panel menu with sections, labels, and reverse-video highlight
 
 import { c } from '../colors.js';

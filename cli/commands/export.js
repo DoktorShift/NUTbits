@@ -3,6 +3,15 @@ import { c } from '../colors.js';
 import { kv, heading, print, jsonOut } from '../render.js';
 import { select, input, confirm, spinner } from '../prompts.js';
 
+// Try to load QR code renderer (optional dependency)
+var qrGenerate = null;
+try {
+    var qrt = await import('qrcode-terminal');
+    qrGenerate = (text) => new Promise(resolve => {
+        qrt.default.generate(text, { small: true }, resolve);
+    });
+} catch (e) { /* qrcode-terminal not installed - skip QR */ }
+
 // ── Entry Point ─────────────────────────────────────────────────────────
 
 export async function run(client, args) {
@@ -273,13 +282,13 @@ async function connectionsExport(client, args, interactive) {
         // Single connection: display inline
         if (data.connections.length === 1) {
             var conn = data.connections[0];
-            printConnectionDetail(conn);
+            await printConnectionDetail(conn);
             return;
         }
 
         // Multiple: display summary + offer file export
         for (var conn of data.connections) {
-            printConnectionDetail(conn);
+            await printConnectionDetail(conn);
         }
 
         print(`  ${c.dim}${'─'.repeat(50)}${c.reset}`);
@@ -408,22 +417,43 @@ function printFileSummary(path, count, label, format) {
     print('');
 }
 
-function printConnectionDetail(conn) {
+async function printConnectionDetail(conn) {
     var status = conn.revoked ? `${c.red}revoked${c.reset}` : `${c.green}active${c.reset}`;
     print(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${conn.label}${c.reset}  ${status}`);
     print(kv('  Permissions', `${c.muted}${(conn.permissions || []).map(shortPerm).join(', ')}${c.reset}`));
     if (conn.mint) print(kv('  Mint', `${c.dim}${conn.mint.replace(/^https?:\/\//, '')}${c.reset}`));
     if (conn.max_daily_sats) print(kv('  Daily limit', `${c.muted}${conn.max_daily_sats.toLocaleString()} sats${c.reset}`));
     if (conn.max_payment_sats) print(kv('  Per payment', `${c.muted}${conn.max_payment_sats.toLocaleString()} sats${c.reset}`));
+    if (conn.service_fee_ppm || conn.service_fee_base) {
+        var feeStr = [];
+        if (conn.service_fee_ppm) feeStr.push(`${(conn.service_fee_ppm / 10000).toFixed(2)}%`);
+        if (conn.service_fee_base) feeStr.push(`${conn.service_fee_base} sat base`);
+        print(kv('  Service fee', `${c.muted}${feeStr.join(' + ')}${c.reset}`));
+    }
     print('');
+
     if (conn.nwc_string) {
+        // QR Code (if qrcode-terminal is installed)
+        if (qrGenerate) {
+            print(`  ${c.muted}Scan to connect:${c.reset}`);
+            print('');
+            var qrText = await qrGenerate(conn.nwc_string);
+            for (var line of qrText.split('\n')) {
+                if (line.trim()) print('    ' + line);
+            }
+            print('');
+        }
+
+        // NWC string (wrapped for readability)
+        print(`  ${c.muted}NWC connection string:${c.reset}`);
+        print('');
         var lineWidth = Math.min(68, (process.stdout.columns || 80) - 8);
         var nwc = conn.nwc_string;
         for (var i = 0; i < nwc.length; i += lineWidth) {
             print(`    ${c.white}${nwc.slice(i, i + lineWidth)}${c.reset}`);
         }
     } else {
-        print(`    ${c.dim}NWC string not available${c.reset}`);
+        print(`    ${c.dim}NWC string not available (connection may have been restored from backup)${c.reset}`);
     }
     print('');
 }

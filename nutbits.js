@@ -1,4 +1,4 @@
-// NUTbits — Cashu ecash mint to NWC bridge
+// NUTbits - Cashu ecash mint to NWC bridge
 // Inspired by https://github.com/supertestnet/bankify
 // License: AGPL-3.0 (https://www.gnu.org/licenses/agpl-3.0.html)
 
@@ -161,7 +161,7 @@ var mintManager = {
 };
 
 var isMintDownError = e => {
-    // MintOperationError extends HttpResponseError, so check it first — if the mint
+    // MintOperationError extends HttpResponseError, so check it first - if the mint
     // responded with a protocol error, it's actually up (not a connectivity issue)
     if (e instanceof MintOperationError) return false;
     if (e instanceof NetworkError) return true;
@@ -218,7 +218,7 @@ var failoverToNextMint = async failedMintUrl => {
             mintManager.mintHealth.set(url, { healthy: false, lastCheck: Date.now(), consecutiveFailures: 1, lastError: e.message });
         }
     }
-    log.error('FAILOVER: ALL MINTS DOWN — no healthy mint available');
+    log.error('FAILOVER: ALL MINTS DOWN - no healthy mint available');
     return false;
 };
 
@@ -277,7 +277,7 @@ var verifyProofsDleq = (proofs, wallet, mintUrl) => {
             if (hasValidDleq(p, wallet.getKeyset(p.id))) {
                 verified.push(p);
             } else {
-                log.error('NUT-12: INVALID DLEQ — proof rejected', { mint: mintUrl, amount: p.amount });
+                log.error('NUT-12: INVALID DLEQ - proof rejected', { mint: mintUrl, amount: p.amount });
             }
         } catch (e) {
             log.warn('NUT-12: DLEQ check failed, accepting proof', { error: e.message, amount: p.amount });
@@ -596,7 +596,7 @@ var nutbits = {
     // Pay a Lightning invoice via the mint (NUT-5)
     // Wrapped in per-mint payment lock to prevent concurrent proof selection
     payInvoice: async (invoice, app_pubkey) => {
-        // Snapshot mint URL and wallet BEFORE entering lock — these must not change mid-payment
+        // Snapshot mint URL and wallet BEFORE entering lock - these must not change mid-payment
         var payMintUrl = mintManager.activeMintUrl;
         var payWallet = mintManager.wallets.get(payMintUrl);
         if (!payWallet) throw new Error('no wallet for active mint');
@@ -606,7 +606,7 @@ var nutbits = {
             var amountSats = decoded.satoshis;
             if (!amountSats) throw new Error('amountless invoices not supported');
 
-            // Get melt quote — use snapshotted wallet, no failover mid-payment
+            // Get melt quote - use snapshotted wallet, no failover mid-payment
             var meltQuote;
             try {
                 meltQuote = await payWallet.createMeltQuoteBolt11(invoice);
@@ -630,7 +630,7 @@ var nutbits = {
             // Atomic swap: remove all original proofs, add back keep
             await store.swapProofs(payMintUrl, { remove: activeProofs, add: keep });
 
-            // Helper: restore proofs on failure — MUST NEVER THROW (funds safety)
+            // Helper: restore proofs on failure - MUST NEVER THROW (funds safety)
             var restoreProofs = async (proofsToRestore) => {
                 try {
                     await store.addProofs(payMintUrl, proofsToRestore);
@@ -789,7 +789,7 @@ var nutbits = {
                         var bhr = await fetch(`https://mempool.space/api/block-height/${blockheight}`, { signal: AbortSignal.timeout(5000) });
                         blockhash = await bhr.text();
                     } catch (e) { log.debug('blockheight fetch failed', { error: e.message }); }
-                    // Build response — standard NIP-47 fields + optional service_fee metadata
+                    // Build response - standard NIP-47 fields + optional service_fee metadata
                     var infoResult = {
                         alias: 'NUTbits',
                         color: '',
@@ -964,7 +964,7 @@ var nutbits = {
                             event.pubkey, event.id, evtAppPubkey);
                     }
 
-                    // Spend limits — enforce both global AND per-connection limits (stricter wins)
+                    // Spend limits - enforce both global AND per-connection limits (stricter wins)
                     var effectiveMaxPayment = config.maxPaymentSats || 0;
                     var connMaxPayment = state.max_payment_sats || 0;
                     if (connMaxPayment && (!effectiveMaxPayment || connMaxPayment < effectiveMaxPayment)) effectiveMaxPayment = connMaxPayment;
@@ -983,7 +983,7 @@ var nutbits = {
                             event.pubkey, event.id, evtAppPubkey);
                     }
 
-                    // Service fee (outgoing only — 0 by default)
+                    // Service fee (outgoing only - 0 by default)
                     var serviceFee = calcServiceFee(invoice_amt, state);
                     var totalNeededWithFee = invoice_amt + serviceFee;
 
@@ -1010,7 +1010,7 @@ var nutbits = {
                     }
 
                     // fees_paid = Lightning routing fees ONLY (from the mint)
-                    // service_fee = our operator fee, separate — never mixed
+                    // service_fee = our operator fee, separate - never mixed
                     var routingFees = result.fees_paid || 0;
                     var serviceFeeMsat = serviceFee * 1000;
 
@@ -1040,7 +1040,7 @@ var nutbits = {
                         log.debug('payment_sent notification failed', { error: e.message })
                     );
 
-                    // NWC response — fees_paid is routing only, service_fee is additional metadata
+                    // NWC response - fees_paid is routing only, service_fee is additional metadata
                     // Clients that understand service_fee can display the breakdown
                     // Clients that don't will just see the routing fees (standard NIP-47)
                     return await sendNWCResponse(state, nwcResult('pay_invoice', {
@@ -1165,7 +1165,7 @@ var nutbits = {
             await wait(1000);
         }
         if (connected) log.info('NWC connection ready');
-        else log.warn('no relays connected — retrying in background');
+        else log.warn('no relays connected - retrying in background');
 
         return nutbits.state.nostr_state.nwc_info[app_pubkey]?.nwc_string;
     },
@@ -1193,47 +1193,172 @@ var c = {
     magenta: '\x1b[35m',
     white: '\x1b[37m',
     red: '\x1b[31m',
+    blue: '\x1b[34m',
 };
 
-var box = (lines, color = c.cyan) => {
-    var maxLen = Math.max(62, ...lines.map(l => l.replace(/\x1b\[[0-9;]*m/g, '').length));
-    var w = Math.min(maxLen, 76);
-    var hr = color + '+-' + '-'.repeat(w) + '-+' + c.reset;
-    console.log(hr);
-    for (var l of lines) {
-        var plain = l.replace(/\x1b\[[0-9;]*m/g, '');
-        var pad = Math.max(0, w - plain.length);
-        console.log(color + '|' + c.reset + ' ' + l + ' '.repeat(pad) + ' ' + color + '|' + c.reset);
-    }
-    console.log(hr);
+var stripAnsi = s => s.replace(/\x1b\[[0-9;]*m/g, '');
+
+// ── Phase 2: Log Stream with Status Line ────────────────────────────────────
+// Reliable approach: logs print normally, status line reprints periodically.
+// Works in all terminals, Docker, piped output, etc.
+
+var startedAt = Date.now();
+var liveMode = false;
+var logLineCount = 0;
+var STATUS_INTERVAL = 30; // reprint status bar every N log lines
+
+var fmtUptime = () => {
+    var s = Math.floor((Date.now() - startedAt) / 1000);
+    var d = Math.floor(s / 86400); s %= 86400;
+    var h = Math.floor(s / 3600); s %= 3600;
+    var m = Math.floor(s / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m`;
+    return `${s}s`;
 };
+
+var printStatusLine = () => {
+    var bal = nutbits.getBalanceSync();
+    var mintName = (nutbits.wallet?.getMintInfo?.()?.name || 'unknown').slice(0, 20);
+    var mintOk = mintManager.mintHealth.get(mintManager.activeMintUrl)?.healthy !== false;
+    var relays = 0, relayTotal = 0;
+    for (var pk in nutbits.state.nostr_state.pools) {
+        var arr = nutbits.state.nostr_state.pools[pk];
+        if (Array.isArray(arr)) { relayTotal = arr.length; relays = arr.filter(r => r.connected).length; }
+    }
+    var conns = Object.keys(nutbits.state.nostr_state.nwc_info).filter(k => !nutbits.state.nostr_state.nwc_info[k]?.revoked).length;
+    var w = Math.min((process.stdout.columns || 80) - 4, 90);
+
+    console.log(`  ${c.dim}${'─'.repeat(w)}${c.reset}`);
+    console.log(`  ${c.magenta}${c.bold}NUTbits${c.reset}  ${mintOk ? c.green : c.red}●${c.reset} ${c.white}${mintName}${c.reset}  ${c.dim}|${c.reset}  ${c.yellow}${bal.toLocaleString()} sats${c.reset}  ${c.dim}|${c.reset}  ${relays > 0 ? c.green : c.red}●${c.reset} ${relays}/${relayTotal} relays  ${c.dim}|${c.reset}  ${c.blue}${conns}${c.reset} conn  ${c.dim}|${c.reset}  ${c.dim}up ${fmtUptime()}${c.reset}`);
+    console.log(`  ${c.dim}${'─'.repeat(w)}${c.reset}`);
+};
+
+var LOG_COLORS = { error: c.red, warn: c.yellow, info: c.blue, debug: c.dim };
+var REDACT_LOG = new Set(['stack', 'C', 'secret', 'nwc_string', 'app_privkey', 'user_secret', 'statePassphrase', 'seed', 'invoice', 'bolt11', 'preimage']);
+
+var formatLogLine = (level, msg, data) => {
+    var time = new Date().toLocaleTimeString('en-US', { hour12: false });
+    var lvl = level.toUpperCase().padEnd(5);
+    var clr = LOG_COLORS[level] || c.dim;
+
+    var extra = '';
+    if (data && typeof data === 'object') {
+        var parts = [];
+        for (var [k, v] of Object.entries(data)) {
+            if (REDACT_LOG.has(k)) continue;
+            var val = typeof v === 'object' ? JSON.stringify(v) : String(v);
+            if (val.length > 50) val = val.slice(0, 47) + '...';
+            parts.push(`${c.dim}${k}=${c.reset}${val}`);
+        }
+        if (parts.length > 0) extra = '  ' + parts.join('  ');
+    }
+
+    return `  ${c.dim}${time}${c.reset}  ${clr}${lvl}${c.reset}  ${msg}${extra}`;
+};
+
+var installLiveLogger = () => {
+    liveMode = true;
+
+    // Clear screen and print initial status bar
+    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
+    printStatusLine();
+    console.log('');
+
+    // Replace log methods to output formatted lines
+    for (var lvl of ['error', 'warn', 'info', 'debug']) {
+        var levelNum = LOG_LEVELS[lvl];
+        log[lvl] = ((level, num) => (msg, data) => {
+            if (log._level < num) return;
+            console.log(formatLogLine(level, msg, data));
+            logLineCount++;
+            // Reprint status bar periodically so it stays visible
+            if (logLineCount % STATUS_INTERVAL === 0) {
+                console.log('');
+                printStatusLine();
+                console.log('');
+            }
+        })(lvl, levelNum);
+    }
+
+    // Also reprint status bar on a timer (for quiet periods)
+    setInterval(() => {
+        if (liveMode) {
+            console.log('');
+            printStatusLine();
+            console.log('');
+            logLineCount = 0;
+        }
+    }, 60_000);
+};
+
+// ── Boot Spinner ────────────────────────────────────────────────────────────
+// Inline spinner for boot steps that take time
+
+var bootSpinner = (label) => {
+    var frames = ['●○○', '○●○', '○○●', '○●○'];
+    var i = 0;
+    var interval;
+    var padLabel = label.padEnd(16);
+
+    var start = () => {
+        interval = setInterval(() => {
+            var frame = frames[i % frames.length].split('').map(ch =>
+                ch === '●' ? `${c.magenta}●${c.reset}` : `${c.dim}○${c.reset}`
+            ).join('');
+            process.stdout.write(`\r  ${frame}  ${c.white}${padLabel}${c.reset}${c.dim}connecting...${c.reset}`);
+            i++;
+        }, 120);
+    };
+
+    var stop = (icon, detail) => {
+        clearInterval(interval);
+        process.stdout.write(`\r\x1b[2K`);
+        console.log(`  ${icon}  ${c.white}${padLabel}${c.reset}${c.dim}${detail}${c.reset}`);
+    };
+
+    return { start, stop };
+};
+
+// ── Phase 1 helpers ────────────────────────────────────────────────────────
+
+var bootLine = (icon, label, detail) => {
+    console.log(`  ${icon}  ${c.white}${label.padEnd(16)}${c.reset}${c.dim}${detail}${c.reset}`);
+};
+
+var bootWait = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
-    // ── Pre-flight checks ─────────────────────────────────────────
+    // ── Pre-flight: passphrase check ─────────────────────────────
     if (!config.statePassphrase) {
         console.log('');
-        box([
-            `${c.red}${c.bold}Missing NUTBITS_STATE_PASSPHRASE${c.reset}`,
-            '',
-            'Set it in your .env file:',
-            '',
-            `  ${c.bold}NUTBITS_STATE_PASSPHRASE=your-strong-passphrase${c.reset}`,
-        ], c.red);
+        console.log(`  ${c.red}${c.bold}Missing NUTBITS_STATE_PASSPHRASE${c.reset}`);
+        console.log('');
+        console.log(`  ${c.white}Set it in your .env file:${c.reset}`);
+        console.log('');
+        console.log(`    ${c.bold}NUTBITS_STATE_PASSPHRASE=your-strong-passphrase${c.reset}`);
+        console.log('');
+        console.log(`  ${c.dim}This passphrase encrypts your ecash proofs at rest.${c.reset}`);
+        console.log(`  ${c.dim}Choose something strong. You'll need it to decrypt backups.${c.reset}`);
+        console.log('');
         process.exit(1);
     }
 
-    console.log(`
-${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _
- | \\ | | | | |_   _| |   (_) |_ ___
- |  \\| | | | | | | | |__ | | __/ __|
- | |\\  | |_| | | | | '_ \\| | |_\\__ \\
- |_| \\_|\\___/  |_| |_.__/|_|\\__|___/${c.reset}
+    // ── Phase 1: Boot Screen ─────────────────────────────────────
 
-  ${c.cyan}Cashu ecash to NWC bridge${c.reset}
-  Use any Cashu mint as a Lightning funding source for ${c.bold}LNbits${c.reset}
-
-  ${c.dim}by DoktorShift | inspired by supertestnet/bankify${c.reset}
-`);
+    console.log('');
+    console.log(`${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _`);
+    console.log(` | \\ | | | | |_   _| |   (_) |_ ___`);
+    console.log(` |  \\| | | | | | | | |__ | | __/ __|`);
+    console.log(` | |\\  | |_| | | | | '_ \\| | |_\\__ \\`);
+    console.log(` |_| \\_|\\___/  |_| |_.__/|_|\\__|___/${c.reset}`);
+    console.log('');
+    console.log(`  ${c.cyan}ecash meets Lightning${c.reset}`);
+    console.log(`  ${c.dim}by DoktorShift | inspired by supertestnet/bankify${c.reset}`);
+    console.log('');
+    console.log(`  ${c.dim}${'─'.repeat(50)}${c.reset}`);
+    console.log('');
 
     // ── Seed (NUT-13) ─────────────────────────────────────────────
     var seedGenerated = false;
@@ -1242,53 +1367,215 @@ ${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _
         seedGenerated = true;
     }
 
-    // Suppress verbose logs during startup — restore after
+    // Fully suppress logs during boot - no console output from log.*
     var savedLogLevel = log._level;
-    log._level = LOG_LEVELS['warn'];
+    log._level = -1;
+
+    // Buffer boot warnings to show after the clean checks
+    var bootWarnings = [];
 
     // ── Relay URL Validation ─────────────────────────────────────
     for (var relayUrl of config.relays) {
         try {
             var parsed = new URL(relayUrl);
             if (!['ws:', 'wss:'].includes(parsed.protocol)) {
-                console.error(`${c.red}Invalid relay protocol: ${relayUrl} (must be ws:// or wss://)${c.reset}`);
+                console.log(`  ${c.red}✗${c.reset}  ${c.white}Relay${c.reset}            ${c.red}invalid protocol: ${relayUrl} (must be ws:// or wss://)${c.reset}`);
+                console.log('');
                 process.exit(1);
             }
         } catch (e) {
-            console.error(`${c.red}Invalid relay URL: ${relayUrl}${c.reset}`);
+            console.log(`  ${c.red}✗${c.reset}  ${c.white}Relay${c.reset}            ${c.red}invalid URL: ${relayUrl}${c.reset}`);
+            console.log('');
             process.exit(1);
         }
     }
 
     // ── Storage ───────────────────────────────────────────────────
-    store = await createStore(config, log);
+    try {
+        store = await createStore(config, log);
+        bootLine(`${c.green}●${c.reset}`, 'Storage', `${config.stateBackend}`);
+    } catch (e) {
+        bootLine(`${c.red}✗${c.reset}`, 'Storage', `failed: ${e.message}`);
+        console.log('');
+        process.exit(1);
+    }
+    await bootWait(80);
 
     // ── Wallets ───────────────────────────────────────────────────
-    await nutbits.initWallet();
-    await nutbits.refreshBalance();
+    try {
+        await nutbits.initWallet();
+        await nutbits.refreshBalance();
+        var mintInfo = nutbits.wallet?.getMintInfo?.();
+        bootLine(`${c.green}●${c.reset}`, 'Mint', `${mintInfo?.name || 'unknown'} (${mintInfo?.version || '?'})`);
+        bootLine(`${c.yellow}●${c.reset}`, 'Balance', `${nutbits.getBalanceSync().toLocaleString()} sats`);
+    } catch (e) {
+        bootLine(`${c.red}✗${c.reset}`, 'Mint', `all mints unreachable`);
+        console.log('');
+        console.log(`  ${c.red}Cannot start without at least one healthy mint.${c.reset}`);
+        console.log(`  ${c.dim}Check NUTBITS_MINT_URLS in your .env file.${c.reset}`);
+        console.log('');
+        process.exit(1);
+    }
+    await bootWait(80);
 
     // ── Proof recovery (NUT-09) ───────────────────────────────────
     if (config.seed) {
         for (var url of mintManager.orderedMints) {
             var existingProofs = await store.getProofs(url);
-            if (existingProofs.length === 0) await nutbits.restoreFromSeed(url);
+            if (existingProofs.length === 0) {
+                var restored = await nutbits.restoreFromSeed(url);
+                if (restored.length > 0) bootWarnings.push(`  ${c.green}●${c.reset}  Recovered ${restored.length} proofs from seed (${url.replace(/^https?:\/\//, '').split('/')[0]})`);
+            }
         }
     }
 
-    // ── NWC connections ───────────────────────────────────────────
+    // ── Seed status ───────────────────────────────────────────────
+    bootLine(
+        seedGenerated ? `${c.yellow}●${c.reset}` : `${c.green}●${c.reset}`,
+        'Seed',
+        seedGenerated ? 'generated (save it! see below)' : 'configured'
+    );
+    await bootWait(80);
+
+    // ── NWC connections + relays (with spinner - these take time) ─
     var pubkeys = Object.keys(nutbits.state.nostr_state.nwc_info);
     var nwcString = null;
+    var connSp = bootSpinner('Connections');
+    connSp.start();
     if (pubkeys.length > 0) {
         for (var pk of pubkeys) {
             var info = nutbits.state.nostr_state.nwc_info[pk];
             await nutbits.createNWCconnection(info.mymint, info.permissions, config.relays, pk);
         }
+        connSp.stop(`${c.green}●${c.reset}`, `${pubkeys.length} restored`);
     } else {
         nwcString = await nutbits.createNWCconnection(mintManager.activeMintUrl);
+        connSp.stop(`${c.green}●${c.reset}`, `1 created (see NWC string below)`);
     }
 
-    // Restore log level
-    log._level = savedLogLevel;
+    // ── Relays - check status after connections established ───────
+    // Give relays a moment to connect (they connect async during createNWCconnection)
+    var relayCount = 0;
+    var relayTotal = config.relays.length;
+    var pools = nutbits.state.nostr_state.pools;
+
+    // Quick check if already connected
+    for (var rpk in pools) { if (Array.isArray(pools[rpk])) relayCount = pools[rpk].filter(r => r.connected).length; }
+
+    if (relayCount === 0 && relayTotal > 0) {
+        // Not connected yet - show spinner while waiting up to 8 seconds
+        var relaySp = bootSpinner('Relays');
+        relaySp.start();
+        for (var attempt = 0; attempt < 16; attempt++) {
+            await bootWait(500);
+            relayCount = 0;
+            for (var rpk2 in pools) { if (Array.isArray(pools[rpk2])) relayCount = pools[rpk2].filter(r => r.connected).length; }
+            if (relayCount > 0) break;
+        }
+        relaySp.stop(
+            relayCount > 0 ? `${c.green}●${c.reset}` : `${c.yellow}●${c.reset}`,
+            relayCount > 0 ? `${relayCount}/${relayTotal} connected` : `0/${relayTotal} - retrying in background`
+        );
+    } else {
+        bootLine(
+            relayCount > 0 ? `${c.green}●${c.reset}` : `${c.yellow}●${c.reset}`,
+            'Relays',
+            relayCount > 0 ? `${relayCount}/${relayTotal} connected` : `0/${relayTotal} - retrying in background`
+        );
+    }
+    if (relayCount === 0) {
+        for (var rUrl of config.relays) bootWarnings.push(`  ${c.yellow}!${c.reset}  ${c.dim}${rUrl} not reachable${c.reset}`);
+    }
+    await bootWait(80);
+
+    // ── NUTs ──────────────────────────────────────────────────────
+    var caps = mintManager.mintCaps.get(mintManager.activeMintUrl) || {};
+    var nutBadges = ['00','01','02','03','04','05','06','07','08'].map(n => `${c.green}${n}${c.reset}`);
+    for (var [n, k] of [['09','nut09'],['12','nut12'],['13',true],['15','nut15'],['17','nut17'],['20','nut20']]) {
+        var supported = k === true || caps[k];
+        nutBadges.push(supported ? `${c.green}${n}${c.reset}` : `${c.dim}${n}${c.reset}`);
+    }
+    bootLine(`${c.cyan}●${c.reset}`, 'NUTs', nutBadges.join(' '));
+    await bootWait(80);
+
+    // ── Management API ───────────────────────────────────────────
+    if (config.apiEnabled) {
+        try {
+            await startApiServer({ nutbits, store, mintManager, config, log, startedAt, seedFromEnv: !!process.env.NUTBITS_SEED });
+            bootLine(`${c.green}●${c.reset}`, 'API', `listening on ${config.apiSocket || '~/.nutbits/nutbits.sock'}`);
+        } catch (e) {
+            bootLine(`${c.yellow}●${c.reset}`, 'API', `failed to start: ${e.message}`);
+        }
+    } else {
+        bootLine(`${c.dim}●${c.reset}`, 'API', `disabled`);
+    }
+    await bootWait(80);
+
+    // ── Failover ──────────────────────────────────────────────────
+    if (mintManager.orderedMints.length > 1) {
+        bootLine(`${c.green}●${c.reset}`, 'Failover', `${mintManager.orderedMints.length} mints configured`);
+    }
+
+    // ── Limits ────────────────────────────────────────────────────
+    if (config.maxPaymentSats || config.dailyLimitSats) {
+        var limitParts = [];
+        if (config.maxPaymentSats) limitParts.push(`${config.maxPaymentSats.toLocaleString()} sats/payment`);
+        if (config.dailyLimitSats) limitParts.push(`${config.dailyLimitSats.toLocaleString()} sats/day`);
+        bootLine(`${c.cyan}●${c.reset}`, 'Limits', limitParts.join('  '));
+    }
+
+    // ── Service fees ──────────────────────────────────────────────
+    if (config.serviceFeePpm || config.serviceFeeBase) {
+        var feePct = (config.serviceFeePpm / 10000).toFixed(2);
+        var feeDesc = `${feePct}%`;
+        if (config.serviceFeeBase) feeDesc += ` + ${config.serviceFeeBase} sat base`;
+        bootLine(`${c.yellow}●${c.reset}`, 'Service fee', feeDesc);
+    }
+
+    // ── Mint MOTD ─────────────────────────────────────────────────
+    var mintMotd = nutbits.wallet?.getMintInfo?.()?.motd;
+    if (mintMotd && mintMotd !== 'Message to users') {
+        bootWarnings.push(`  ${c.yellow}!${c.reset}  ${c.yellow}Mint notice: "${mintMotd}"${c.reset}`);
+    }
+
+    // ── Show boot warnings ────────────────────────────────────────
+    if (bootWarnings.length > 0) {
+        console.log('');
+        for (var w of bootWarnings) console.log(w);
+    }
+
+    // ── Seed warning (critical - must read) ───────────────────────
+    if (seedGenerated) {
+        console.log('');
+        console.log(`  ${c.dim}${'─'.repeat(50)}${c.reset}`);
+        console.log('');
+        console.log(`  ${c.yellow}${c.bold}NEW SEED GENERATED${c.reset}`);
+        console.log(`  ${c.white}Save this seed and add it to your .env file.${c.reset}`);
+        console.log(`  ${c.dim}Without it, a new seed is generated every start${c.reset}`);
+        console.log(`  ${c.dim}and you cannot recover proofs if the database is lost.${c.reset}`);
+        console.log('');
+        console.log(`  ${c.bold}${config.seed}${c.reset}`);
+        console.log('');
+        console.log(`  ${c.dim}Add to .env:${c.reset}  ${c.bold}NUTBITS_SEED=${config.seed}${c.reset}`);
+    }
+
+    // ── NWC string (first run - ready to use immediately) ─────────
+    if (nwcString) {
+        console.log('');
+        console.log(`  ${c.dim}${'─'.repeat(50)}${c.reset}`);
+        console.log('');
+        console.log(`  ${c.magenta}${c.bold}YOUR NWC CONNECTION STRING${c.reset}`);
+        console.log(`  ${c.white}NUTbits created a default connection so you're ready to go.${c.reset}`);
+        console.log(`  ${c.dim}Paste this into LNbits, Alby, BuhoGO, or any NWC-compatible app:${c.reset}`);
+        console.log('');
+        var lineW = Math.min(72, (process.stdout.columns || 80) - 6);
+        for (var i = 0; i < nwcString.length; i += lineW) {
+            console.log(`  ${c.bold}${nwcString.slice(i, i + lineW)}${c.reset}`);
+        }
+        console.log('');
+        console.log(`  ${c.yellow}${c.bold}Copy this now${c.reset} ${c.dim}— it won't be shown again on startup.${c.reset}`);
+        console.log(`  ${c.dim}You can always retrieve it later: ${c.white}nutbits export connections${c.reset}`);
+    }
 
     // ── Background tasks ──────────────────────────────────────────
     setInterval(() => { store.saveAll().catch(() => {}); }, 60_000);
@@ -1315,101 +1602,57 @@ ${c.magenta}${c.bold}  _   _ _   _ _____ _     _ _
         }, config.healthCheckInterval);
     }
 
-    // ── Startup summary ───────────────────────────────────────────
-    var mintInfo = nutbits.wallet?.getMintInfo?.();
-    var caps = mintManager.mintCaps.get(mintManager.activeMintUrl) || {};
-    var relayCount = 0;
-    var pools = nutbits.state.nostr_state.pools;
-    for (var rpk in pools) { if (Array.isArray(pools[rpk])) relayCount = pools[rpk].filter(r => r.connected).length; }
+    // ── Ready - wait for user to press Enter ──────────────────────
+    console.log('');
+    console.log(`  ${c.dim}${'─'.repeat(50)}${c.reset}`);
+    console.log('');
+    console.log(`  ${c.green}${c.bold}NUTbits is running.${c.reset}`);
+    console.log('');
+    console.log(`  ${c.white}Press ${c.bold}Enter${c.reset}${c.white} to switch to log view${c.reset}  ${c.dim}· Ctrl+C to stop${c.reset}`);
 
-    // Core NUTs (always supported) + optional NUTs (from mint)
-    var coreNuts = ['00','01','02','03','04','05','06','07','08'].map(n => `${c.green}${n}${c.reset}`);
-    var optNuts = [
-        caps.nut09 ? `${c.green}09${c.reset}` : `${c.dim}09${c.reset}`,
-        caps.nut12 ? `${c.green}12${c.reset}` : `${c.dim}12${c.reset}`,
-        `${c.green}13${c.reset}`,
-        caps.nut15 ? `${c.green}15${c.reset}` : `${c.dim}15${c.reset}`,
-        caps.nut17 ? `${c.green}17${c.reset}` : `${c.dim}17${c.reset}`,
-        caps.nut20 ? `${c.green}20${c.reset}` : `${c.dim}20${c.reset}`,
-    ];
-    var nutBadges = [...coreNuts, ...optNuts].join(' ');
-
-    var lines = [
-        `${c.green}${c.bold}NUTbits is running!${c.reset}`,
-        '',
-        `  ${c.bold}Mint${c.reset}       ${mintInfo?.name || 'unknown'}`,
-        `  ${c.dim}${mintManager.activeMintUrl}${c.reset}`,
-        `  ${c.bold}Version${c.reset}    ${mintInfo?.version || '?'}`,
-        `  ${c.bold}Balance${c.reset}    ${c.yellow}${nutbits.getBalanceSync()} sats${c.reset}`,
-        `  ${c.bold}Storage${c.reset}    ${config.stateBackend}`,
-        `  ${c.bold}Relays${c.reset}     ${relayCount} connected`,
-        `  ${c.bold}Seed${c.reset}       ${config.seed ? `${c.green}configured${c.reset}` : `${c.red}none${c.reset}`}`,
-        '',
-        `  ${c.bold}NUTs${c.reset}       ${nutBadges || `${c.dim}(none detected)${c.reset}`}`,
-    ];
-
-    if (mintInfo?.motd && mintInfo.motd !== 'Message to users') {
-        lines.push('', `  ${c.yellow}Mint notice: "${mintInfo.motd}"${c.reset}`);
-    }
-    if (config.maxPaymentSats) lines.push(`  ${c.bold}Limit${c.reset}      ${config.maxPaymentSats} sats/payment`);
-    if (config.dailyLimitSats) lines.push(`  ${c.bold}Limit${c.reset}      ${config.dailyLimitSats} sats/day`);
-    if (mintManager.orderedMints.length > 1) {
-        lines.push(`  ${c.bold}Failover${c.reset}   ${mintManager.orderedMints.length} mints configured`);
-    }
-
-    box(lines, c.cyan);
-
-    // Show seed if newly generated
-    if (seedGenerated) {
-        console.log('');
-        box([
-            `${c.yellow}${c.bold}NEW SEED GENERATED — DO THESE 2 STEPS NOW${c.reset}`,
-            '',
-            `${c.bold}Step 1:${c.reset} Save this seed somewhere safe (password manager, paper):`,
-            '',
-            `  ${c.bold}${config.seed}${c.reset}`,
-            '',
-            `${c.bold}Step 2:${c.reset} Add this line to your .env file:`,
-            '',
-            `  ${c.bold}NUTBITS_SEED=${c.reset}`,
-            `  ${c.bold}${config.seed}${c.reset}`,
-            '',
-            `${c.dim}This seed generates your ecash proofs deterministically.${c.reset}`,
-            `${c.dim}If you lose your database, this seed recovers your funds.${c.reset}`,
-            `${c.dim}Without it in .env, a new seed is generated every start.${c.reset}`,
-        ], c.yellow);
-    }
-
-    // Show NWC connection string on first run
-    if (nwcString) {
-        console.log('');
-        box([
-            `${c.magenta}${c.bold}NWC CONNECTION STRING${c.reset}`,
-            '',
-            `Paste into ${c.bold}LNbits${c.reset}, ${c.bold}BuhoGO${c.reset}, ${c.bold}Alby${c.reset}, or any NWC-compatible wallet:`,
-        ], c.magenta);
-        console.log(`\n${c.bold}${nwcString}${c.reset}\n`);
+    // Wait for Enter - boot screen stays visible until user is ready
+    if (process.stdin.isTTY) {
+        await new Promise(resolve => {
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+            process.stdin.setEncoding('utf8');
+            var onKey = key => {
+                if (key === '\r' || key === '\n') {
+                    process.stdin.removeListener('data', onKey);
+                    process.stdin.setRawMode(false);
+                    resolve();
+                }
+                if (key === '\x03') { // Ctrl+C
+                    process.stdin.removeListener('data', onKey);
+                    process.stdin.setRawMode(false);
+                    shutdown();
+                }
+            };
+            process.stdin.on('data', onKey);
+        });
     } else {
-        console.log(`\n  ${c.green}NWC connections restored. Ready.${c.reset}\n`);
+        // Non-TTY (Docker, piped) - go straight to logs
+        await bootWait(500);
     }
 
-    // ── Management API ───────────────────────────────────────────
-    if (config.apiEnabled) {
-        try {
-            await startApiServer({ nutbits, store, mintManager, config, log, startedAt: Date.now(), seedFromEnv: !!process.env.NUTBITS_SEED });
-            log.info('management API ready', { socket: config.apiSocket || '~/.nutbits/nutbits.sock' });
-        } catch (e) {
-            log.warn('management API failed to start (non-fatal)', { error: e.message });
-        }
-    } else {
-        log.info('management API disabled (NUTBITS_API_ENABLED=false)');
-    }
+    // Restore log level
+    log._level = savedLogLevel;
+
+    // Enter live mode: clear screen, status bar + formatted log stream
+    installLiveLogger();
 })();
 
 // ── Graceful Shutdown ──────────────────────────────────────────────────────
 
 var shutdown = async () => {
-    log.info('shutting down...');
+    if (liveMode) {
+        // Exit live mode cleanly: move below status bar, reset scroll region
+        process.stdout.write('\x1b[?25h'); // show cursor
+        console.log('');
+        console.log(`  ${c.dim}NUTbits shutting down...${c.reset}`);
+    } else {
+        log.info('shutting down...');
+    }
     if (store) await store.close().catch(() => {});
     for (var pk in nutbits.state.nostr_state.pools) {
         var relays = nutbits.state.nostr_state.pools[pk];

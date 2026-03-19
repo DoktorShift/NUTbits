@@ -1,4 +1,4 @@
-// SqliteStore — SQLite backend with AES-256-GCM encrypted columns
+// SqliteStore - SQLite backend with AES-256-GCM encrypted columns
 // Atomic proof operations via SQLite transactions (the concurrency fix)
 
 import crypto from 'crypto';
@@ -235,7 +235,7 @@ export class SqliteStore {
     // ── Bulk ──────────────────────────────────────────────────────────
 
     async saveAll() {
-        // No-op — SQLite persists immediately
+        // No-op - SQLite persists immediately
     }
 
     // ── Internal ──────────────────────────────────────────────────────

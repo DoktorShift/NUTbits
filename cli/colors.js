@@ -1,4 +1,4 @@
-// NUTbits CLI — ANSI color palette
+// NUTbits CLI - ANSI color palette
 // True-color matching the project's SVG/terminal style
 // Respects NO_COLOR env and --no-color flag
 

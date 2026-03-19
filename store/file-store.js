@@ -1,4 +1,4 @@
-// FileStore — encrypted flat file storage with write mutex
+// FileStore - encrypted flat file storage with write mutex
 // Wraps the original .enc approach with serialized writes
 
 import fs from 'fs';

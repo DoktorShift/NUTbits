@@ -26,7 +26,7 @@ export async function run(client, args) {
         }
 
         var mintName = url.split('/').pop() || url;
-        print(heading(`NUT Support — ${mintName}`));
+        print(heading(`NUT Support: ${mintName}`));
         print('');
         for (var i = 0; i < Math.max(left.length, right.length); i++) {
             var l = left[i] || '';
@@ -65,7 +65,7 @@ export async function run(client, args) {
             var activeNuts = d.mints[activeUrl].nuts;
             var count = Object.values(activeNuts).filter(Boolean).length;
             var short = activeUrl.replace(/^https?:\/\//, '').split('/')[0];
-            print(`\n  ${c.muted}Active mint: ${short} — ${count}/${nutIds.length} NUTs supported${c.reset}\n`);
+            print(`\n  ${c.muted}Active mint: ${short} - ${count}/${nutIds.length} NUTs supported${c.reset}\n`);
         }
     }
 }

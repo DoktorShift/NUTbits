@@ -1,5 +1,5 @@
-// NUTbits CLI — Interactive prompt components
-// Select, MultiSelect, Input, Confirm — zero dependencies
+// NUTbits CLI - Interactive prompt components
+// Select, MultiSelect, Input, Confirm - zero dependencies
 // Uses raw stdin keypresses + ANSI cursor control
 //
 // ESCAPE: every prompt resolves with null on Escape (cancel).
@@ -258,7 +258,7 @@ export var input = ({ message, placeholder = '', validate, description } = {}) =
             render();
             return;
         }
-        // Printable characters (supports paste — multi-char data events)
+        // Printable characters (supports paste - multi-char data events)
         var printable = '';
         for (var ci = 0; ci < key.length; ci++) {
             var ch = key.charCodeAt(ci);

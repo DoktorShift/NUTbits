@@ -1,6 +1,6 @@
-// NUTbits Management API — Local server
+// NUTbits Management API - Local server
 // Unix socket (primary) + optional HTTP on 127.0.0.1
-// Zero dependencies — built on node:http
+// Zero dependencies - built on node:http
 
 import http from 'node:http';
 import fs from 'node:fs';
@@ -13,7 +13,7 @@ import { registerHandlers } from './handlers/index.js';
 var MAX_BODY_BYTES = 1024 * 1024; // 1 MB
 
 export async function startApiServer(ctx) {
-    // Use XDG_RUNTIME_DIR or ~/.nutbits/ — never /tmp (shared, insecure)
+    // Use XDG_RUNTIME_DIR or ~/.nutbits/ - never /tmp (shared, insecure)
     var defaultDir = process.env.XDG_RUNTIME_DIR || path.join(os.homedir(), '.nutbits');
     if (!fs.existsSync(defaultDir)) fs.mkdirSync(defaultDir, { mode: 0o700, recursive: true });
     // Always enforce directory permissions (may already exist with wrong perms)
@@ -52,10 +52,10 @@ export async function startApiServer(ctx) {
         var urlPath = (req.url || '/').split('?')[0];
 
         res.setHeader('Content-Type', 'application/json');
-        // No CORS headers — CLI uses socket/direct HTTP, not browser
+        // No CORS headers - CLI uses socket/direct HTTP, not browser
         // CORS will be added when the web dashboard is built
 
-        // Auth — reject empty tokens
+        // Auth - reject empty tokens
         if (!auth(req)) {
             ctx.log?.warn?.('API: unauthorized request', { method: req.method, path: urlPath });
             res.writeHead(401);
@@ -92,7 +92,7 @@ export async function startApiServer(ctx) {
             }
         }
 
-        // Execute handler — namespace params to prevent override
+        // Execute handler - namespace params to prevent override
         try {
             var result = await match.handler({ params: match.params, query: match.query, body });
             var duration = Date.now() - startTime;
@@ -102,7 +102,7 @@ export async function startApiServer(ctx) {
         } catch (e) {
             var status = e.statusCode || 500;
             var duration = Date.now() - startTime;
-            // Don't leak internal errors — only show message for known API errors
+            // Don't leak internal errors - only show message for known API errors
             var message = e.statusCode ? e.message : 'internal error';
             ctx.log?.warn?.('API: request failed', { method: req.method, path: urlPath, status, error: message, ms: duration });
             res.writeHead(status);

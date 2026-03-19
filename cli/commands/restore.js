@@ -6,7 +6,7 @@ export async function run(client, args) {
     print(heading('Proof Recovery (NUT-09)'));
     print(`  ${c.muted}Scans each configured mint for ecash proofs that can be${c.reset}`);
     print(`  ${c.muted}recovered using your deterministic seed. Your existing${c.reset}`);
-    print(`  ${c.muted}proofs and balance are not affected — this only adds.${c.reset}`);
+    print(`  ${c.muted}proofs and balance are not affected. This only adds.${c.reset}`);
     print('');
 
     if (args?.json) {
@@ -19,7 +19,7 @@ export async function run(client, args) {
         var ok = await confirm({
             message: 'Start recovery scan?',
             initial: true,
-            description: 'This is safe — it only looks for lost proofs, nothing is deleted.',
+            description: 'Safe operation. Only looks for lost proofs, nothing is deleted.',
         });
         if (ok === null || !ok) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
     }

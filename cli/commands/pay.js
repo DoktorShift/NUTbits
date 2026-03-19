@@ -46,7 +46,7 @@ export async function run(client, args) {
         } catch (e) { /* skip */ }
     }
 
-    // Extract amount from invoice prefix (rough — lnbc<amount><multiplier>)
+    // Extract amount from invoice prefix (rough - lnbc<amount><multiplier>)
     var amountHint = extractAmountFromInvoice(invoice);
     if (amountHint) {
         print(kv('Amount', `${c.yellow}${c.bold}${amountHint.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
