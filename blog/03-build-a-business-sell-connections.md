@@ -82,4 +82,4 @@ But if you're already running a mint and doing those things anyway, selling conn
 
 **Every NWC connection is a product.** Define yours, price them, and start offering access to your mint's capabilities to a wider audience.
 
-[GitHub](https://github.com/DoktorShift/nutbits) · [CLI Guide](../CLI.md)
+[GitHub](https://github.com/DoktorShift/nutbits) · [CLI Guide](../docs/CLI.md)

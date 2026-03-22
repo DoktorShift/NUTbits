@@ -71,4 +71,4 @@ The fee is fully transparent — it's advertised when clients connect and report
 
 **Your mint is already doing the hard work.** NUTbits just lets you get paid for it.
 
-[GitHub](https://github.com/DoktorShift/nutbits) · [How It Works](../HOW-IT-WORKS.md)
+[GitHub](https://github.com/DoktorShift/nutbits) · [How It Works](../docs/HOW-IT-WORKS.md)

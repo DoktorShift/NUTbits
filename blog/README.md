@@ -14,8 +14,6 @@ Articles about what you can build with NUTbits — from funding LNbits with ecas
 | 06 | [Put the Fees in Front of LNBits](06-fees-in-front-of-lnbits.md) | Two-layer fee architecture |
 | 07 | [Ecash Was Always the Missing Piece](07-ecash-was-always-the-missing-piece.md) | Bridging Cashu and Lightning |
 | 08 | [The Stack Nobody Expected](08-the-stack-nobody-expected.md) | LNbits + NUTbits + Cashu + Lightning |
-| 09 | [NUTbits Cloud — The Platform Vision](09-nutbits-cloud-vision.md) | Hosted bridge concept |
-| 09 | [NUTbits Cloud — Security Considerations](09-nutbits-cloud-security.md) | Multi-tenant threat model |
 
 ## Structure
 

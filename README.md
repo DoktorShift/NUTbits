@@ -12,7 +12,7 @@ Inspired by [supertestnet/bankify](https://github.com/supertestnet/bankify). Bui
 
 ## Quick Start
 
-See **[INSTALL.md](INSTALL.md)** for full setup instructions (bare metal, Docker, LNbits integration).
+See **[INSTALL.md](docs/INSTALL.md)** for full setup instructions (bare metal, Docker, LNbits integration).
 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
@@ -47,9 +47,9 @@ All settings in `.env` (see `.env.example`):
 | `NUTBITS_SERVICE_FEE_BASE` | `0` | Flat base fee in sats per outgoing payment (0 = disabled) |
 | `NUTBITS_API_ENABLED` | `true` | Set to `false` to disable management API/CLI |
 
-> **Storage:** See **[DATABASE.md](DATABASE.md)** for backend comparison, setup, and migration.
-> **Backups:** See **[BACKUP.md](BACKUP.md)** for backup and recovery procedures.
-> **Service fees:** See **[CLI.md](CLI.md#service-fees)** for fee configuration, per-connection overrides, and revenue tracking.
+> **Storage:** See **[DATABASE.md](docs/DATABASE.md)** for backend comparison, setup, and migration.
+> **Backups:** See **[BACKUP.md](docs/BACKUP.md)** for backup and recovery procedures.
+> **Service fees:** See **[CLI.md](docs/CLI.md#service-fees)** for fee configuration, per-connection overrides, and revenue tracking.
 
 Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
@@ -116,20 +116,25 @@ State (keys, ecash proofs, transaction history) is encrypted with AES-256-GCM an
 
 ## Management Console
 
-NUTbits includes an interactive management console. Run `nutbits` in a second terminal to get a split-screen dashboard, or use individual commands:
+NUTbits includes a CLI and interactive TUI to manage the daemon **while it's running**. Open a second terminal and use `nutbits` to control connections, check balances, pay invoices, and monitor activity — all without restarting the service.
 
 ```bash
-nutbits                    # interactive TUI
-nutbits balance            # check balance
+nutbits                    # interactive TUI dashboard
+nutbits balance            # check balance across mints
 nutbits connections        # list NWC connections
-nutbits connect            # create new connection (guided)
+nutbits connect            # create new connection (guided wizard)
+nutbits revoke <label>     # revoke a connection
 nutbits pay <invoice>      # pay a Lightning invoice
 nutbits receive <amount>   # create an invoice
+nutbits history            # transaction history
+nutbits fees               # view/manage service fees
+nutbits mints              # mint status and health
+nutbits relays             # relay connection status
 ```
 
-Create multiple NWC connections with scoped permissions and spending limits — one for LNbits with full access, another for a POS with pay-only and a daily cap.
+Create multiple NWC connections with scoped permissions and spending limits — one for LNbits with full access, another for a POS with pay-only and a daily cap. Revoke any connection without affecting the others.
 
-See **[CLI.md](CLI.md)** for the full command reference.
+See **[CLI.md](docs/CLI.md)** for the full command reference and **[CONSOLE.md](docs/CONSOLE.md)** for TUI usage.
 
 > Set `NUTBITS_API_ENABLED=false` in `.env` to disable the management API entirely.
 
@@ -144,7 +149,7 @@ See **[CLI.md](CLI.md)** for the full command reference.
 - Atomic state writes (crash-safe)
 - Graceful shutdown with state save
 
-All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](STATE.md) for backup, recovery, and decryption instructions** — this is critical if you're running NUTbits with real funds.
+All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](docs/STATE.md) for backup, recovery, and decryption instructions** — this is critical if you're running NUTbits with real funds.
 
 ## Multi-Mint Failover
 
@@ -183,13 +188,13 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 
 | Document | Description |
 |----------|-------------|
-| [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
-| [CONSOLE.md](CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
-| [CLI.md](CLI.md) | Full command reference — flags, scripting, connections |
-| [INSTALL.md](INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
-| [DATABASE.md](DATABASE.md) | Storage backends — file, SQLite, MySQL |
-| [BACKUP.md](BACKUP.md) | Backup, recovery, and encryption details |
-| [STATE.md](STATE.md) | Deep dive into the encrypted state file |
+| [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
+| [CONSOLE.md](docs/CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
+| [CLI.md](docs/CLI.md) | Full command reference — flags, scripting, connections |
+| [INSTALL.md](docs/INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
+| [DATABASE.md](docs/DATABASE.md) | Storage backends — file, SQLite, MySQL |
+| [BACKUP.md](docs/BACKUP.md) | Backup, recovery, and encryption details |
+| [STATE.md](docs/STATE.md) | Deep dive into the encrypted state file |
 
 ## Trust Model
 
@@ -202,6 +207,8 @@ NUTbits operators can optionally enable a service fee on outgoing payments. This
 - [Cashu](https://cashu.space) — Ecash protocol for Bitcoin
 - [LNbits](https://lnbits.com) — Lightning accounts system
 - [Nostr Wallet Connect (NIP-47)](https://github.com/nostr-protocol/nips/blob/master/47.md) — Wallet protocol over Nostr
+- [nostr-core](https://nostr-core.netlify.app) — Nostr + LNURL library used by NUTbits
+- [@cashu/cashu-ts](https://www.npmjs.com/package/@cashu/cashu-ts) — Cashu TypeScript library
 - [supertestnet/bankify](https://github.com/supertestnet/bankify) — Original inspiration for this project
 - [bitcoinmints.com](https://bitcoinmints.com) — Directory of Cashu mints
 
