@@ -21,7 +21,8 @@ export async function run(client, args) {
                 var time = new Date((tx.created_at || 0) * 1000).toLocaleTimeString('en-US', { hour12: false });
                 var amt = Math.floor((tx.amount || 0) / 1000);
                 var statusStr = tx.settled_at ? `${c.green}settled${c.reset}` : tx.err_msg ? `${c.red}failed${c.reset}` : `${c.yellow}pending${c.reset}`;
-                liveFeed.push(`  ${c.dim}${time}${c.reset}   ${arrow} ${tx.type.padEnd(8)}  ${c.yellow}${c.bold}${amt.toLocaleString().padStart(8)}${c.reset} ${c.muted}sats${c.reset}   ${statusStr}   ${c.dim}${tx.connection_label || '—'}${c.reset}`);
+                var connLabel = (tx.connection_label || '—').slice(0, 16);
+                liveFeed.push(`  ${c.dim}${time}${c.reset}   ${arrow} ${tx.type.padEnd(8)}  ${c.yellow}${c.bold}${amt.toLocaleString().padStart(10)}${c.reset} ${c.muted}sats${c.reset}   ${statusStr}   ${c.dim}${connLabel}${c.reset}`);
             }
             if (liveFeed.length > MAX_FEED) liveFeed = liveFeed.slice(-MAX_FEED);
         }
@@ -51,7 +52,8 @@ export async function run(client, args) {
                 var time = tx.created_at ? relativeTime(tx.created_at * 1000).padEnd(12) : '—'.padEnd(12);
                 var amt = Math.floor((tx.amount || 0) / 1000);
                 var statusStr = tx.settled_at ? `${c.green}settled${c.reset}` : tx.err_msg ? `${c.red}failed${c.reset}` : `${c.yellow}pending${c.reset}`;
-                print(`  ${c.dim}${time}${c.reset} ${arrow} ${tx.type.padEnd(8)}  ${c.yellow}${c.bold}${amt.toLocaleString().padStart(8)}${c.reset} ${c.muted}sats${c.reset}   ${statusStr}   ${c.dim}${tx.connection_label || '—'}${c.reset}`);
+                var connLabel = (tx.connection_label || '—').slice(0, 16);
+                print(`  ${c.dim}${time}${c.reset} ${arrow} ${tx.type.padEnd(8)}  ${c.yellow}${c.bold}${amt.toLocaleString().padStart(10)}${c.reset} ${c.muted}sats${c.reset}   ${statusStr}   ${c.dim}${connLabel}${c.reset}`);
             }
             if (history.transactions.length === 0) {
                 print(`  ${c.dim}No transactions yet. Send or receive sats to see them here.${c.reset}`);

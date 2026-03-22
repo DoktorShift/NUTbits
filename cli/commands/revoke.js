@@ -7,8 +7,7 @@ export async function run(client, args) {
 
     // If no ID given, interactive selection
     if (!targetId) {
-        print('');
-        print(`  ${c.purple}${c.bold}Revoke Connection${c.reset}`);
+        print(heading('Revoke Connection'));
         print(`  ${c.muted}Permanently disconnect an NWC connection. The app will${c.reset}`);
         print(`  ${c.muted}no longer be able to access your wallet.${c.reset}`);
         print('');
@@ -63,7 +62,10 @@ export async function run(client, args) {
     if (args?.json) return jsonOut({ ...result, id: conn.id, label: conn.label });
 
     print('');
-    print(`  ${c.ok} ${c.green}Connection "${conn.label}" revoked${c.reset}`);
+    print(`  ${c.ok} ${c.green}${c.bold}Connection "${conn.label}" revoked${c.reset}`);
     print(`  ${c.dim}Relay subscriptions closed. ${d.connections.length - 1} active connection${d.connections.length - 1 !== 1 ? 's' : ''} remaining.${c.reset}`);
+    print('');
+    print(`  ${c.dim}The NWC string for this connection no longer works.${c.reset}`);
+    print(`  ${c.dim}Transaction history is preserved in exports.${c.reset}`);
     print('');
 }

@@ -1,4 +1,5 @@
 // NUTbits - Cashu ecash mint to NWC bridge
+// Published by @drshift - https://drshift.dev
 // Inspired by https://github.com/supertestnet/bankify
 // License: AGPL-3.0 (https://www.gnu.org/licenses/agpl-3.0.html)
 

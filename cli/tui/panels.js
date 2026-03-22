@@ -3,6 +3,7 @@
 
 import { c } from '../colors.js';
 import { col } from './layout.js';
+import { sparkline, hbar, gauge, miniBar, brailleSparkline } from './charts.js';
 
 // ── Formatting Helpers ───────────────────────────────────────────────────
 
@@ -40,14 +41,38 @@ var dot = {
     off:  `${c.dim}●${c.reset}`,
 };
 
+// Standardized panel title: consistent format across all panels
+// color defaults to purple for info panels; action panels pass their own
+var title = (text, status, color) => {
+    var clr = color || c.purple;
+    var line = `${clr}${c.bold}${text}${c.reset}`;
+    if (status) line += `  ${c.dim}${status}${c.reset}`;
+    return line;
+};
+
+// Section divider inside a panel
+var divider = () => `${c.dim}${'─'.repeat(46)}${c.reset}`;
+
+// Safe datastore access (may not exist during early render or in CLI mode)
+var getDs = (client) => client?._datastore || null;
+
+// Inviting empty state with context and call-to-action
+var emptyState = (lines, what, context, action) => {
+    lines.push('');
+    lines.push(`  ${c.dim}◇${c.reset} ${c.muted}${what}${c.reset}`);
+    lines.push('');
+    if (context) lines.push(`  ${c.dim}${context}${c.reset}`);
+    if (action) lines.push(`  ${c.blue}${action}${c.reset}`);
+    lines.push('');
+};
+
 // ── Panel: Status ────────────────────────────────────────────────────────
 
 export async function statusPanel(client) {
     var d = await client.get('/api/v1/status');
     var lines = [];
 
-    lines.push(`${c.green}${c.bold}NUTbits is running${c.reset}`);
-    lines.push(`${c.dim}uptime: ${fmtUptime(d.uptime_ms)}${c.reset}`);
+    lines.push(title('Dashboard', `uptime: ${fmtUptime(d.uptime_ms)}`));
     lines.push('');
 
     // Active mint
@@ -55,7 +80,23 @@ export async function statusPanel(client) {
     lines.push(kv('Mint', `${mintHealth} ${c.white}${c.bold}${d.mint?.name || 'unknown'}${c.reset}`));
     lines.push(kv('', `${c.dim}${d.mint?.url || ''}${c.reset}`));
     lines.push(kv('Version', `${d.mint?.version || '?'}`));
-    lines.push(kv('Balance', fmtSats(d.balance_sats)));
+    // Balance with session delta
+    var ds = getDs(client);
+    var balLine = fmtSats(d.balance_sats);
+    if (ds) {
+        var balHistory = ds.getBalanceHistory();
+        if (balHistory.length > 2) {
+            var first = balHistory[0];
+            var delta = Math.round(d.balance_sats - first);
+            if (delta !== 0) {
+                var sign = delta > 0 ? '+' : '';
+                var deltaColor = delta > 0 ? c.green : c.red;
+                balLine += `  ${deltaColor}${sign}${delta.toLocaleString()}${c.reset}`;
+            }
+        }
+    }
+    lines.push(kv('Balance', balLine));
+
     lines.push(kv('Storage', `${d.storage}`));
     lines.push(kv('Relays', `${d.relays?.connected || 0}/${d.relays?.total || 0} connected`));
     lines.push(kv('Seed', d.seed_configured ? `${dot.ok} configured` : `${dot.err} not set`));
@@ -90,6 +131,18 @@ export async function statusPanel(client) {
         lines.push(kv('NUTs', nutStr));
     }
 
+    // Activity sparkline (tx count over session)
+    if (ds) {
+        var txHistory = ds.getTxCountHistory();
+        if (txHistory.length > 3) {
+            lines.push('');
+            lines.push(divider());
+            lines.push('');
+            var txSpark = sparkline(txHistory, 36, { color: c.green, label: 'Activity', showRange: false });
+            for (var sl of txSpark) lines.push(`  ${sl}`);
+        }
+    }
+
     if (d.mint?.motd) lines.push('', kv('MOTD', `${c.yellow}"${d.mint.motd}"${c.reset}`));
     if (d.limits?.max_payment_sats) lines.push(kv('Limit', `${d.limits.max_payment_sats.toLocaleString()} sats/payment`));
     if (d.limits?.daily_limit_sats) lines.push(kv('Limit', `${d.limits.daily_limit_sats.toLocaleString()} sats/day`));
@@ -103,7 +156,7 @@ export async function balancePanel(client) {
     var d = await client.get('/api/v1/balance');
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Balance Breakdown${c.reset}`);
+    lines.push(title('Balance Breakdown'));
     lines.push('');
     lines.push(`  ${c.muted}${'Mint'.padEnd(34)}${'Proofs'.padEnd(8)}${'Sats'.padEnd(16)}Status${c.reset}`);
     lines.push(`  ${c.dim}${'─'.repeat(66)}${c.reset}`);
@@ -117,6 +170,21 @@ export async function balancePanel(client) {
     lines.push(`  ${c.dim}${'─'.repeat(70)}${c.reset}`);
     lines.push(`  ${'Total'.padEnd(46)}${fmtSats(d.total_sats)}`);
 
+    // Balance trend sparkline
+    var ds = getDs(client);
+    if (ds) {
+        var balHistory = ds.getBalanceHistory();
+        if (balHistory.length > 5) {
+            lines.push('');
+            lines.push(divider());
+            lines.push('');
+            lines.push(`  ${c.muted}Balance trend (session):${c.reset}`);
+            lines.push('');
+            var balSpark = sparkline(balHistory, 50, { color: c.yellow, showRange: true });
+            for (var sl of balSpark) lines.push(`  ${sl}`);
+        }
+    }
+
     return lines;
 }
 
@@ -126,12 +194,15 @@ export async function connectionsPanel(client) {
     var d = await client.get('/api/v1/connections');
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}NWC Connections${c.reset}  ${c.dim}(${(d.connections || []).length} active)${c.reset}`);
+    lines.push(title('NWC Connections', `${(d.connections || []).length} active`));
     lines.push('');
 
     if (!d.connections?.length) {
-        lines.push(`  ${c.muted}No connections yet.${c.reset}`);
-        lines.push(`  ${c.dim}Navigate to "New Connection" and press Enter.${c.reset}`);
+        emptyState(lines,
+            'No connections yet',
+            'Each NWC connection can have custom permissions and spending limits.',
+            'Navigate to "New Connection" and press Enter to create one.'
+        );
         return lines;
     }
 
@@ -166,11 +237,15 @@ export async function historyPanel(client) {
     var d = await client.get('/api/v1/history', { limit: '15', unpaid: 'true' });
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Recent Transactions${c.reset}  ${c.dim}(${d.total} total)${c.reset}`);
+    lines.push(title('Recent Transactions', `${d.total} total`));
     lines.push('');
 
     if (!d.transactions?.length) {
-        lines.push(`  ${c.muted}No transactions yet.${c.reset}`);
+        emptyState(lines,
+            'No transactions yet',
+            'Incoming payments and sent invoices will appear here.',
+            'Select "Receive" in the menu and press Enter to get started.'
+        );
         return lines;
     }
 
@@ -203,9 +278,10 @@ export async function mintsPanel(client) {
     var d = await client.get('/api/v1/mints');
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Configured Mints${c.reset}`);
+    lines.push(title('Configured Mints'));
     lines.push('');
 
+    var ds = getDs(client);
     for (var m of (d.mints || [])) {
         var health = m.healthy === true ? dot.ok : m.healthy === false ? dot.err : dot.off;
         var active = m.active ? `${c.green}active${c.reset}` : `${c.dim}standby${c.reset}`;
@@ -213,6 +289,18 @@ export async function mintsPanel(client) {
         lines.push(`    ${c.dim}${m.url}${c.reset}`);
         if (m.version) lines.push(`    ${c.dim}Version: ${m.version}${c.reset}`);
         if (m.motd) lines.push(`    ${c.yellow}MOTD: "${m.motd}"${c.reset}`);
+
+        // Response time sparkline from session data
+        if (ds) {
+            var responseTimes = ds.getMintResponseTimes(m.url);
+            if (responseTimes.length > 3) {
+                var avg = Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length);
+                var rtSpark = sparkline(responseTimes, 30, { color: c.blue, showRange: false });
+                if (rtSpark.length > 0) {
+                    lines.push(`    ${c.dim}Response:${c.reset} ${rtSpark[rtSpark.length > 1 ? 1 : 0]}  ${c.dim}avg ${avg}ms${c.reset}`);
+                }
+            }
+        }
         lines.push('');
     }
 
@@ -232,30 +320,19 @@ export async function nutsPanel(client) {
     var nutIds = Object.keys(nutNames);
     var mintUrls = Object.keys(d.mints || {});
 
-    lines.push(`${c.white}${c.bold}NUT Support${c.reset}`);
+    lines.push(title('NUT Support'));
     lines.push('');
 
     if (mintUrls.length <= 1) {
         var url = mintUrls[0] || '';
         var mintNuts = d.mints?.[url]?.nuts || {};
-        var half = Math.ceil(nutIds.length / 2);
 
-        for (var i = 0; i < half; i++) {
-            var left = nutIds[i];
-            var right = nutIds[i + half];
-            var lOk = mintNuts[left];
-            var lIcon = lOk ? `${c.green}✓${c.reset}` : `${c.red}✗${c.reset}`;
-            var lName = `${lOk ? c.white : c.dim}${nutNames[left] || ''}${c.reset}`;
-            var entry = `  ${lIcon} ${c.muted}${left}${c.reset}  ${lName}`;
-
-            if (right) {
-                var rOk = mintNuts[right];
-                var rIcon = rOk ? `${c.green}✓${c.reset}` : `${c.red}✗${c.reset}`;
-                var rName = `${rOk ? c.white : c.dim}${nutNames[right] || ''}${c.reset}`;
-                var pad = 36 - (left.length + (nutNames[left] || '').length + 5);
-                entry += ' '.repeat(Math.max(2, pad)) + `${rIcon} ${c.muted}${right}${c.reset}  ${rName}`;
-            }
-            lines.push(entry);
+        // Single column list - cleaner and more reliable than two-column
+        for (var nid of nutIds) {
+            var ok = mintNuts[nid];
+            var icon = ok ? `${c.green}✓${c.reset}` : `${c.dim}✗${c.reset}`;
+            var name = `${ok ? c.white : c.dim}${nutNames[nid] || ''}${c.reset}`;
+            lines.push(`  ${icon} ${c.muted}${nid}${c.reset}  ${name}`);
         }
 
         var supported = Object.values(mintNuts).filter(Boolean).length;
@@ -289,14 +366,32 @@ export async function relaysPanel(client) {
     var d = await client.get('/api/v1/relays');
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Relay Status${c.reset}  ${c.muted}(${d.connected}/${d.total} connected)${c.reset}`);
+    lines.push(title('Nostr Relays', `${d.connected}/${d.total} connected`));
     lines.push('');
 
-    for (var r of (d.relays || [])) {
-        var status = r.connected ? `${dot.ok} connected` : `${dot.err} disconnected`;
-        var subs = r.subscriptions > 0 ? `${c.dim}${r.subscriptions} subs${c.reset}` : '';
-        lines.push(`  ${status}  ${c.dim}${r.url}${c.reset}  ${subs}`);
+    if (!d.relays?.length) {
+        emptyState(lines,
+            'No relays configured',
+            'Relays carry NWC messages between your wallet and apps.',
+            'Set NUTBITS_RELAYS in .env to add relay URLs.'
+        );
+        return lines;
     }
+
+    for (var r of (d.relays || [])) {
+        var statusDot = r.connected ? dot.ok : dot.err;
+        var statusText = r.connected ? `${c.green}connected${c.reset}` : `${c.red}disconnected${c.reset}`;
+        var shortUrl = r.url.replace(/^wss?:\/\//, '');
+
+        lines.push(`  ${statusDot} ${c.white}${c.bold}${shortUrl}${c.reset}`);
+        lines.push(`    ${statusText}${r.subscriptions > 0 ? `  ${c.dim}${r.subscriptions} NWC link${r.subscriptions > 1 ? 's' : ''} active${c.reset}` : ''}`);
+        lines.push('');
+    }
+
+    lines.push(divider());
+    lines.push('');
+    lines.push(`  ${c.dim}Relays carry NWC messages between your wallet and connected apps.${c.reset}`);
+    lines.push(`  ${c.dim}At least one relay must be connected for NWC to work.${c.reset}`);
 
     return lines;
 }
@@ -306,7 +401,7 @@ export async function relaysPanel(client) {
 export async function configPanel(client) {
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Configuration${c.reset}`);
+    lines.push(title('Configuration'));
     lines.push('');
 
     try {
@@ -331,29 +426,50 @@ export async function configPanel(client) {
             return lines;
         }
 
+        // Group options by category for visual structure
+        var categories = {
+            'Mint & Relays':  ['MINT_URL', 'MINT_URLS', 'RELAYS'],
+            'Security':       ['STATE_PASSPHRASE', 'SEED', 'API_TOKEN'],
+            'Storage':        ['STATE_BACKEND', 'SQLITE_PATH', 'MYSQL_URL', 'STATE_FILE'],
+            'Limits & Fees':  ['MAX_PAYMENT_SATS', 'DAILY_LIMIT_SATS', 'FEE_RESERVE_PCT', 'SERVICE_FEE_PPM', 'SERVICE_FEE_BASE'],
+            'API':            ['API_ENABLED', 'API_SOCKET', 'API_PORT'],
+            'Tuning':         ['LOG_LEVEL', 'HEALTH_CHECK_INTERVAL_MS', 'FAILOVER_COOLDOWN_MS', 'INVOICE_CHECK_MAX_RETRIES', 'INVOICE_CHECK_INTERVAL_SECS', 'FETCH_TIMEOUT_MS'],
+        };
+
+        var optMap = {};
         for (var opt of (env.options || [])) {
-            var status = opt.active
-                ? `${c.green}ON ${c.reset}`
-                : `${c.dim}OFF${c.reset}`;
+            optMap[opt.key.replace('NUTBITS_', '')] = opt;
+        }
 
-            var val = opt.value || `${c.dim}(not set)${c.reset}`;
-            if (opt.sensitive && opt.value) val = `${c.dim}***${c.reset}`;
+        // Collect keys that aren't in any category
+        var categorizedKeys = new Set(Object.values(categories).flat());
+        var uncategorized = Object.keys(optMap).filter(k => !categorizedKeys.has(k));
+        if (uncategorized.length > 0) categories['Other'] = uncategorized;
 
-            // Shorten long values
-            var plainVal = (opt.value || '').replace(/^https?:\/\//, '');
-            if (plainVal.length > 30) val = `${c.dim}${plainVal.slice(0, 28)}..${c.reset}`;
+        for (var [catName, keys] of Object.entries(categories)) {
+            var catOpts = keys.map(k => optMap[k]).filter(Boolean);
+            if (catOpts.length === 0) continue;
 
-            var restartTag = opt.restart ? '' : `  ${c.blue}live${c.reset}`;
+            lines.push(`  ${c.purple}${c.bold}${catName}${c.reset}`);
 
-            lines.push(`  ${status}  ${c.white}${opt.key.replace('NUTBITS_', '')}${c.reset}${restartTag}`);
-            lines.push(`        ${val}`);
-            if (opt.desc) lines.push(`        ${c.dim}${opt.desc}${c.reset}`);
+            for (var opt of catOpts) {
+                var statusDot = opt.active ? `${c.green}●${c.reset}` : `${c.dim}○${c.reset}`;
+                var val = opt.value || '';
+                if (opt.sensitive && val) val = '***';
+                if (val.length > 28) val = val.slice(0, 26) + '..';
+                var liveTag = opt.restart ? '' : ` ${c.blue}live${c.reset}`;
+                var shortKey = opt.key.replace('NUTBITS_', '');
+
+                lines.push(`  ${statusDot} ${c.white}${shortKey}${c.reset}${liveTag}  ${c.dim}${val || '(not set)'}${c.reset}`);
+            }
             lines.push('');
         }
 
+        lines.push(divider());
+        lines.push('');
+        lines.push(`  ${c.green}●${c.reset} ${c.dim}= active${c.reset}   ${c.dim}○ = inactive${c.reset}   ${c.blue}live${c.reset} ${c.dim}= no restart needed${c.reset}`);
+        lines.push('');
         lines.push(`  ${c.green}${c.bold}Press Enter to change settings${c.reset}`);
-        lines.push(`  ${c.dim}Changes are saved to .env automatically${c.reset}`);
-        lines.push(`  ${c.dim}Settings marked ${c.blue}live${c.dim} apply instantly. Others need restart.${c.reset}`);
 
     } catch (e) {
         lines.push(`  ${c.red}Could not load config: ${e.message}${c.reset}`);
@@ -370,7 +486,7 @@ export async function logsPanel(client) {
     var d = await client.get('/api/v1/logs', { level: 'info', limit: '20' });
     var lines = [];
 
-    lines.push(`${c.white}${c.bold}Recent Logs${c.reset}`);
+    lines.push(title('Recent Logs'));
     lines.push('');
 
     for (var entry of (d.logs || [])) {
@@ -378,11 +494,12 @@ export async function logsPanel(client) {
         var lvl = (entry.level || 'info').toUpperCase().padEnd(5);
         var clr = LOG_COLORS[entry.level] || c.muted;
         var msg = entry.msg || '';
+        if (msg.length > 80) msg = msg.slice(0, 77) + '...';
         lines.push(`  ${c.dim}${time}${c.reset} ${clr}${lvl}${c.reset} ${msg}`);
     }
 
     if (!d.logs?.length) {
-        lines.push(`  ${c.muted}No recent logs.${c.reset}`);
+        emptyState(lines, 'No recent logs', 'Logs appear as NUTbits processes NWC requests.', null);
     }
 
     return lines;
@@ -394,7 +511,7 @@ export async function feesPanel(client) {
     var d = await client.get('/api/v1/fees');
     var lines = [];
 
-    lines.push(`${c.yellow}${c.bold}Service Fee Revenue${c.reset}`);
+    lines.push(title('Service Fee Revenue', null, c.yellow));
     lines.push('');
 
     if (!d.enabled) {
@@ -415,12 +532,35 @@ export async function feesPanel(client) {
     lines.push(kv('Today', `${c.yellow}${c.bold}${d.today_sats.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
     lines.push(kv('Total earned', `${c.green}${c.bold}${d.total_sats.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
 
+    // Fee trend sparkline
+    var ds = getDs(client);
+    if (ds) {
+        var feeHistory = ds.getFeeHistory();
+        if (feeHistory.length > 3) {
+            lines.push('');
+            lines.push(divider());
+            lines.push('');
+            lines.push(`  ${c.muted}Revenue trend (session):${c.reset}`);
+            lines.push('');
+            var feeSpark = sparkline(feeHistory, 40, { color: c.yellow, showRange: true });
+            for (var sl of feeSpark) lines.push(`  ${sl}`);
+        }
+    }
+
     if (d.by_connection?.length > 0) {
         lines.push('');
+        lines.push(divider());
+        lines.push('');
         lines.push(`  ${c.muted}By connection:${c.reset}`);
-        for (var conn of d.by_connection) {
-            lines.push(`    ${c.white}${conn.label}${c.reset}  ${c.dim}today:${c.reset} ${Math.floor(conn.today_msat / 1000)}  ${c.dim}total:${c.reset} ${Math.floor(conn.total_msat / 1000)}`);
-        }
+        lines.push('');
+        var sortedConns = d.by_connection.slice().sort((a, b) => b.total_msat - a.total_msat);
+        var barData = sortedConns.map(cn => ({
+            label: cn.label.slice(0, 14),
+            value: Math.floor(cn.total_msat / 1000),
+            color: c.yellow,
+        }));
+        var bars = hbar(barData, 50, { unit: 'sats', showPct: true });
+        for (var bl of bars) lines.push(`  ${bl}`);
     }
 
     lines.push('');
@@ -434,7 +574,7 @@ export async function feesPanel(client) {
 
 export async function backupPanel(client) {
     var lines = [];
-    lines.push(`${c.white}${c.bold}Backup${c.reset}`);
+    lines.push(title('Backup'));
     lines.push('');
 
     try {
@@ -460,7 +600,7 @@ export async function backupPanel(client) {
 
 export async function restorePanel(client) {
     var lines = [];
-    lines.push(`${c.white}${c.bold}Restore (NUT-09)${c.reset}`);
+    lines.push(title('Restore', 'NUT-09'));
     lines.push('');
 
     try {
@@ -483,7 +623,7 @@ export async function restorePanel(client) {
 
 export async function payPanel(client) {
     var lines = [];
-    lines.push(`${c.purple}${c.bold}Pay Invoice${c.reset}`);
+    lines.push(title('Pay Invoice', null, c.red));
     lines.push('');
 
     try {
@@ -505,7 +645,7 @@ export async function payPanel(client) {
 
 export async function receivePanel(client) {
     var lines = [];
-    lines.push(`${c.green}${c.bold}Receive Payment${c.reset}`);
+    lines.push(title('Receive Payment', null, c.green));
     lines.push('');
 
     try {
@@ -528,7 +668,7 @@ export async function receivePanel(client) {
 
 export async function connectPanel(client) {
     var lines = [];
-    lines.push(`${c.blue}${c.bold}New NWC Connection${c.reset}`);
+    lines.push(title('New NWC Connection', null, c.blue));
     lines.push('');
 
     try {
@@ -553,7 +693,7 @@ export async function connectPanel(client) {
 
 export async function exportPanel(client) {
     var lines = [];
-    lines.push(`${c.yellow}${c.bold}Export Data${c.reset}`);
+    lines.push(title('Export Data', null, c.yellow));
     lines.push('');
 
     try {
@@ -595,7 +735,7 @@ export async function exportPanel(client) {
 
 export async function revokePanel(client) {
     var lines = [];
-    lines.push(`${c.red}${c.bold}Revoke Connection${c.reset}`);
+    lines.push(title('Revoke Connection', null, c.red));
     lines.push('');
     lines.push(`  Disconnect an NWC connection permanently.`);
     lines.push(`  Transaction history is kept.`);
@@ -622,6 +762,126 @@ export async function revokePanel(client) {
     return lines;
 }
 
+// ── Panel: Activity ──────────────────────────────────────────────────────
+
+export async function activityPanel(client) {
+    var lines = [];
+    lines.push(title('Activity'));
+    lines.push('');
+
+    // Fetch transaction data for breakdown
+    var allTxs = [];
+    try {
+        var hist = await client.get('/api/v1/history', { limit: '100', unpaid: 'true' });
+        allTxs = hist.transactions || [];
+    } catch (e) { /* skip */ }
+
+    if (allTxs.length === 0) {
+        emptyState(lines,
+            'No activity data yet',
+            'Charts and breakdowns appear as payments flow through NUTbits.',
+            'Send or receive sats to see volume, trends, and connection stats.'
+        );
+        return lines;
+    }
+
+    // Volume by day (last 7 days)
+    var now = Math.floor(Date.now() / 1000);
+    var dayBuckets = {};
+    var dayLabels = [];
+    for (var i = 6; i >= 0; i--) {
+        var dayTs = now - i * 86400;
+        var dayKey = new Date(dayTs * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+        dayBuckets[dayKey] = 0;
+        dayLabels.push(dayKey);
+    }
+
+    var settledCount = 0;
+    var failedCount = 0;
+    var totalIncoming = 0;
+    var totalOutgoing = 0;
+
+    for (var tx of allTxs) {
+        if (tx.settled_at) settledCount++;
+        if (tx.err_msg) failedCount++;
+        var amtSats = Math.floor((tx.amount || 0) / 1000);
+        if (tx.type === 'incoming') totalIncoming += amtSats;
+        else totalOutgoing += amtSats;
+
+        // Bucket by day
+        var txDay = new Date((tx.created_at || 0) * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+        if (dayBuckets[txDay] !== undefined) dayBuckets[txDay] += amtSats;
+    }
+
+    // Daily volume bars
+    lines.push(`  ${c.muted}Volume (last 7 days):${c.reset}`);
+    lines.push('');
+    var dayData = dayLabels.map(d => ({ label: d, value: dayBuckets[d], color: c.purple }));
+    // Filter out all-zero days from the beginning
+    while (dayData.length > 1 && dayData[0].value === 0) dayData.shift();
+    var dayBars = hbar(dayData, 48, { unit: 'sats', showPct: false });
+    for (var bl of dayBars) lines.push(`  ${bl}`);
+
+    lines.push('');
+    lines.push(divider());
+    lines.push('');
+
+    // Summary stats
+    lines.push(`  ${c.muted}Summary:${c.reset}`);
+    lines.push('');
+    lines.push(kv('  Incoming', `${c.green}${c.bold}${totalIncoming.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+    lines.push(kv('  Outgoing', `${c.red}${c.bold}${totalOutgoing.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+    lines.push(kv('  Net flow', `${c.white}${c.bold}${(totalIncoming - totalOutgoing).toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+
+    // Success rate gauge
+    var totalTx = settledCount + failedCount;
+    if (totalTx > 0) {
+        lines.push('');
+        var successGauge = gauge(settledCount, totalTx, 30, { label: '  Success', color: c.green, showPct: true });
+        for (var gl of successGauge) lines.push(gl);
+        lines.push(`  ${c.dim}${settledCount} settled, ${failedCount} failed of ${totalTx} total${c.reset}`);
+    }
+
+    // Per-connection breakdown
+    var connMap = {};
+    for (var tx of allTxs) {
+        var cl = tx.connection_label || 'unknown';
+        connMap[cl] = (connMap[cl] || 0) + Math.floor((tx.amount || 0) / 1000);
+    }
+    var connEntries = Object.entries(connMap).sort((a, b) => b[1] - a[1]);
+    if (connEntries.length > 1) {
+        lines.push('');
+        lines.push(divider());
+        lines.push('');
+        lines.push(`  ${c.muted}By connection:${c.reset}`);
+        lines.push('');
+        var connData = connEntries.slice(0, 8).map(([label, value]) => ({
+            label: label.slice(0, 14),
+            value,
+            color: c.blue,
+        }));
+        var connBars = hbar(connData, 48, { unit: 'sats', showPct: true });
+        for (var cb of connBars) lines.push(`  ${cb}`);
+    }
+
+    // Session activity sparkline
+    var ds = getDs(client);
+    if (ds) {
+        var txHistory = ds.getTxCountHistory();
+        if (txHistory.length > 5) {
+            lines.push('');
+            lines.push(divider());
+            lines.push('');
+            lines.push(`  ${c.muted}Session activity (tx count):${c.reset}`);
+            lines.push('');
+            var actSpark = sparkline(txHistory, 48, { color: c.green, showRange: true });
+            for (var asl of actSpark) lines.push(`  ${asl}`);
+        }
+    }
+
+    return lines;
+}
+
 // ── Panel Router ─────────────────────────────────────────────────────────
 
 var PANELS = {
@@ -629,6 +889,7 @@ var PANELS = {
     balance:     balancePanel,
     connections: connectionsPanel,
     history:     historyPanel,
+    activity:    activityPanel,
     mints:       mintsPanel,
     nuts:        nutsPanel,
     relays:      relaysPanel,
@@ -651,9 +912,12 @@ export async function renderPanel(panelId, client) {
         return await fn(client);
     } catch (e) {
         return [
-            `${c.red}Error loading ${panelId}${c.reset}`,
             '',
-            `${c.dim}${e.message}${c.reset}`,
+            `  ${c.red}${c.bold}Error loading ${panelId}${c.reset}`,
+            '',
+            `  ${c.dim}${(e.message || '').slice(0, 100)}${c.reset}`,
+            '',
+            `  ${c.muted}Press ${c.white}r${c.muted} to retry or check if NUTbits is running.${c.reset}`,
         ];
     }
 }

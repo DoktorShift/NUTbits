@@ -1,10 +1,14 @@
 // NUTbits TUI - Menu component
-// Navigable left-panel menu with sections, labels, and reverse-video highlight
+// Focus-aware, responsive separators, background highlight on active item
 
 import { c } from '../colors.js';
+import { getMenuWidth } from './layout.js';
+
+// Background highlight for focused active item
+var bgHighlight = '\x1b[48;2;45;30;65m'; // dark purple bg
+var bgReset = '\x1b[49m';
 
 // ── Menu Definition ──────────────────────────────────────────────────────
-// Icons: single-cell-width only (no emoji) for cross-terminal compatibility
 
 export var MENU_ITEMS = [
     { id: 'sec_overview',  section_label: 'OVERVIEW' },
@@ -12,16 +16,17 @@ export var MENU_ITEMS = [
     { id: 'balance',       label: 'Balance',          icon: '$', section: 'overview' },
     { id: 'connections',   label: 'Connections',      icon: '#', section: 'overview' },
     { id: 'history',       label: 'History',          icon: '>', section: 'overview' },
+    { id: 'activity',      label: 'Activity',         icon: '~', section: 'overview' },
     { id: 'sec_actions',   section_label: 'ACTIONS' },
     { id: 'pay',           label: 'Pay',              icon: '<', section: 'actions', color: c.red },
     { id: 'receive',       label: 'Receive',          icon: '>', section: 'actions', color: c.green },
     { id: 'connect',       label: 'New Connection',   icon: '+', section: 'actions', color: c.blue },
     { id: 'revoke',        label: 'Revoke',           icon: 'x', section: 'actions', color: c.red },
+    { id: 'export',        label: 'Export',            icon: 'E', section: 'actions', color: c.yellow },
     { id: 'sec_network',   section_label: 'NETWORK' },
     { id: 'mints',         label: 'Mints',            icon: 'M', section: 'network' },
     { id: 'nuts',          label: 'NUTs',             icon: 'N', section: 'network' },
     { id: 'relays',        label: 'Relays',           icon: 'R', section: 'network' },
-    { id: 'export',        label: 'Export History',   icon: 'E', section: 'actions', color: c.yellow },
     { id: 'sec_system',    section_label: 'SYSTEM' },
     { id: 'fees',          label: 'Fees',             icon: '%', section: 'system', color: c.yellow },
     { id: 'config',        label: 'Config',           icon: '~', section: 'system' },
@@ -30,7 +35,6 @@ export var MENU_ITEMS = [
     { id: 'logs',          label: 'Logs',             icon: '.', section: 'system' },
 ];
 
-// Navigable items (skip section headers)
 export var NAV_ITEMS = MENU_ITEMS.filter(m => m.label);
 
 // ── Menu State ───────────────────────────────────────────────────────────
@@ -53,18 +57,23 @@ export function getSelectedId(state) {
 
 // ── Render Menu Lines ────────────────────────────────────────────────────
 
-export function renderMenu(state, maxRows) {
+export function renderMenu(state, maxRows, focused) {
     var selected = state.index;
+    var cols = (process.stdout.columns || 100);
+    var mw = getMenuWidth(cols);
+    var sepLen = mw - 4; // dynamic separator width
     var lines = [];
 
     var navIdx = 0;
     for (var item of MENU_ITEMS) {
         if (lines.length >= maxRows) break;
 
-        // Section header
+        // Section header with dynamic separator
         if (item.section_label) {
-            if (lines.length > 0) lines.push(''); // blank line before (except first)
-            lines.push(`${c.dim} ${item.section_label}${c.reset}`);
+            if (lines.length > 0) lines.push('');
+            var headerColor = focused ? c.muted : c.dim;
+            lines.push(`${headerColor} ${item.section_label}${c.reset}`);
+            lines.push(`${c.dim} ${'─'.repeat(sepLen)}${c.reset}`);
             continue;
         }
 
@@ -72,12 +81,16 @@ export function renderMenu(state, maxRows) {
         var icon = item.icon || ' ';
         var label = item.label;
 
-        if (isActive) {
-            // Reverse-video style: bright background indicator + bold text
+        if (isActive && focused) {
+            // Focused + active: background highlight + bold colored text
             var clr = item.color || c.purple;
-            lines.push(`${clr}${c.bold} >> ${icon} ${label}${c.reset}`);
+            lines.push(`${bgHighlight} ${clr}${c.bold}▌ ${icon} ${label}${c.reset}${bgReset}${c.reset}`);
+        } else if (isActive && !focused) {
+            // Unfocused + active: subtle indicator, white label
+            lines.push(`${c.muted} ▌${c.reset} ${c.white}${icon} ${label}${c.reset}`);
         } else {
-            lines.push(`${c.muted}    ${icon} ${label}${c.reset}`);
+            // Inactive: dim text
+            lines.push(`${c.dim}   ${icon} ${label}${c.reset}`);
         }
         navIdx++;
     }
