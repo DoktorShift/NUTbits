@@ -29,7 +29,7 @@ All settings in `.env` (see `.env.example`):
 
 | Variable | Default | Description |
 |---|---|---|
-| `NUTBITS_MINT_URL` | `https://mint.coinos.io` | Cashu mint URL ([find mints](https://bitcoinmints.com)) |
+| `NUTBITS_MINT_URL` | `https://mint.minibits.cash/Bitcoin` | Cashu mint URL ([find mints](https://bitcoinmints.com)) |
 | `NUTBITS_MINT_URLS` | _(optional)_ | Comma-separated mint URLs for failover (first = primary) |
 | `NUTBITS_RELAYS` | `wss://nostrue.com` | Comma-separated Nostr relays |
 | `NUTBITS_STATE_PASSPHRASE` | _(required)_ | Passphrase to encrypt state at rest |
