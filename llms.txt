@@ -24,10 +24,10 @@ License: AGPL-3.0. Author: DoktorShift.
 ## Core Documentation
 
 - [README.md](README.md): Project overview, configuration reference, supported NUTs and NIPs, trust model
-- [HOW-IT-WORKS.md](HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
-- [INSTALL.md](INSTALL.md): Setup guide for bare metal, Docker, and LNbits integration
-- [CLI.md](CLI.md): Full CLI and TUI command reference, connection management, service fees
-- [CONSOLE.md](CONSOLE.md): How to use the interactive TUI dashboard
+- [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
+- [INSTALL.md](docs/INSTALL.md): Setup guide for bare metal, Docker, and LNbits integration
+- [CLI.md](docs/CLI.md): Full CLI and TUI command reference, connection management, service fees
+- [CONSOLE.md](docs/CONSOLE.md): How to use the interactive TUI dashboard
 
 ## Architecture
 
@@ -39,9 +39,9 @@ License: AGPL-3.0. Author: DoktorShift.
 
 ## Operations
 
-- [DATABASE.md](DATABASE.md): Storage backends — file (default), SQLite (recommended), MySQL
-- [BACKUP.md](BACKUP.md): Backup procedures, encrypted state export, seed-based recovery
-- [STATE.md](STATE.md): Deep dive into the encrypted state file format and decryption
+- [DATABASE.md](docs/DATABASE.md): Storage backends — file (default), SQLite (recommended), MySQL
+- [BACKUP.md](docs/BACKUP.md): Backup procedures, encrypted state export, seed-based recovery
+- [STATE.md](docs/STATE.md): Deep dive into the encrypted state file format and decryption
 - [SECURITY.md](SECURITY.md): Security architecture and threat model
 
 ## Optional

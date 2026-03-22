@@ -19,6 +19,9 @@ nutbits_state.enc.migrated
 *.db-wal
 *.db-shm
 
+# Unpublished blog drafts
+blog/_drafts/
+
 # Claude Code
 .claude/
 

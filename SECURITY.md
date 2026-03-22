@@ -18,7 +18,7 @@ The authors and contributors of NUTbits accept **no liability** for lost funds, 
 If you discover a security vulnerability, **please report it responsibly**.
 
 - **Do not** open a public GitHub issue for security vulnerabilities
-- **Email:** [doktorshift@proton.me](mailto:doktorshift@proton.me)
+- **Email:** [Me - DrShift](mailto:keleeweb@tutanota.com)
 - **Nostr:** DM [DoktorShift](https://njump.me/npub17c2szua46mc8ndp4grvy4z5465x0qxjge8tqx7vyu0vkqr24y2hssuuy6f)
 
 Include:

@@ -78,4 +78,4 @@ Two layers. Both transparent. Both under your control.
 
 **Stop fronting fees. Start earning from the first sat.** Put NUTbits in front of LNBits and let the two-layer model work for you.
 
-[GitHub](https://github.com/DoktorShift/nutbits) · [How It Works](../HOW-IT-WORKS.md) · [LNBits](https://lnbits.com)
+[GitHub](https://github.com/DoktorShift/nutbits) · [How It Works](../docs/HOW-IT-WORKS.md) · [LNBits](https://lnbits.com)

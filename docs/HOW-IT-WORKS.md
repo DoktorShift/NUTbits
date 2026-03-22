@@ -119,7 +119,7 @@ The management console lets you create multiple NWC connections with different p
 - [INSTALL.md](INSTALL.md) — Get NUTbits running in 5 minutes
 - [CONSOLE.md](CONSOLE.md) — How to use the TUI and CLI day-to-day
 - [CLI.md](CLI.md) — Full command reference
-- [README.md](README.md) — Full technical reference
+- [README.md](../README.md) — Full technical reference
 - [LNbits](https://lnbits.com) — Lightning accounts system that NUTbits was built to power
 - [Cashu protocol](https://cashu.space) — Learn about ecash for Bitcoin
 - [NIP-47 spec](https://github.com/nostr-protocol/nips/blob/master/47.md) — The NWC protocol NUTbits implements

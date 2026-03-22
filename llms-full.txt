@@ -18,7 +18,7 @@ Inspired by [supertestnet/bankify](https://github.com/supertestnet/bankify). Bui
 
 ## Quick Start
 
-See **[INSTALL.md](INSTALL.md)** for full setup instructions (bare metal, Docker, LNbits integration).
+See **[INSTALL.md](docs/INSTALL.md)** for full setup instructions (bare metal, Docker, LNbits integration).
 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
@@ -53,9 +53,9 @@ All settings in `.env` (see `.env.example`):
 | `NUTBITS_SERVICE_FEE_BASE` | `0` | Flat base fee in sats per outgoing payment (0 = disabled) |
 | `NUTBITS_API_ENABLED` | `true` | Set to `false` to disable management API/CLI |
 
-> **Storage:** See **[DATABASE.md](DATABASE.md)** for backend comparison, setup, and migration.
-> **Backups:** See **[BACKUP.md](BACKUP.md)** for backup and recovery procedures.
-> **Service fees:** See **[CLI.md](CLI.md#service-fees)** for fee configuration, per-connection overrides, and revenue tracking.
+> **Storage:** See **[DATABASE.md](docs/DATABASE.md)** for backend comparison, setup, and migration.
+> **Backups:** See **[BACKUP.md](docs/BACKUP.md)** for backup and recovery procedures.
+> **Service fees:** See **[CLI.md](docs/CLI.md#service-fees)** for fee configuration, per-connection overrides, and revenue tracking.
 
 Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
@@ -135,7 +135,7 @@ nutbits receive <amount>   # create an invoice
 
 Create multiple NWC connections with scoped permissions and spending limits — one for LNbits with full access, another for a POS with pay-only and a daily cap.
 
-See **[CLI.md](CLI.md)** for the full command reference.
+See **[CLI.md](docs/CLI.md)** for the full command reference.
 
 > Set `NUTBITS_API_ENABLED=false` in `.env` to disable the management API entirely.
 
@@ -150,7 +150,7 @@ See **[CLI.md](CLI.md)** for the full command reference.
 - Atomic state writes (crash-safe)
 - Graceful shutdown with state save
 
-All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](STATE.md) for backup, recovery, and decryption instructions** — this is critical if you're running NUTbits with real funds.
+All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](docs/STATE.md) for backup, recovery, and decryption instructions** — this is critical if you're running NUTbits with real funds.
 
 ## Multi-Mint Failover
 
@@ -189,13 +189,13 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 
 | Document | Description |
 |----------|-------------|
-| [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
-| [CONSOLE.md](CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
-| [CLI.md](CLI.md) | Full command reference — flags, scripting, connections |
-| [INSTALL.md](INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
-| [DATABASE.md](DATABASE.md) | Storage backends — file, SQLite, MySQL |
-| [BACKUP.md](BACKUP.md) | Backup, recovery, and encryption details |
-| [STATE.md](STATE.md) | Deep dive into the encrypted state file |
+| [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
+| [CONSOLE.md](docs/CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
+| [CLI.md](docs/CLI.md) | Full command reference — flags, scripting, connections |
+| [INSTALL.md](docs/INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
+| [DATABASE.md](docs/DATABASE.md) | Storage backends — file, SQLite, MySQL |
+| [BACKUP.md](docs/BACKUP.md) | Backup, recovery, and encryption details |
+| [STATE.md](docs/STATE.md) | Deep dive into the encrypted state file |
 
 ## Trust Model
 
@@ -311,7 +311,7 @@ When enabled, the fee is deducted from the sender's balance on each outgoing pay
 
 The fee is transparent: NWC clients that support it can read the fee policy from the `get_info` response and see the exact fee on each payment. Clients that don't support it simply ignore the extra field — nothing breaks.
 
-This makes it possible to run NUTbits as a service for others, covering costs or earning a small margin. See **[CLI.md](CLI.md#service-fees)** for setup.
+This makes it possible to run NUTbits as a service for others, covering costs or earning a small margin. See **[CLI.md](docs/CLI.md#service-fees)** for setup.
 
 ## Who Is This For?
 
@@ -331,13 +331,13 @@ nutbits connections  # see your NWC connections
 nutbits connect      # create a new connection
 ```
 
-The management console lets you create multiple NWC connections with different permissions — one for LNbits with full access, another for a POS terminal with just pay and a daily spending cap. See **[CLI.md](CLI.md)** for the full guide.
+The management console lets you create multiple NWC connections with different permissions — one for LNbits with full access, another for a POS terminal with just pay and a daily spending cap. See **[CLI.md](docs/CLI.md)** for the full guide.
 
 ## Related Reading
 
-- [INSTALL.md](INSTALL.md) — Get NUTbits running in 5 minutes
-- [CONSOLE.md](CONSOLE.md) — How to use the TUI and CLI day-to-day
-- [CLI.md](CLI.md) — Full command reference
+- [INSTALL.md](docs/INSTALL.md) — Get NUTbits running in 5 minutes
+- [CONSOLE.md](docs/CONSOLE.md) — How to use the TUI and CLI day-to-day
+- [CLI.md](docs/CLI.md) — Full command reference
 - [README.md](README.md) — Full technical reference
 - [LNbits](https://lnbits.com) — Lightning accounts system that NUTbits was built to power
 - [Cashu protocol](https://cashu.space) — Learn about ecash for Bitcoin
@@ -422,7 +422,7 @@ No extra configuration — the CLI finds the running service and authenticates a
 
 > Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
 
-See **[CLI.md](CLI.md)** for the full setup and command reference.
+See **[CLI.md](docs/CLI.md)** for the full setup and command reference.
 
 ## Docker
 
@@ -506,7 +506,7 @@ npm install
 npm start
 ```
 
-Your state file is preserved across upgrades. If upgrading to a new storage backend, see [DATABASE.md](DATABASE.md) for migration instructions.
+Your state file is preserved across upgrades. If upgrading to a new storage backend, see [DATABASE.md](docs/DATABASE.md) for migration instructions.
 
 ---
 
@@ -516,7 +516,7 @@ Your state file is preserved across upgrades. If upgrading to a new storage back
 
 ## What Is This?
 
-This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** — workflows, TUI vs CLI, tips — see **[CONSOLE.md](CONSOLE.md)**.
+This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** — workflows, TUI vs CLI, tips — see **[CONSOLE.md](docs/CONSOLE.md)**.
 
 NUTbits runs as a background service. The management console gives you a window into what's happening and lets you control it:
 
@@ -1019,9 +1019,9 @@ Then use it normally from your host.
 
 ## Related
 
-- [CLI.md](CLI.md) — full command reference, flags, environment variables
-- [INSTALL.md](INSTALL.md) — getting NUTbits up and running
-- [HOW-IT-WORKS.md](HOW-IT-WORKS.md) — what NUTbits does and why
+- [CLI.md](docs/CLI.md) — full command reference, flags, environment variables
+- [INSTALL.md](docs/INSTALL.md) — getting NUTbits up and running
+- [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) — what NUTbits does and why
 
 ---
 
@@ -1057,7 +1057,7 @@ NUTBITS_STATE_PASSPHRASE=your-passphrase
 
 **Limitation:** Two concurrent payments can still read stale proof data between async `await` points. The mutex serializes writes but not reads. For single-user setups this rarely matters. For LNbits with concurrent users, use SQLite or MySQL.
 
-> See [STATE.md](STATE.md) for encryption details and manual decryption.
+> See [STATE.md](docs/STATE.md) for encryption details and manual decryption.
 
 ## SQLite Backend (recommended)
 
@@ -1351,8 +1351,8 @@ node decrypt_state.js "your-passphrase"
 
 # Encrypted State File (`.enc`)
 
-> This document covers the **file backend** specifically. For SQLite and MySQL, see [DATABASE.md](DATABASE.md).
-> For backup procedures across all backends, see [BACKUP.md](BACKUP.md).
+> This document covers the **file backend** specifically. For SQLite and MySQL, see [DATABASE.md](docs/DATABASE.md).
+> For backup procedures across all backends, see [BACKUP.md](docs/BACKUP.md).
 
 The `.enc` file is the default storage backend (`NUTBITS_STATE_BACKEND=file`). It holds your entire wallet — ecash proofs, NWC keys, transaction history — in a single AES-256-GCM encrypted file.
 
@@ -1470,7 +1470,7 @@ console.log(JSON.stringify(JSON.parse(d.update(enc, null, 'utf8') + d.final('utf
 | LNbits with concurrent payments | `sqlite` — atomic proof operations |
 | Multi-server production | `mysql` — shared remote database |
 
-See [DATABASE.md](DATABASE.md) for setup and migration instructions.
+See [DATABASE.md](docs/DATABASE.md) for setup and migration instructions.
 
 ---
 

@@ -48,7 +48,7 @@ store/
 
 - ES modules everywhere. No CommonJS, no `require()`.
 - `var` (not `let`/`const`) — this is an intentional project convention.
-- No semicolons at line ends.
+- Semicolons at line ends.
 - Minimal dependencies — stdlib preferred over npm packages.
 - No TypeScript, no build step. Raw JS, runs directly with `node`.
 - Comments use `// ── Section Name ──` dividers for major blocks.

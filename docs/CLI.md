@@ -220,9 +220,10 @@ nutbits export history --format csv --type outgoing
 nutbits export history --format csv --type incoming
 nutbits export history --format csv --from 1710806400 --until 1711411200
 nutbits export history --format csv --connection "lnbits-main"
+nutbits export history --format csv --include-revoked  # include revoked connections
 ```
 
-CSV columns: `date`, `time`, `type`, `amount_sats`, `routing_fee_sats`, `service_fee_sats`, `status`, `connection`, `description`, `payment_hash`. Includes transactions from revoked connections for complete records.
+CSV columns: `date`, `time`, `type`, `amount_sats`, `routing_fee_sats`, `service_fee_sats`, `status`, `connection`, `description`, `payment_hash`. Use `--include-revoked` to include transactions from revoked connections for complete records.
 
 ### NWC connections
 

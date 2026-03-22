@@ -59,4 +59,4 @@ It's a new way to think about what a Cashu mint can be. Not just a wallet backen
 
 ---
 
-**Curious?** Check out the [install guide](../INSTALL.md) or browse the [source on GitHub](https://github.com/DoktorShift/nutbits).
+**Curious?** Check out the [install guide](../docs/INSTALL.md) or browse the [source on GitHub](https://github.com/DoktorShift/nutbits).
