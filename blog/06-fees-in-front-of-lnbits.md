@@ -18,7 +18,7 @@ What if the fee was collected **before** the payment left the building?
 
 ## NUTbits Collects at the Source
 
-When NUTbits sits between a Cashu mint and LNBits as the funding source, it can charge a service fee on every outgoing payment. That fee is deducted at the bridge level — before LNBits even sees the transaction.
+When NUTbits sits between a Cashu mint and LNBits as the funding source, it can charge a service fee on every outgoing payment. That fee is deducted at the bridge level, before LNBits even sees the transaction.
 
 From LNBits' perspective, the payment just had a slightly higher cost. From your perspective, you just earned revenue without fronting anything.
 
@@ -28,9 +28,9 @@ The mint handles the Lightning routing. NUTbits takes a service fee for the brid
 
 Here's another one. You can stack two fee layers:
 
-**Layer 1 — NUTbits (funding source fee):** This covers your infrastructure costs. The mint, the liquidity, the bridge. Set a percentage, a flat fee per payment, or both. Every outgoing payment generates revenue at this layer.
+**Layer 1 - NUTbits (funding source fee):** This covers your infrastructure costs. The mint, the liquidity, the bridge. Set a percentage, a flat fee per payment, or both. Every outgoing payment generates revenue at this layer.
 
-**Layer 2 — LNBits (platform fee):** This is your margin for running the LNBits instance. The value you add by curating extensions, managing users, providing the platform. Configure this however LNBits lets you.
+**Layer 2 - LNBits (platform fee):** This is your margin for running the LNBits instance. The value you add by curating extensions, managing users, providing the platform. Configure this however LNBits lets you.
 
 Together, you get a clean split:
 

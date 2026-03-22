@@ -5,7 +5,7 @@
 > This document covers the **file backend** specifically. For SQLite and MySQL, see [DATABASE.md](DATABASE.md).
 > For backup procedures across all backends, see [BACKUP.md](BACKUP.md).
 
-The `.enc` file is the default storage backend (`NUTBITS_STATE_BACKEND=file`). It holds your entire wallet — ecash proofs, NWC keys, transaction history — in a single AES-256-GCM encrypted file.
+The `.enc` file is the default storage backend (`NUTBITS_STATE_BACKEND=file`). It holds your entire wallet (ecash proofs, NWC keys, transaction history) in a single AES-256-GCM encrypted file.
 
 ## What's Inside
 
@@ -70,18 +70,18 @@ When decrypted, the state is a JSON object:
 
 1. A random **salt** is generated per save
 2. `NUTBITS_STATE_PASSPHRASE` + salt run through **scrypt** to derive a 32-byte AES key
-3. JSON encrypted with **AES-256-GCM** (authenticated — detects tampering)
-4. Written to `.enc.tmp` first, then renamed to `.enc` (atomic — crash-safe)
+3. JSON encrypted with **AES-256-GCM** (authenticated; detects tampering)
+4. Written to `.enc.tmp` first, then renamed to `.enc` (atomic; crash-safe)
 5. File permissions set to `0600` (owner read/write only)
 
-A **write mutex** serializes all writes — concurrent operations cannot corrupt the file.
+A **write mutex** serializes all writes; concurrent operations cannot corrupt the file.
 
 ## Decrypt Manually
 
 For debugging or recovery:
 
 ```js
-// decrypt_state.js — run with: node decrypt_state.js "your-passphrase"
+// decrypt_state.js - run with: node decrypt_state.js "your-passphrase"
 import crypto from 'crypto';
 import fs from 'fs';
 
@@ -108,8 +108,8 @@ console.log(JSON.stringify(JSON.parse(d.update(enc, null, 'utf8') + d.final('utf
 
 ## Important Notes
 
-- **The `.enc` file IS your money** (unless you have a seed configured — then funds are recoverable)
-- **Never run two NUTbits instances** with the same state file — double-spend risk
+- **The `.enc` file IS your money** (unless you have a seed configured, in which case funds are recoverable)
+- **Never run two NUTbits instances** with the same state file; double-spend risk
 - **The `.tmp` file** is a write-in-progress artifact. If it exists after a crash, `.enc` is still valid. Delete `.tmp` safely.
 - **Changing your passphrase:** stop NUTbits, update `NUTBITS_STATE_PASSPHRASE` in `.env`, restart. The file is re-encrypted on next save.
 
@@ -117,8 +117,8 @@ console.log(JSON.stringify(JSON.parse(d.update(enc, null, 'utf8') + d.final('utf
 
 | Use case | Recommendation |
 |----------|---------------|
-| Personal use, single user | `file` — simple, portable, no dependencies |
-| LNbits with concurrent payments | `sqlite` — atomic proof operations |
-| Multi-server production | `mysql` — shared remote database |
+| Personal use, single user | `file` - simple, portable, no dependencies |
+| LNbits with concurrent payments | `sqlite` - atomic proof operations |
+| Multi-server production | `mysql` - shared remote database |
 
 See [DATABASE.md](DATABASE.md) for setup and migration instructions.

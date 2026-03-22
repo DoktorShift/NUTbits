@@ -4,12 +4,12 @@
 
 ## What Is This?
 
-This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** — workflows, TUI vs CLI, tips — see **[CONSOLE.md](CONSOLE.md)**.
+This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** (workflows, TUI vs CLI, tips), see **[CONSOLE.md](CONSOLE.md)**.
 
 NUTbits runs as a background service. The management console gives you a window into what's happening and lets you control it:
 
-- **`nutbits`** — interactive TUI dashboard (monitor)
-- **`nutbits <command>`** — single CLI command (act)
+- **`nutbits`** - interactive TUI dashboard (monitor)
+- **`nutbits <command>`** - single CLI command (act)
 
 Both talk to the same local API. Same data, your choice of interface.
 
@@ -21,16 +21,16 @@ Both talk to the same local API. Same data, your choice of interface.
 
 ### Bare metal
 
-You need two terminals — one runs the service, the other runs the CLI.
+You need two terminals - one runs the service, the other runs the CLI.
 
-**Terminal 1 — start the service:**
+**Terminal 1 - start the service:**
 
 ```bash
 cd nutbits
 npm start
 ```
 
-**Terminal 2 — set up and run the CLI:**
+**Terminal 2 - set up and run the CLI:**
 
 ```bash
 cd nutbits
@@ -70,7 +70,7 @@ nutbits balance
 
 ### No configuration needed
 
-The CLI connects automatically. When NUTbits starts, it creates a local socket and auth token at `~/.nutbits/`. The CLI finds and reads these on its own — nothing to configure.
+The CLI connects automatically. When NUTbits starts, it creates a local socket and auth token at `~/.nutbits/`. The CLI finds and reads these on its own; nothing to configure.
 
 ### Troubleshooting
 
@@ -112,7 +112,7 @@ The CLI connects automatically. When NUTbits starts, it creates a local socket a
 | `nutbits verify` | Check a backup file |
 | `nutbits restore` | Recover proofs from seed |
 
-## Connections — The Powerful Part
+## Connections - The Powerful Part
 
 One NUTbits instance, many NWC connections. Each with its own permissions and spending limits.
 
@@ -122,14 +122,14 @@ One NUTbits instance, many NWC connections. Each with its own permissions and sp
 
 ### Create a connection
 
-Just run `nutbits connect` — the guided menu walks you through it:
+Just run `nutbits connect` - the guided menu walks you through it:
 
 1. Give it a name
 2. Choose permissions (pay, receive, balance, history, info)
 3. Set a daily spending limit (optional)
 4. Set a per-payment limit (optional)
 5. Pick a mint (if you have multiple)
-6. Confirm — get your NWC string
+6. Confirm - get your NWC string
 
 For scripting:
 
@@ -143,7 +143,7 @@ nutbits connect --label "public-api" --permissions pay,receive,balance --fee-ppm
 ### Revoke a connection
 
 ```bash
-nutbits revoke        # interactive — pick from a list
+nutbits revoke        # interactive - pick from a list
 nutbits revoke 2      # revoke connection #2 directly
 ```
 
@@ -167,14 +167,14 @@ Use `all` to grant everything.
 
 ```bash
 nutbits pay lnbc12000n1pj...     # pay directly
-nutbits pay                       # interactive — paste the invoice
+nutbits pay                       # interactive - paste the invoice
 ```
 
 ### Receive sats
 
 ```bash
 nutbits receive 5000              # create a 5000 sat invoice
-nutbits receive                   # interactive — enter amount
+nutbits receive                   # interactive - enter amount
 ```
 
 By default, `receive` waits for the payment to arrive. Use `--no-wait` to just print the invoice and exit.
@@ -205,7 +205,7 @@ Export data from your NUTbits instance. Three export types available:
 ### Interactive
 
 ```bash
-nutbits export                    # choose what to export interactively
+nutbits export                    # choose what to export
 ```
 
 ### Transaction history
@@ -228,7 +228,7 @@ CSV columns: `date`, `time`, `type`, `amount_sats`, `routing_fee_sats`, `service
 ### NWC connections
 
 ```bash
-nutbits export connections                         # interactive — pick one or all
+nutbits export connections                         # interactive - pick one or all
 nutbits export connections --id 2                  # single connection NWC string
 nutbits export connections --format json --out connections.json
 ```
@@ -238,7 +238,7 @@ Exports NWC connection strings, permissions, spending limits, and per-connection
 ### Mint info
 
 ```bash
-nutbits export mints                               # interactive — view and save
+nutbits export mints                               # interactive - view and save
 nutbits export mints --format json --out mints.json
 ```
 
@@ -252,7 +252,7 @@ nutbits verify ./backup.enc       # check a backup file
 nutbits restore                   # recover proofs from seed (NUT-09)
 ```
 
-Backups are encrypted with your state passphrase. The seed recovers your ecash proofs deterministically — as long as the mint supports NUT-09.
+Backups are encrypted with your state passphrase. The seed recovers your ecash proofs deterministically, as long as the mint supports NUT-09.
 
 ## Scripting with --json
 
@@ -276,7 +276,7 @@ nutbits connections --json | jq '.connections[].label'
 
 ## Service Fees
 
-NUTbits can optionally take a cut on outgoing payments. Disabled by default — zero fees unless you turn it on.
+NUTbits can optionally take a cut on outgoing payments. Disabled by default; zero fees unless you turn it on.
 
 **Receiving is always free.** Only outgoing payments (pay_invoice) can have a fee.
 
@@ -324,15 +324,15 @@ nutbits fees --json       # machine-readable for dashboards
 
 The management API communicates over a local Unix socket at `~/.nutbits/nutbits.sock`. It never touches the network.
 
-- **Authentication** — every request requires a bearer token (auto-generated, stored at `~/.nutbits/nutbits.sock.token`)
-- **Permissions** — socket file is mode 0600, directory is mode 0700
-- **Kill switch** — set `NUTBITS_API_ENABLED=false` in your `.env` to disable the entire management API
+- **Authentication** - every request requires a bearer token (auto-generated, stored at `~/.nutbits/nutbits.sock.token`)
+- **Permissions** - socket file is mode 0600, directory is mode 0700
+- **Kill switch** - set `NUTBITS_API_ENABLED=false` in your `.env` to disable the entire management API
 
 On shared servers, the API is only accessible to the user running NUTbits. No other user can read the socket or token file.
 
 ### Disabling the CLI
 
-If you don't need the management console at all — maybe you're running NUTbits headless in production and want zero attack surface beyond NWC:
+If you don't need the management console at all, maybe you're running NUTbits headless in production and want zero attack surface beyond NWC:
 
 ```env
 NUTBITS_API_ENABLED=false

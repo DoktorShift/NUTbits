@@ -47,9 +47,9 @@ store/
 ## Code style
 
 - ES modules everywhere. No CommonJS, no `require()`.
-- `var` (not `let`/`const`) — this is an intentional project convention.
+- `var` (not `let`/`const`) - this is an intentional project convention.
 - Semicolons at line ends.
-- Minimal dependencies — stdlib preferred over npm packages.
+- Minimal dependencies - stdlib preferred over npm packages.
 - No TypeScript, no build step. Raw JS, runs directly with `node`.
 - Comments use `// ── Section Name ──` dividers for major blocks.
 
@@ -68,7 +68,7 @@ var calcServiceFee = (amountSats, connState) => {
 Agents working on this codebase need to understand these concepts:
 
 **Cashu ecash:**
-- Mints issue blind-signed ecash tokens (proofs). Proofs are bearer instruments — whoever holds them can spend them.
+- Mints issue blind-signed ecash tokens (proofs). Proofs are bearer instruments; whoever holds them can spend them.
 - Proofs are cryptographically bound to the issuing mint. Proofs from Mint A cannot be used at Mint B.
 - Minting (NUT-04): user pays a Lightning invoice, receives ecash proofs.
 - Melting (NUT-05): user surrenders ecash proofs, mint pays a Lightning invoice.
@@ -117,7 +117,7 @@ Auth: Bearer token via `Authorization` header. Token auto-generated at startup, 
 - Handle ecash proofs atomically (all-or-nothing swaps). Never leave partial proof state.
 - Deduplicate NWC events across relays to prevent double-payments.
 - Mask NWC strings, private keys, and proof data in all log output.
-- Validate mint URLs — HTTPS only, no private IP ranges, no localhost.
+- Validate mint URLs - HTTPS only, no private IP ranges, no localhost.
 
 **Ask first:**
 - Changes to NWC protocol handling or supported methods.
@@ -130,4 +130,4 @@ Auth: Bearer token via `Authorization` header. Token auto-generated at startup, 
 - Skip event deduplication.
 - Commit `.env` files, state files (`.enc`, `.db`), or socket token files.
 - Store passwords or secrets in plaintext.
-- Use `let` or `const` — project convention is `var`.
+- Use `let` or `const` - project convention is `var`.

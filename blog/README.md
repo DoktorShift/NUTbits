@@ -1,6 +1,6 @@
 # NUTbits Blog
 
-Articles about what you can build with NUTbits — from funding LNbits with ecash to running a hosted bridge platform.
+Articles about what you can build with NUTbits, from funding LNbits with ecash to running a hosted bridge platform.
 
 ## Articles
 

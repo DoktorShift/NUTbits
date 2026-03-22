@@ -71,7 +71,7 @@ nutbits balance      # check balance
 nutbits connections  # list NWC connections
 ```
 
-No extra configuration — the CLI finds the running service and authenticates automatically.
+No extra configuration needed. The CLI finds the running service and authenticates automatically.
 
 > Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
 
@@ -148,7 +148,7 @@ Check the logs for:
 [INFO] NWC connection ready
 ```
 
-From LNbits, check the balance — it should respond via NWC.
+From LNbits, check the balance; it should respond via NWC.
 
 ## Upgrading
 

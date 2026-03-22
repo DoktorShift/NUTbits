@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/headers/hero.svg" alt="NUTbits — Cashu ecash to NWC bridge" width="100%">
+  <img src="assets/headers/hero.svg" alt="NUTbits - Cashu ecash to NWC bridge" width="100%">
 </p>
 
 ## What is NUTbits?
 
-NUTbits is an NWC wallet service that translates between **Cashu Mint** (NUTs) and **Nostr Wallet Connect** (NIP-47). It connects to a Cashu mint, manages ecash tokens automatically, and exposes a full NWC server — so any NWC-compatible app can send and receive Lightning payments through the mint.
+NUTbits is an NWC wallet service that translates between **Cashu Mint** (NUTs) and **Nostr Wallet Connect** (NIP-47). It connects to a Cashu mint, manages ecash tokens automatically, and exposes a full NWC server, so any NWC-compatible app can send and receive Lightning payments through the mint.
 
 Use case: plug the NWC string into **LNbits** as a funding source, and your ecash mint powers the entire [LNbits](https://github.com/lnbits/lnbits) instance with [60+ Extensions](https://extensions.lnbits.com).
 
@@ -17,7 +17,7 @@ See **[INSTALL.md](docs/INSTALL.md)** for full setup instructions (bare metal, D
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
 npm install && cp .env.example .env
-# Edit .env — set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
+# Edit .env - set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
 npm start
 ```
 
@@ -86,16 +86,16 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
 ## Supported NWC Methods (NIP-47)
 
-- `get_info` — wallet metadata, capabilities, encryption support
-- `get_balance` — current balance in millisats
-- `make_invoice` — create a Lightning invoice (NUT-4 mint)
-- `pay_invoice` — pay a Lightning invoice (NUT-5 melt)
-- `lookup_invoice` — check invoice status
-- `list_transactions` — transaction history with filtering
+- `get_info` - wallet metadata, capabilities, encryption support
+- `get_balance` - current balance in millisats
+- `make_invoice` - create a Lightning invoice (NUT-4 mint)
+- `pay_invoice` - pay a Lightning invoice (NUT-5 melt)
+- `lookup_invoice` - check invoice status
+- `list_transactions` - transaction history with filtering
 
 **Notifications (push):**
-- `payment_received` — sent when an incoming invoice settles
-- `payment_sent` — sent when an outgoing payment completes
+- `payment_received` - sent when an incoming invoice settles
+- `payment_sent` - sent when an outgoing payment completes
 
 **Optional NIP-47 extensions** (non-breaking, clients can ignore or honor):
 - `get_info` response includes `service_fee` object when fees are enabled (ppm, base, applies_to)
@@ -116,7 +116,7 @@ State (keys, ecash proofs, transaction history) is encrypted with AES-256-GCM an
 
 ## Management Console
 
-NUTbits includes a CLI and interactive TUI to manage the daemon **while it's running**. Open a second terminal and use `nutbits` to control connections, check balances, pay invoices, and monitor activity — all without restarting the service.
+NUTbits includes a CLI and interactive TUI to manage the daemon **while it's running**. Open a second terminal and use `nutbits` to control connections, check balances, pay invoices, and monitor activity, all without restarting the service.
 
 ```bash
 nutbits                    # interactive TUI dashboard
@@ -132,7 +132,7 @@ nutbits mints              # mint status and health
 nutbits relays             # relay connection status
 ```
 
-Create multiple NWC connections with scoped permissions and spending limits — one for LNbits with full access, another for a POS with pay-only and a daily cap. Revoke any connection without affecting the others.
+Create multiple NWC connections with scoped permissions and spending limits; one for LNbits with full access, another for a POS with pay-only and a daily cap. Revoke any connection without affecting the others.
 
 See **[CLI.md](docs/CLI.md)** for the full command reference and **[CONSOLE.md](docs/CONSOLE.md)** for TUI usage.
 
@@ -149,14 +149,14 @@ See **[CLI.md](docs/CLI.md)** for the full command reference and **[CONSOLE.md](
 - Atomic state writes (crash-safe)
 - Graceful shutdown with state save
 
-All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](docs/STATE.md) for backup, recovery, and decryption instructions** — this is critical if you're running NUTbits with real funds.
+All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](docs/STATE.md) for backup, recovery, and decryption instructions** - this is critical if you're running NUTbits with real funds.
 
 ## Multi-Mint Failover
 
 NUTbits supports optional multi-mint failover for higher reliability. Configure multiple mints and NUTbits will automatically switch to the next one if the active mint goes down. Your NWC connection string stays the same.
 
 ```bash
-# In .env — first mint is primary, rest are fallbacks
+# In .env - first mint is primary, rest are fallbacks
 NUTBITS_MINT_URLS=https://your-primary-mint.com,https://your-backup-mint.com
 ```
 
@@ -172,7 +172,7 @@ NUTBITS_MINT_URLS=https://your-primary-mint.com,https://your-backup-mint.com
 
 Ecash proofs are cryptographically bound to the mint that issued them. Proofs from Mint A cannot be spent through Mint B. This means:
 
-- **On failover**, your spendable balance is whatever was pre-funded on the new active mint. Proofs on the old mint are not lost — they become spendable again when that mint recovers.
+- **On failover**, your spendable balance is whatever was pre-funded on the new active mint. Proofs on the old mint are not lost; they become spendable again when that mint recovers.
 - **In-flight invoices** (created but not yet paid) are tied to their originating mint. They will still resolve when that mint comes back online.
 - **When a mint recovers**, NUTbits automatically switches back and the full balance on that mint is available again.
 
@@ -188,11 +188,11 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 
 | Document | Description |
 |----------|-------------|
-| [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide — what NUTbits does and why |
+| [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide; what NUTbits does and why |
 | [CONSOLE.md](docs/CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
-| [CLI.md](docs/CLI.md) | Full command reference — flags, scripting, connections |
-| [INSTALL.md](docs/INSTALL.md) | Setup guide — bare metal, Docker, LNbits |
-| [DATABASE.md](docs/DATABASE.md) | Storage backends — file, SQLite, MySQL |
+| [CLI.md](docs/CLI.md) | Full command reference - flags, scripting, connections |
+| [INSTALL.md](docs/INSTALL.md) | Setup guide - bare metal, Docker, LNbits |
+| [DATABASE.md](docs/DATABASE.md) | Storage backends - file, SQLite, MySQL |
 | [BACKUP.md](docs/BACKUP.md) | Backup, recovery, and encryption details |
 | [STATE.md](docs/STATE.md) | Deep dive into the encrypted state file |
 
@@ -200,18 +200,18 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 
 Ecash is custodial. The mint holds the funds. Standard risks apply: the mint can steal, get shut down, or get hacked. Only use mints you trust, and only with amounts you can afford to lose.
 
-NUTbits operators can optionally enable a service fee on outgoing payments. This fee is transparent — advertised in the NWC `get_info` response and reported separately in every `pay_invoice` response. Receiving payments is always free. By default, no fees are charged.
+NUTbits operators can optionally enable a service fee on outgoing payments. This fee is transparent - advertised in the NWC `get_info` response and reported separately in every `pay_invoice` response. Receiving payments is always free. By default, no fees are charged.
 
 ## Related Projects
 
-- [Cashu](https://cashu.space) — Ecash protocol for Bitcoin
-- [LNbits](https://lnbits.com) — Lightning accounts system
-- [Nostr Wallet Connect (NIP-47)](https://github.com/nostr-protocol/nips/blob/master/47.md) — Wallet protocol over Nostr
-- [nostr-core](https://nostr-core.netlify.app) — Nostr + LNURL library used by NUTbits
-- [@cashu/cashu-ts](https://www.npmjs.com/package/@cashu/cashu-ts) — Cashu TypeScript library
-- [supertestnet/bankify](https://github.com/supertestnet/bankify) — Original inspiration for this project
-- [bitcoinmints.com](https://bitcoinmints.com) — Directory of Cashu mints
+- [Cashu](https://cashu.space) - Ecash protocol for Bitcoin
+- [LNbits](https://lnbits.com) - Lightning accounts system
+- [Nostr Wallet Connect (NIP-47)](https://github.com/nostr-protocol/nips/blob/master/47.md) - Wallet protocol over Nostr
+- [nostr-core](https://nostr-core.netlify.app) - Nostr + LNURL library used by NUTbits
+- [@cashu/cashu-ts](https://www.npmjs.com/package/@cashu/cashu-ts) - Cashu TypeScript library
+- [supertestnet/bankify](https://github.com/supertestnet/bankify) - Original inspiration for this project
+- [bitcoinmints.com](https://bitcoinmints.com) - Directory of Cashu mints
 
 ## License
 
-[AGPL-3.0](LICENSE) — Free to use, modify, and distribute. If you run a modified version as a network service, you must share your source code.
+[AGPL-3.0](LICENSE) - Free to use, modify, and distribute. If you run a modified version as a network service, you must share your source code.

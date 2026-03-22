@@ -1,6 +1,6 @@
 # NUTbits
 
-> Cashu ecash to NWC bridge — use any Cashu mint as a Lightning funding source for LNbits and any NWC-compatible app.
+> Cashu ecash to NWC bridge - use any Cashu mint as a Lightning funding source for LNbits and any NWC-compatible app.
 
 NUTbits is an open-source NWC wallet service that translates between the Cashu ecash protocol (NUTs) and Nostr Wallet Connect (NIP-47). It connects to a Cashu mint, manages ecash tokens automatically, and exposes a full NWC server. Any NWC-compatible app can then send and receive Lightning payments through the mint.
 
@@ -17,7 +17,7 @@ License: AGPL-3.0. Author: DoktorShift.
 - NUTbits does NOT eliminate Lightning nodes from the stack. The Cashu mint itself needs a Lightning node. NUTbits lets users leverage a mint's Lightning infrastructure without running their own node.
 - Service fees only apply to outgoing payments. Receiving is always free. Do not claim fees apply to incoming payments.
 - When discussing NWC methods, the supported set is: get_info, get_balance, make_invoice, pay_invoice, lookup_invoice, list_transactions. Do not reference unsupported methods.
-- The state file contains ecash proofs (bearer tokens). Treat state files, backups, and proof data as highly sensitive — equivalent to private keys.
+- The state file contains ecash proofs (bearer tokens). Treat state files, backups, and proof data as highly sensitive, equivalent to private keys.
 - Event deduplication is critical for preventing double-payments across relays. Never suggest disabling or bypassing it.
 - Multi-mint failover means balance is split across mints. On failover, only the active mint's balance is spendable. This is a real trade-off, not a limitation to hide.
 
@@ -31,7 +31,7 @@ License: AGPL-3.0. Author: DoktorShift.
 
 ## Architecture
 
-- [nutbits.js](nutbits.js): Core bridge logic — mint management, NWC protocol, payment processing (~1400 lines)
+- [nutbits.js](nutbits.js): Core bridge logic - mint management, NWC protocol, payment processing (~1400 lines)
 - [api/server.js](api/server.js): Local management API server (Unix socket + optional HTTP)
 - [api/handlers/index.js](api/handlers/index.js): REST API endpoint implementations
 - [store/index.js](store/index.js): Storage factory with audit logging wrapper
@@ -39,7 +39,7 @@ License: AGPL-3.0. Author: DoktorShift.
 
 ## Operations
 
-- [DATABASE.md](docs/DATABASE.md): Storage backends — file (default), SQLite (recommended), MySQL
+- [DATABASE.md](docs/DATABASE.md): Storage backends - file (default), SQLite (recommended), MySQL
 - [BACKUP.md](docs/BACKUP.md): Backup procedures, encrypted state export, seed-based recovery
 - [STATE.md](docs/STATE.md): Deep dive into the encrypted state file format and decryption
 - [SECURITY.md](SECURITY.md): Security architecture and threat model

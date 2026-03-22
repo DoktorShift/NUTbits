@@ -18,7 +18,7 @@ But there was always a boundary.
 
 A Cashu mint is powerful within its domain. Inside the mint ecosystem, ecash moves freely. Wallets like Minibits, eNuts, and Cashu.me make that experience smooth for end users.
 
-The moment you want to interact with the wider Lightning world, though — pay an invoice, get paid by someone outside the mint, connect to a platform that expects a wallet API — you're back to manual operations. The mint knows Cashu. The rest of the world knows Lightning. These two worlds were adjacent but didn't really talk to each other in a standardized way.
+The moment you want to interact with the wider Lightning world, though (pay an invoice, get paid by someone outside the mint, connect to a platform that expects a wallet API), you're back to manual operations. The mint knows Cashu. The rest of the world knows Lightning. These two worlds were adjacent but didn't really talk to each other in a standardized way.
 
 Wallet apps bridged this for individual users. But platforms, services, apps that want to build on top of Lightning programmatically? They had no clean way to plug into a Cashu mint.
 
@@ -38,7 +38,7 @@ After NUTbits, a mint serves everything that speaks NWC. Every Nostr client that
 
 The mint doesn't change. It still does exactly what it always did. But its reach expands dramatically because NUTbits makes its capabilities accessible through a protocol the rest of the world already uses.
 
-That's meaningful. It means mint operators aren't limited to serving Cashu wallet users. Their infrastructure — the Lightning liquidity, the servers, the uptime — becomes useful to a much larger audience.
+That's meaningful. It means mint operators aren't limited to serving Cashu wallet users. Their infrastructure (the Lightning liquidity, the servers, the uptime) becomes useful to a much larger audience.
 
 ## Ecash Properties Travel With the Payments
 
@@ -76,7 +76,7 @@ That's a flywheel.
 
 NUTbits is open source. It's built by DoktorShift, using the same Cashu primitives the community has been developing together. It supports multi-mint failover, encrypted state, per-connection fees, and a CLI for management.
 
-If you run a mint — try it. If you build NWC apps — test against it. If you want to bring ecash into the wider Lightning ecosystem — this is a good place to start.
+If you run a mint, try it. If you build NWC apps, test against it. If you want to bring ecash into the wider Lightning ecosystem, this is a good place to start.
 
 ---
 

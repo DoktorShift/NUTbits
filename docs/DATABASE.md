@@ -47,19 +47,19 @@ NUTBITS_STATE_PASSPHRASE=your-passphrase
 # NUTBITS_SQLITE_PATH=./nutbits.db
 ```
 
-**How it works:** Each proof, connection, and transaction is a row in the database. Sensitive fields (private keys, proof secrets, invoices) are encrypted per-column with AES-256-GCM. Proof operations use SQLite transactions for atomicity — two concurrent payments cannot select the same proofs.
+**How it works:** Each proof, connection, and transaction is a row in the database. Sensitive fields (private keys, proof secrets, invoices) are encrypted per-column with AES-256-GCM. Proof operations use SQLite transactions for atomicity; two concurrent payments cannot select the same proofs.
 
 **Schema:**
 
 ```
-proofs        — one row per ecash proof (proof_id, mint_url, amount, proof_enc)
-connections   — one row per NWC connection (app_pubkey, data_enc, balance)
+proofs        - one row per ecash proof (proof_id, mint_url, amount, proof_enc)
+connections   - one row per NWC connection (app_pubkey, data_enc, balance)
               includes per-connection: permissions, spending limits, service fee rates
-transactions  — one row per payment (payment_hash, app_pubkey, data_enc)
+transactions  - one row per payment (payment_hash, app_pubkey, data_enc)
               includes: fees_paid (routing), service_fee (operator), settled_at
-daily_spend   — per-connection daily spend tracking (spend_key, sats)
-mints         — configured mints (url, last_healthy)
-config        — key-value settings (active_mint_url, encryption_salt)
+daily_spend   - per-connection daily spend tracking (spend_key, sats)
+mints         - configured mints (url, last_healthy)
+config        - key-value settings (active_mint_url, encryption_salt)
 ```
 
 ## MySQL Backend

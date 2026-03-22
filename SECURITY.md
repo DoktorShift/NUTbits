@@ -7,8 +7,8 @@
 NUTbits is provided **as-is, without warranty of any kind**. This software handles ecash tokens (real money). By using NUTbits, you acknowledge:
 
 - **Ecash is custodial.** The mint holds the funds. The mint can be compromised, shut down, or act maliciously.
-- **NUTbits is a bridge, not a bank.** It translates between Cashu and NWC. It does not custody funds independently — the mint does.
-- **You are responsible for your own setup.** Passphrase strength, seed backup, mint selection, server security — all yours.
+- **NUTbits is a bridge, not a bank.** It translates between Cashu and NWC. It does not custody funds independently; the mint does.
+- **You are responsible for your own setup.** Passphrase strength, seed backup, mint selection, server security - all yours.
 - **No guarantee of funds safety.** Software bugs, network failures, or mint issues can lead to loss of funds. Only use amounts you can afford to lose.
 
 The authors and contributors of NUTbits accept **no liability** for lost funds, security breaches, or damages of any kind arising from the use of this software.
@@ -46,4 +46,4 @@ We will acknowledge your report and work on a fix. Once resolved, we will credit
 - Use SQLite or MySQL backend for concurrent access (LNbits)
 - Only use mints you trust
 - Keep your server updated and access-controlled
-- Don't expose NUTbits to the public internet — it communicates via Nostr relays only
+- Don't expose NUTbits to the public internet - it communicates via Nostr relays only

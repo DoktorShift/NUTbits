@@ -10,7 +10,7 @@ NUTbits gives you two tools. Same data, different experience:
 |---|---|---|
 | **Launch** | `nutbits` | `nutbits <command>` |
 | **What it is** | Full-screen interactive dashboard | Single command, one result |
-| **Best for** | Monitoring, browsing, exploring | Doing things — pay, receive, connect |
+| **Best for** | Monitoring, browsing, exploring | Doing things - pay, receive, connect |
 | **Stays open** | Yes, auto-refreshes every 5s | No, runs and exits |
 
 **The simple rule:** no arguments = visual dashboard. With arguments = do something specific.
@@ -33,7 +33,7 @@ In a **second terminal**:
 nutbits
 ```
 
-The splash screen appears for a few seconds while it connects to your running instance. Then the dashboard opens — menu on the left, live data on the right.
+The splash screen appears for a few seconds while it connects to your running instance. Then the dashboard opens with a menu on the left and live data on the right.
 
 ### 3. Browse around
 
@@ -53,7 +53,7 @@ Terminal 1:  npm start           ← service running
 Terminal 2:  nutbits             ← dashboard open, watching
 ```
 
-The dashboard auto-refreshes. When a payment comes in via NWC, you'll see the balance update and the transaction appear in history — without doing anything.
+The dashboard auto-refreshes. When a payment comes in via NWC, you'll see the balance update and the transaction appear in history, without doing anything.
 
 ### Taking action (CLI in the same or another terminal)
 
@@ -92,16 +92,16 @@ Terminal 3:  nutbits pay ...      ← CLI command (acting)
 
 Or use one terminal and switch between them:
 
-1. Open `nutbits` — browse the dashboard
+1. Open `nutbits` - browse the dashboard
 2. Press `q` to quit the TUI
-3. Run `nutbits pay lnbc...` — execute a payment
-4. Run `nutbits` again — see the updated state
+3. Run `nutbits pay lnbc...` - execute a payment
+4. Run `nutbits` again - see the updated state
 
 Both approaches work. The TUI and CLI talk to the same local API, so they always see the same data.
 
 ## Actions Inside the TUI
 
-When you navigate to an action item (Pay, Receive, Connect, Revoke, Export History, Backup, Restore, Config) and press **Enter**, the TUI temporarily steps aside and runs the command interactively — same prompts, same flow as the CLI. When the command finishes, press Enter to return to the dashboard.
+When you navigate to an action item (Pay, Receive, Connect, Revoke, Export History, Backup, Restore, Config) and press **Enter**, the TUI temporarily steps aside and runs the command interactively with the same prompts and flow as the CLI. When the command finishes, press Enter to return to the dashboard.
 
 ```
 Dashboard → navigate to "Pay" → press Enter → interactive pay flow → "Press Enter to return" → Dashboard
@@ -142,6 +142,6 @@ Then use it normally from your host.
 
 ## Related
 
-- [CLI.md](CLI.md) — full command reference, flags, environment variables
-- [INSTALL.md](INSTALL.md) — getting NUTbits up and running
-- [HOW-IT-WORKS.md](HOW-IT-WORKS.md) — what NUTbits does and why
+- [CLI.md](CLI.md) - full command reference, flags, environment variables
+- [INSTALL.md](INSTALL.md) - getting NUTbits up and running
+- [HOW-IT-WORKS.md](HOW-IT-WORKS.md) - what NUTbits does and why

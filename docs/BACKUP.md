@@ -12,7 +12,7 @@ Your NUTbits state contains **ecash proofs (real money)** and **NWC private keys
 | `sqlite` | `nutbits_state.db` | Single database file |
 | `mysql` | Database dump | Use `mysqldump` |
 
-**Always back up your `.env` file too** — it contains `NUTBITS_STATE_PASSPHRASE` (required to decrypt everything), your seed, and service fee configuration.
+**Always back up your `.env` file too** - it contains `NUTBITS_STATE_PASSPHRASE` (required to decrypt everything), your seed, and service fee configuration.
 
 > Store the passphrase and the data separately. One without the other is useless.
 
@@ -95,7 +95,7 @@ seed + counter 2  →  ask mint  →  "never seen this"     →  done
 
 ### When does it run?
 
-**Automatically on startup** — if NUTbits has a seed configured but no proofs stored for a mint, it attempts recovery. You don't need to do anything.
+**Automatically on startup** - if NUTbits has a seed configured but no proofs stored for a mint, it attempts recovery. You don't need to do anything.
 
 ### Manual recovery after data loss
 
@@ -122,13 +122,13 @@ NUTbits will:
 | | Recoverable | Not recoverable |
 |---|---|---|
 | Ecash proofs (your sats) | With seed | Without seed |
-| NWC connection string | No — a new one is generated | Save it separately |
-| Transaction history | No — stored locally only | Gone |
-| NWC private keys | No — regenerated | Clients need to reconnect |
+| NWC connection string | No - a new one is generated | Save it separately |
+| Transaction history | No - stored locally only | Gone |
+| NWC private keys | No - regenerated | Clients need to reconnect |
 
 ### Requirements
 
-- Your mint must support NUT-09 (most modern mints do — NUTbits checks this at startup)
+- Your mint must support NUT-09 (most modern mints do; NUTbits checks this at startup)
 - You must have used a seed (`NUTBITS_SEED`) **before** the proofs were created
 - Proofs created with random secrets (no seed) **cannot** be recovered this way
 
@@ -142,7 +142,7 @@ NUTbits will:
 | Lost passphrase | Data permanently locked | Seed recovery (proofs only) |
 | Corrupted file | State load fails, starts fresh | Seed recovery runs automatically |
 | Restored old backup | Spent proofs rejected, unspent proofs work | Acceptable partial recovery |
-| Copied to new machine | Works — same file + passphrase = same wallet | Don't run two copies at once |
+| Copied to new machine | Works - same file + passphrase = same wallet | Don't run two copies at once |
 | Lost state + have seed | Proofs recovered, NWC string regenerated | Clients need new NWC string |
 | Lost state + no seed | **Funds permanently lost** | None |
 
@@ -175,7 +175,7 @@ node decrypt_state.js "your-passphrase"
 
 ## Important Rules
 
-- **Never run two NUTbits instances** with the same state — double-spend attempts will burn proofs
-- **Back up after funding** — the state changes on every payment
+- **Never run two NUTbits instances** with the same state; double-spend attempts will burn proofs
+- **Back up after funding** - the state changes on every payment
 - **The `.tmp` file** is a write-in-progress artifact; the main file is always the valid one
 - **File permissions** are set to `0600` (owner-only) automatically

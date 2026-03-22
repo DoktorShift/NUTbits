@@ -4,11 +4,11 @@
 
 # The Stack Nobody Expected
 
-**What happens when you combine a Lightning accounts system with an ecash bridge — and why it matters more than either one alone.**
+**What happens when you combine a Lightning accounts system with an ecash bridge, and why it matters more than either one alone.**
 
 ---
 
-There's a pattern in open source Bitcoin tooling that's easy to miss if you're not paying attention. Individual projects are useful on their own. But when two of them click together in the right way, something new emerges — something neither project could do alone.
+There's a pattern in open source Bitcoin tooling that's easy to miss if you're not paying attention. Individual projects are useful on their own. But when two of them click together in the right way, something new emerges, something neither project could do alone.
 
 NUTbits and LNBits are one of those combinations.
 
@@ -18,7 +18,7 @@ LNBits turned Lightning into a platform. Before LNBits, if you wanted a point-of
 
 That idea worked. Today there are over sixty extensions. Communities run LNBits for their members. Merchants use it at the counter. Developers build on its APIs. It's become infrastructure that people depend on.
 
-But LNBits has always needed something underneath it — a funding source. And that funding source shaped what was possible.
+But LNBits has always needed something underneath it: a funding source. And that funding source shaped what was possible.
 
 ## The Funding Source Shapes Everything
 
@@ -30,11 +30,11 @@ NUTbits introduces a funding source with a shape that didn't exist before: one b
 
 ## New Scenarios That Actually Work Now
 
-**The ecash community that wants more.** A group of Cashu enthusiasts share a mint. They use it for private transfers between each other. It's great, but limited to Cashu wallets. They add NUTbits and LNBits, and suddenly the same mint powers Lightning addresses for every member, a payment page for meetup tickets, and a TPoS for the bar that hosts them. Their ecash world just got a lot bigger — without leaving it.
+**The ecash community that wants more.** A group of Cashu enthusiasts share a mint. They use it for private transfers between each other. It's great, but limited to Cashu wallets. They add NUTbits and LNBits, and suddenly the same mint powers Lightning addresses for every member, a payment page for meetup tickets, and a TPoS for the bar that hosts them. Their ecash world just got a lot bigger, without leaving it.
 
 **The mint operator who wants to build on top.** You run a Cashu mint. You've seen what LNBits can do and wondered: what if my mint could power all that? With NUTbits, it can. Your mint becomes the backend for sixty-plus extensions. Your ecash infrastructure now serves people who've never opened a Cashu wallet.
 
-**The developer who thinks in ecash.** You're building something and you like the properties of Cashu — bearer tokens, blind signatures, the privacy model. But you also need Lightning integration for the real world. NUTbits gives you a bridge. Build on ecash, reach Lightning, use LNBits extensions where they help.
+**The developer who thinks in ecash.** You're building something and you like the properties of Cashu: bearer tokens, blind signatures, the privacy model. But you also need Lightning integration for the real world. NUTbits gives you a bridge. Build on ecash, reach Lightning, use LNBits extensions where they help.
 
 **The tinkerer.** You just want to see what happens when you plug a Cashu mint into LNBits. You've been in both ecosystems. You want to see them talk to each other. That curiosity is valid, and NUTbits is how you scratch that itch.
 
@@ -60,11 +60,11 @@ NUTbits charges a service fee at the funding source level. LNBits can charge a p
 
 The mint operator earns for providing the ecash and Lightning infrastructure. The LNBits operator earns for providing the platform. Users pay a clear, predictable fee for a service they actually use.
 
-It's a straightforward value exchange — you provide something useful, you charge fairly for it.
+It's a straightforward value exchange: you provide something useful, you charge fairly for it.
 
 ## What LNBits Gets From This
 
-A new audience. People in the Cashu ecosystem who weren't thinking about LNBits now have a reason to. Every ecash enthusiast who uses NUTbits with LNBits is also a LNBits user — more instances in the world, more feedback, more extension development.
+A new audience. People in the Cashu ecosystem who weren't thinking about LNBits now have a reason to. Every ecash enthusiast who uses NUTbits with LNBits is also a LNBits user, which means more instances in the world, more feedback, more extension development.
 
 It also means more funding source diversity. LNBits already supports several backends. NUTbits adds one with a different trust model and different properties. More options are good for the ecosystem.
 
@@ -80,7 +80,7 @@ Something neither has alone: a complete, end-to-end Bitcoin payment stack that s
 
 Cashu provides the privacy and the settlement layer. NUTbits provides the protocol bridge and the fee layer. LNBits provides the user experience and the extension ecosystem.
 
-Together, you get a platform that a community can run, a merchant can use, a developer can build on, and an operator can sustain — with ecash flowing through the whole thing.
+Together, you get a platform that a community can run, a merchant can use, a developer can build on, and an operator can sustain, with ecash flowing through the whole thing.
 
 ## Try It
 
@@ -88,7 +88,7 @@ If you already run LNBits, adding NUTbits is one connection string away. Point i
 
 If you already run a Cashu mint, NUTbits and LNBits extend your mint's usefulness to an audience you weren't reaching before.
 
-If you're in both worlds and wanted them to talk to each other — this is how.
+If you're in both worlds and wanted them to talk to each other, this is how.
 
 Some things are better together.
 
