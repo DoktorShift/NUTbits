@@ -14,19 +14,3 @@ Articles about what you can build with NUTbits — from funding LNbits with ecas
 | 06 | [Put the Fees in Front of LNBits](06-fees-in-front-of-lnbits.md) | Two-layer fee architecture |
 | 07 | [Ecash Was Always the Missing Piece](07-ecash-was-always-the-missing-piece.md) | Bridging Cashu and Lightning |
 | 08 | [The Stack Nobody Expected](08-the-stack-nobody-expected.md) | LNbits + NUTbits + Cashu + Lightning |
-
-## Structure
-
-```
-blog/
-  README.md              ← this file
-  01-funding-source-for-lnbits.md
-  02-monetize-your-ecash-mint.md
-  ...
-  assets/
-    blog-01-funding-source.svg
-    blog-02-monetize-mint.svg
-    ...
-```
-
-Each article references its header image from `assets/` using a relative path.
