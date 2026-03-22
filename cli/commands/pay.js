@@ -1,13 +1,12 @@
 import { c } from '../colors.js';
-import { kv, sats, print, jsonOut } from '../render.js';
+import { kv, sats, heading, print, jsonOut } from '../render.js';
 import { confirm, input, spinner } from '../prompts.js';
 
 export async function run(client, args) {
     var invoice = args._positional?.[0] || null;
 
     if (!invoice) {
-        print('');
-        print(`  ${c.purple}${c.bold}Pay a Lightning Invoice${c.reset}`);
+        print(heading('Pay Invoice'));
         print(`  ${c.muted}Send sats from your ecash balance to a Lightning invoice.${c.reset}`);
         print('');
 

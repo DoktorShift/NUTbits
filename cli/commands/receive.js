@@ -1,5 +1,5 @@
 import { c } from '../colors.js';
-import { kv, sats, print, jsonOut } from '../render.js';
+import { kv, sats, heading, print, jsonOut } from '../render.js';
 import { input, spinner } from '../prompts.js';
 
 // Try to load QR code renderer (optional dependency)
@@ -15,8 +15,7 @@ export async function run(client, args) {
     var amount = args._positional?.[0] || null;
 
     if (!amount) {
-        print('');
-        print(`  ${c.purple}${c.bold}Receive Sats${c.reset}`);
+        print(heading('Receive Sats'));
         print(`  ${c.muted}Create a Lightning invoice. When someone pays it, the sats${c.reset}`);
         print(`  ${c.muted}are minted as ecash and added to your balance.${c.reset}`);
         print('');
@@ -25,7 +24,12 @@ export async function run(client, args) {
             message: 'How many sats?',
             placeholder: 'e.g. 1000',
             description: 'Enter the amount in satoshis you want to receive.',
-            validate: v => isNaN(Number(v)) || Number(v) <= 0 ? 'Enter a positive number' : null,
+            validate: v => {
+                var n = Number(v);
+                if (isNaN(n) || n <= 0) return 'Enter a positive number';
+                if (!Number.isInteger(n)) return 'Sats must be a whole number (no decimals)';
+                return null;
+            },
         });
         if (amount === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
     }

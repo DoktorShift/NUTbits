@@ -1,5 +1,5 @@
 // NUTbits TUI - Layout engine
-// Handles terminal dimensions, panel drawing, border rendering
+// Rounded corners, focus borders, responsive menu, single-write buffer
 
 import { c, stripAnsi } from '../colors.js';
 
@@ -10,6 +10,19 @@ export var getSize = () => ({
     rows: process.stdout.rows || 40,
 });
 
+// ── Responsive Menu Width ────────────────────────────────────────────────
+// Scales with terminal: wider terminals get a wider menu
+
+export var getMenuWidth = (cols) => {
+    if (cols >= 140) return 38;
+    if (cols >= 110) return 34;
+    if (cols >= 90)  return 30;
+    return 26;
+};
+
+// Backwards compat export (used by panels that need a constant)
+export var MENU_WIDTH = 30;
+
 // ── Screen Buffer ────────────────────────────────────────────────────────
 
 export var createBuffer = () => {
@@ -17,60 +30,86 @@ export var createBuffer = () => {
     return {
         push: line => lines.push(line),
         flush: () => {
-            // Move to top-left, overwrite in-place, clear remainder
-            process.stdout.write('\x1b[H' + lines.join('\x1b[K\n') + '\x1b[K\x1b[J');
+            process.stdout.write('\x1b[H' + lines.join('\n') + '\x1b[J');
             lines = [];
         },
     };
 };
 
-// ── Box Drawing ──────────────────────────────────────────────────────────
+// ── Border Characters ───────────────────────────────────────────────────
 
 var B = {
-    tl: '┌', tr: '┐', bl: '└', br: '┘',
+    tl: '╭', tr: '╮', bl: '╰', br: '╯',
     h: '─', v: '│',
     tj: '┬', bj: '┴', lj: '├', rj: '┤', x: '┼',
 };
 
-// ── Constants ────────────────────────────────────────────────────────────
+// ── Alternate Screen Buffer ─────────────────────────────────────────────
 
-export var MENU_WIDTH = 28;
+export var enterScreen = () => {
+    process.stdout.write('\x1b[?1049h');
+    process.stdout.write('\x1b[?25l');
+    process.stdout.write('\x1b[2J\x1b[H');
+};
+
+export var exitScreen = () => {
+    process.stdout.write('\x1b[?25h');
+    process.stdout.write('\x1b[?1049l');
+};
+
+// ── Focus-Aware Border Colors ───────────────────────────────────────────
+
+var borderColor = (focused) => focused ? c.purple : c.dim;
 
 // ── Top Border with Titles ───────────────────────────────────────────────
+// Title left-aligned, scroll indicator right-aligned in content panel
 
-export var drawFrame = (buf, size, menuTitle, contentTitle) => {
+export var drawFrame = (buf, size, menuTitle, contentTitle, scrollInfo, menuFocused, contentFocused) => {
     var { cols } = size;
-    var mw = MENU_WIDTH;
+    var mw = getMenuWidth(cols);
     var cw = cols - mw - 1;
 
     var mtPlain = stripAnsi(menuTitle);
-    var ctPlain = stripAnsi(contentTitle);
-
     var menuFill = Math.max(0, mw - mtPlain.length - 4);
-    var contentFill = Math.max(0, cw - ctPlain.length - 4);
+
+    var mc = borderColor(menuFocused);
+    var cc = borderColor(contentFocused);
+    var mtColor = menuFocused ? `${c.purple}${c.bold}` : c.muted;
+    var ctColor = contentFocused ? `${c.white}${c.bold}` : c.muted;
+
+    // Content title left, scroll info right
+    var ctPlain = stripAnsi(contentTitle);
+    var siPlain = scrollInfo ? stripAnsi(scrollInfo) : '';
+    var contentFill = Math.max(0, cw - ctPlain.length - siPlain.length - (siPlain ? 6 : 4));
+
+    var scrollPart = scrollInfo ? ` ${c.dim}${scrollInfo}${c.reset} ` : '';
 
     buf.push(
-        `${c.dim}${B.tl}${B.h}${c.reset}` +
-        ` ${c.purple}${c.bold}${menuTitle}${c.reset} ` +
-        `${c.dim}${B.h.repeat(menuFill)}${B.tj}${B.h}${c.reset}` +
-        ` ${c.blue}${contentTitle}${c.reset} ` +
-        `${c.dim}${B.h.repeat(contentFill)}${B.tr}${c.reset}`
+        `${mc}${B.tl}${B.h}${c.reset}` +
+        ` ${mtColor}${menuTitle}${c.reset} ` +
+        `${mc}${B.h.repeat(menuFill)}${c.reset}${c.dim}${B.tj}${c.reset}` +
+        `${cc}${B.h}${c.reset}` +
+        ` ${ctColor}${contentTitle}${c.reset} ` +
+        `${cc}${B.h.repeat(contentFill)}${c.reset}` +
+        `${scrollPart}${cc}${B.tr}${c.reset}`
     );
 };
 
 // ── Title Separator ──────────────────────────────────────────────────────
 
-export var drawTitleSep = (buf, size) => {
+export var drawTitleSep = (buf, size, menuFocused, contentFocused) => {
     var { cols } = size;
-    var mw = MENU_WIDTH;
+    var mw = getMenuWidth(cols);
     var cw = cols - mw - 1;
-    buf.push(`${c.dim}${B.lj}${B.h.repeat(mw)}${B.x}${B.h.repeat(cw)}${B.rj}${c.reset}`);
+    var mc = borderColor(menuFocused);
+    var cc = borderColor(contentFocused);
+    buf.push(`${mc}${B.lj}${B.h.repeat(mw)}${c.reset}${c.dim}${B.x}${c.reset}${cc}${B.h.repeat(cw)}${B.rj}${c.reset}`);
 };
 
 // ── Content Row ──────────────────────────────────────────────────────────
 
-export var drawRow = (menuContent, panelContent, cols) => {
-    var mw = MENU_WIDTH;
+export var drawRow = (menuContent, panelContent, cols, menuFocused, contentFocused) => {
+    var mw = getMenuWidth(cols);
     var cw = cols - mw - 1;
 
     var menuPlain = stripAnsi(menuContent || '');
@@ -79,29 +118,36 @@ export var drawRow = (menuContent, panelContent, cols) => {
     var panelPlain = stripAnsi(panelContent || '');
     var panelPad = Math.max(0, cw - 2 - panelPlain.length);
 
+    var mc = borderColor(menuFocused);
+    var cc = borderColor(contentFocused);
+
     return (
-        `${c.dim}${B.v}${c.reset} ${menuContent || ''}${' '.repeat(menuPad)}` +
+        `${mc}${B.v}${c.reset} ${menuContent || ''}${' '.repeat(menuPad)}` +
         `${c.dim}${B.v}${c.reset} ${panelContent || ''}${' '.repeat(panelPad)}` +
-        `${c.dim}${B.v}${c.reset}`
+        `${cc}${B.v}${c.reset}`
     );
 };
 
-// ── Footer ───────────────────────────────────────────────────────────────
+// ── Footer (inside the frame) ────────────────────────────────────────────
 
-export var drawFooter = (buf, size, footerContent) => {
+export var drawFooter = (buf, size, footerContent, menuFocused, contentFocused) => {
     var { cols } = size;
-    var mw = MENU_WIDTH;
+    var mw = getMenuWidth(cols);
     var cw = cols - mw - 1;
 
-    // Bottom border with ┴ junction where the center divider meets it
-    buf.push(`${c.dim}${B.bl}${B.h.repeat(mw)}${B.bj}${B.h.repeat(cw)}${B.br}${c.reset}`);
+    var mc = borderColor(menuFocused);
+    var cc = borderColor(contentFocused);
 
-    // Footer text below the frame
+    buf.push(`${mc}${B.lj}${B.h.repeat(mw)}${c.reset}${c.dim}${B.bj}${c.reset}${cc}${B.h.repeat(cw)}${B.rj}${c.reset}`);
+
     if (footerContent) {
         var plain = stripAnsi(footerContent);
-        var pad = Math.max(0, cols - 2 - plain.length);
-        buf.push(` ${footerContent}${' '.repeat(pad)}`);
+        var innerWidth = cols - 4;
+        var pad = Math.max(0, innerWidth - plain.length);
+        buf.push(`${mc}${B.v}${c.reset} ${footerContent}${' '.repeat(pad)}${c.reset} ${cc}${B.v}${c.reset}`);
     }
+
+    buf.push(`${mc}${B.bl}${c.reset}${c.dim}${B.h.repeat(cols - 2)}${c.reset}${cc}${B.br}${c.reset}`);
 };
 
 // ── Text Utilities ───────────────────────────────────────────────────────
@@ -118,7 +164,6 @@ export var padRight = (str, width) => {
     return str + ' '.repeat(pad);
 };
 
-// ANSI-aware column formatting
 export var col = (str, width) => {
     var plain = stripAnsi(str);
     if (plain.length > width) return truncate(str, width);
