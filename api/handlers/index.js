@@ -180,6 +180,18 @@ export function registerHandlers(router, ctx) {
 
         var mintUrl = body.mint || mintManager.activeMintUrl;
 
+        // Validate and normalize lud16 (Lightning Address)
+        var lud16 = null;
+        if (body.lud16) {
+            if (typeof body.lud16 !== 'string' || body.lud16.length > 320) {
+                throw apiError(400, 'lud16 must be a valid Lightning Address (max 320 chars)');
+            }
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.lud16)) {
+                throw apiError(400, 'lud16 must be in format user@domain.com');
+            }
+            lud16 = body.lud16.toLowerCase().trim();
+        }
+
         // Serialize connection creation to prevent key-diff race conditions
         var prev = connectLock;
         var release;
@@ -188,7 +200,7 @@ export function registerHandlers(router, ctx) {
 
         try {
             var keysBefore = new Set(Object.keys(nutbits.state.nostr_state.nwc_info));
-            var nwcString = await nutbits.createNWCconnection(mintUrl, perms, config.relays);
+            var nwcString = await nutbits.createNWCconnection(mintUrl, perms, config.relays, null, lud16);
 
             var newPk = null;
             for (var key of Object.keys(nutbits.state.nostr_state.nwc_info)) {
@@ -211,6 +223,7 @@ export function registerHandlers(router, ctx) {
                 max_payment_sats: conn.max_payment_sats,
                 service_fee_ppm: conn.service_fee_ppm,
                 service_fee_base: conn.service_fee_base,
+                lud16: lud16,
             });
 
             // Calculate the connection's display ID (1-based index of non-revoked connections)
@@ -227,6 +240,7 @@ export function registerHandlers(router, ctx) {
                 app_pubkey: newPk,
                 label: conn.label,
                 permissions: perms,
+                lud16: lud16 || null,
             };
         } finally {
             release();

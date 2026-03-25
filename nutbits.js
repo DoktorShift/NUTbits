@@ -677,7 +677,7 @@ var nutbits = {
 
     // ── NWC Connection ─────────────────────────────────────────────────────
 
-    createNWCconnection: async (mymint, permissions = ['pay_invoice', 'get_balance', 'make_invoice', 'lookup_invoice', 'list_transactions', 'get_info'], myrelays = config.relays, app_pubkey) => {
+    createNWCconnection: async (mymint, permissions = ['pay_invoice', 'get_balance', 'make_invoice', 'lookup_invoice', 'list_transactions', 'get_info'], myrelays = config.relays, app_pubkey, lud16 = null) => {
         mymint = validateMintUrl(mymint);
 
         var getRecipientFromNostrEvent = event => {
@@ -1140,6 +1140,7 @@ var nutbits = {
             var user_pubkey = getPublicKey(hexToBytes(user_secret));
             var relayParams = myrelays.map(r => `relay=${encodeURIComponent(r)}`).join('&');
             var nwc_string = `nostr+walletconnect://${app_pubkey_new}?${relayParams}&secret=${user_secret}`;
+            if (lud16) nwc_string += `&lud16=${encodeURIComponent(lud16)}`;
 
             nutbits.state.nostr_state.nwc_info[app_pubkey_new] = {
                 permissions,
@@ -1152,6 +1153,7 @@ var nutbits = {
                 relay: myrelays[0],
                 balance: 0,
                 tx_history: {},
+                lud16: lud16 || null,
             };
             app_pubkey = app_pubkey_new;
             await store.setConnection(app_pubkey, nutbits.state.nostr_state.nwc_info[app_pubkey]);
