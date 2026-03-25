@@ -3,7 +3,7 @@
 
 import crypto from 'crypto';
 import fs from 'fs';
-import { deriveKey, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
+import { deriveKey, deriveKeyLegacy, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
 
 var SCHEMA_VERSION = 1;
 
@@ -337,13 +337,61 @@ export class MysqlStore {
     async #initEncryptionKey() {
         var [rows] = await this.#pool.execute("SELECT v FROM config WHERE k = 'encryption_salt'");
         var salt;
-        if (rows[0]) {
+        var isExisting = !!rows[0];
+        if (isExisting) {
             salt = Buffer.from(rows[0].v, 'hex');
         } else {
             salt = crypto.randomBytes(16);
             await this.#pool.execute("INSERT INTO config (k, v) VALUES ('encryption_salt', ?)", [salt.toString('hex')]);
         }
-        this.#key = deriveKey(this.#passphrase, salt);
+
+        // Check if DB was created with legacy scrypt params
+        var [vRows] = await this.#pool.execute("SELECT v FROM config WHERE k = 'scrypt_version'");
+        if (vRows[0] && vRows[0].v === '2') {
+            this.#key = deriveKey(this.#passphrase, salt);
+        } else if (!isExisting) {
+            // Fresh DB - use strong params from the start
+            this.#key = deriveKey(this.#passphrase, salt);
+            await this.#pool.execute("INSERT INTO config (k, v) VALUES ('scrypt_version', '2')");
+        } else {
+            // Existing DB with legacy params - migrate
+            var legacyKey = deriveKeyLegacy(this.#passphrase, salt);
+            var newKey = deriveKey(this.#passphrase, salt);
+            await this.#migrateScryptParams(legacyKey, newKey);
+            this.#key = newKey;
+            await this.#pool.execute("INSERT INTO config (k, v) VALUES ('scrypt_version', '2') ON DUPLICATE KEY UPDATE v = '2'");
+        }
+    }
+
+    async #migrateScryptParams(oldKey, newKey) {
+        var conn = await this.#pool.getConnection();
+        try {
+            await conn.beginTransaction();
+            // Re-encrypt proofs
+            var [proofs] = await conn.execute('SELECT proof_id, proof_enc FROM proofs');
+            for (var p of proofs) {
+                var plain = decryptValue(oldKey, p.proof_enc);
+                await conn.execute('UPDATE proofs SET proof_enc = ? WHERE proof_id = ?', [encryptValue(newKey, plain), p.proof_id]);
+            }
+            // Re-encrypt connections
+            var [conns] = await conn.execute('SELECT app_pubkey, data_enc FROM connections');
+            for (var c of conns) {
+                var plain = decryptValue(oldKey, c.data_enc);
+                await conn.execute('UPDATE connections SET data_enc = ? WHERE app_pubkey = ?', [encryptValue(newKey, plain), c.app_pubkey]);
+            }
+            // Re-encrypt transactions
+            var [txs] = await conn.execute('SELECT payment_hash, app_pubkey, data_enc FROM transactions');
+            for (var t of txs) {
+                var plain = decryptValue(oldKey, t.data_enc);
+                await conn.execute('UPDATE transactions SET data_enc = ? WHERE payment_hash = ? AND app_pubkey = ?', [encryptValue(newKey, plain), t.payment_hash, t.app_pubkey]);
+            }
+            await conn.commit();
+        } catch (e) {
+            await conn.rollback();
+            throw e;
+        } finally {
+            conn.release();
+        }
     }
 
     async #isEmpty() {

@@ -3,7 +3,7 @@
 
 import crypto from 'crypto';
 import fs from 'fs';
-import { deriveKey, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
+import { deriveKey, deriveKeyLegacy, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
 
 var SCHEMA_VERSION = 1;
 
@@ -298,7 +298,49 @@ export class SqliteStore {
             salt = crypto.randomBytes(16);
             this.#db.prepare("INSERT INTO config (key, value) VALUES ('encryption_salt', ?)").run(salt.toString('hex'));
         }
-        this.#key = deriveKey(this.#passphrase, salt);
+
+        // Check if DB was created with legacy scrypt params
+        var versionRow = this.#db.prepare("SELECT value FROM config WHERE key = 'scrypt_version'").get();
+        if (versionRow && versionRow.value === '2') {
+            this.#key = deriveKey(this.#passphrase, salt);
+        } else if (!row) {
+            // Fresh DB - use strong params from the start
+            this.#key = deriveKey(this.#passphrase, salt);
+            this.#db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('scrypt_version', '2')").run();
+        } else {
+            // Existing DB with legacy params - migrate
+            var legacyKey = deriveKeyLegacy(this.#passphrase, salt);
+            var newKey = deriveKey(this.#passphrase, salt);
+            this.#migrateScryptParams(legacyKey, newKey);
+            this.#key = newKey;
+            this.#db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('scrypt_version', '2')").run();
+        }
+    }
+
+    #migrateScryptParams(oldKey, newKey) {
+        this.#db.transaction(() => {
+            // Re-encrypt proofs
+            var proofs = this.#db.prepare('SELECT proof_id, proof_enc FROM proofs').all();
+            var updateProof = this.#db.prepare('UPDATE proofs SET proof_enc = ? WHERE proof_id = ?');
+            for (var p of proofs) {
+                var plain = decryptValue(oldKey, p.proof_enc);
+                updateProof.run(encryptValue(newKey, plain), p.proof_id);
+            }
+            // Re-encrypt connections
+            var conns = this.#db.prepare('SELECT app_pubkey, data_enc FROM connections').all();
+            var updateConn = this.#db.prepare('UPDATE connections SET data_enc = ? WHERE app_pubkey = ?');
+            for (var c of conns) {
+                var plain = decryptValue(oldKey, c.data_enc);
+                updateConn.run(encryptValue(newKey, plain), c.app_pubkey);
+            }
+            // Re-encrypt transactions
+            var txs = this.#db.prepare('SELECT payment_hash, app_pubkey, data_enc FROM transactions').all();
+            var updateTx = this.#db.prepare('UPDATE transactions SET data_enc = ? WHERE payment_hash = ? AND app_pubkey = ?');
+            for (var t of txs) {
+                var plain = decryptValue(oldKey, t.data_enc);
+                updateTx.run(encryptValue(newKey, plain), t.payment_hash, t.app_pubkey);
+            }
+        })();
     }
 
     #isEmpty() {

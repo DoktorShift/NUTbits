@@ -19,6 +19,13 @@ nutbits_state.enc.migrated
 *.db-wal
 *.db-shm
 
+# Exports and recovery files (may contain secrets/NWC strings)
+nutbits-connections-*.json
+nutbits-export-*.csv
+nutbits-export-*.json
+*.recovery-*.json
+*.recovery-*.enc
+
 # Unpublished blog drafts
 blog/_drafts/
 
