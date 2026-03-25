@@ -56,7 +56,7 @@ export async function run(client, args) {
         var mintCheck = await client.get('/api/v1/mints');
         multiMint = mintCheck.mints?.length > 1;
     } catch (e) { /* single mint */ }
-    var totalSteps = multiMint ? 4 : 3;
+    var totalSteps = multiMint ? 5 : 4;  // Added Lightning Address step
 
     // Step 1. Label
     print(`  ${c.purple}Step 1 of ${totalSteps}${c.reset}  ${c.dim}— Give it a name${c.reset}`);
@@ -119,12 +119,28 @@ export async function run(client, args) {
     }
     print('');
 
-    // Step 4. Mint selection (multi-mint only)
+    // Step 4. Lightning Address (optional)
+    print(`  ${c.purple}Step 4 of ${totalSteps}${c.reset}  ${c.dim}— Lightning Address (optional)${c.reset}`);
+    var lud16 = await input({
+        message: 'Lightning Address:',
+        placeholder: 'e.g. you@getalby.com (or press Enter to skip)',
+        description: 'Attach a Lightning Address to this connection. Apps can use it for receiving.',
+        validate: v => {
+            if (!v || !v.trim()) return null;  // Empty is OK (optional)
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim())) return 'Invalid format. Use: user@domain.com';
+            return null;
+        },
+    });
+    if (lud16 === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
+    lud16 = lud16?.trim() || null;
+    print('');
+
+    // Step 5. Mint selection (multi-mint only)
     var mint = null;
     try {
         var mints = mintCheck || await client.get('/api/v1/mints');
         if (mints.mints?.length > 1) {
-            print(`  ${c.purple}Step 4 of ${totalSteps}${c.reset}  ${c.dim}— Choose mint${c.reset}`);
+            print(`  ${c.purple}Step 5 of ${totalSteps}${c.reset}  ${c.dim}— Choose mint${c.reset}`);
             var mintChoice = await select({
                 message: 'Which mint should this connection use?',
                 options: mints.mints.map(m => ({
@@ -147,6 +163,7 @@ export async function run(client, args) {
     print(kv('Permissions', `${c.muted}${permissions.join(', ')}${c.reset}`));
     print(kv('Daily limit', maxDaily ? `${c.yellow}${maxDaily.toLocaleString()} sats${c.reset}` : `${c.dim}no limit${c.reset}`));
     print(kv('Per payment', maxPayment ? `${c.yellow}${maxPayment.toLocaleString()} sats${c.reset}` : `${c.dim}no limit${c.reset}`));
+    if (lud16) print(kv('Lightning ⚡', `${c.cyan}${lud16}${c.reset}`));
     if (mint) print(kv('Mint', `${c.dim}${mint}${c.reset}`));
     print('');
 
@@ -165,6 +182,7 @@ export async function run(client, args) {
         max_payment_sats: maxPayment,
     };
     if (mint) body.mint = mint;
+    if (lud16) body.lud16 = lud16;
 
     var sp = spinner('Creating connection');
     sp.start();
@@ -223,6 +241,7 @@ async function createScripted(client, args) {
         max_payment_sats: Number(args['max-payment']) || 0,
     };
     if (args.mint) body.mint = args.mint;
+    if (args.lud16) body.lud16 = args.lud16;
     if (args['fee-ppm'] !== undefined) body.service_fee_ppm = Number(args['fee-ppm']);
     if (args['fee-base'] !== undefined) body.service_fee_base = Number(args['fee-base']);
 
