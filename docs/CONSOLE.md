@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/headers/doc-console.svg" alt="Using the Console" width="100%">
+  <img src="../assets/headers/doc-console.svg" alt="Using the Console" width="100%">
 </p>
 
 ## Two Ways to Interact

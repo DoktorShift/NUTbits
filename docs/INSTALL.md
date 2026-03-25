@@ -1,4 +1,4 @@
-<img src="assets/headers/doc-install.svg" alt="Installation Guide" width="100%">
+<img src="../assets/headers/doc-install.svg" alt="Installation Guide" width="100%">
 
 # Installation
 
@@ -128,7 +128,7 @@ nutbits history
 4. Paste the NWC connection string
 5. Save and restart LNbits
 
-<img src="assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Mint → Lightning → Network" width="100%">
+<img src="../assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Mint → Lightning → Network" width="100%">
 
 ## Funding Your Wallet
 

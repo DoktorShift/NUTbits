@@ -1,4 +1,4 @@
-<img src="assets/headers/doc-state.svg" alt="Encrypted State File" width="100%">
+<img src="../assets/headers/doc-state.svg" alt="Encrypted State File" width="100%">
 
 # Encrypted State File (`.enc`)
 

@@ -1,0 +1,75 @@
+{
+  "connections": [
+    {
+      "id": 2,
+      "app_pubkey": "943c7d97daeab81464fab93b5feb1413997d51902d86b414fe747525e29cafcb",
+      "label": "lnbits",
+      "nwc_string": "nostr+walletconnect://943c7d97daeab81464fab93b5feb1413997d51902d86b414fe747525e29cafcb?relay=wss%3A%2F%2Fnostrue.com&secret=8efd4a790a6c5b5c8a9ad0fda360adc89e63eace7c123ffee00c373086d54f44",
+      "permissions": [
+        "pay_invoice",
+        "make_invoice",
+        "get_balance",
+        "list_transactions",
+        "get_info"
+      ],
+      "balance_msat": 0,
+      "tx_count": 0,
+      "relay": "wss://nostrue.com",
+      "mint": "https://mint.minibits.cash/Bitcoin",
+      "created_at": 1773938148,
+      "revoked": false,
+      "revoked_at": null,
+      "max_daily_sats": 13,
+      "max_payment_sats": 500,
+      "service_fee_ppm": null,
+      "service_fee_base": null
+    },
+    {
+      "id": 3,
+      "app_pubkey": "3efbcfb68a46ccf5344ed955fdc69935513d808eaf769c93d7b77394daec4f66",
+      "label": "loser",
+      "nwc_string": "nostr+walletconnect://3efbcfb68a46ccf5344ed955fdc69935513d808eaf769c93d7b77394daec4f66?relay=wss%3A%2F%2Fnostrue.com&secret=81ded4d54681d33627db5b8f29aed49b09ca77877498c2ad5716925e557db7ec",
+      "permissions": [
+        "pay_invoice",
+        "make_invoice",
+        "get_balance"
+      ],
+      "balance_msat": 0,
+      "tx_count": 0,
+      "relay": "wss://nostrue.com",
+      "mint": "https://mint.minibits.cash/Bitcoin",
+      "created_at": 1773945418,
+      "revoked": false,
+      "revoked_at": null,
+      "max_daily_sats": 0,
+      "max_payment_sats": 0,
+      "service_fee_ppm": null,
+      "service_fee_base": null
+    },
+    {
+      "id": 4,
+      "app_pubkey": "8a836823d99e836ce3d87c961b131eb56747feabd27b624aee6389fa910398e7",
+      "label": "Pratik nwc",
+      "nwc_string": "nostr+walletconnect://8a836823d99e836ce3d87c961b131eb56747feabd27b624aee6389fa910398e7?relay=wss%3A%2F%2Frelay.getalby.com%2Fv1&relay=wss%3A%2F%2Fnostrue.com&relay=wss%3A%2F%2Fnos.lol&relay=wss%3A%2F%2Fnostr.mom&secret=f417210d082f0f793720e10e45c598066074b9bda9f5d9fa06614a575bf29ce8",
+      "permissions": [
+        "pay_invoice",
+        "make_invoice",
+        "get_balance",
+        "list_transactions",
+        "get_info"
+      ],
+      "balance_msat": 0,
+      "tx_count": 0,
+      "relay": "wss://relay.getalby.com/v1",
+      "mint": "https://mint.minibits.cash/Bitcoin",
+      "created_at": 1774359233,
+      "revoked": false,
+      "revoked_at": null,
+      "max_daily_sats": 0,
+      "max_payment_sats": 0,
+      "service_fee_ppm": null,
+      "service_fee_base": null
+    }
+  ],
+  "exported_at": "2026-03-24T14:00:40.702Z"
+}

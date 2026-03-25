@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/headers/doc-cli.svg" alt="NUTbits Management Console" width="100%">
+  <img src="../assets/headers/doc-cli.svg" alt="NUTbits Management Console" width="100%">
 </p>
 
 ## What Is This?
@@ -14,7 +14,7 @@ NUTbits runs as a background service. The management console gives you a window 
 Both talk to the same local API. Same data, your choice of interface.
 
 <p align="center">
-  <img src="assets/inline_explaining/inline_cli-overview.svg" alt="Architecture: Service → API → TUI / CLI" width="100%">
+  <img src="../assets/Inline_Explaining/inline_cli-overview.svg" alt="Architecture: Service → API → TUI / CLI" width="100%">
 </p>
 
 ## Setup
@@ -117,7 +117,7 @@ The CLI connects automatically. When NUTbits starts, it creates a local socket a
 One NUTbits instance, many NWC connections. Each with its own permissions and spending limits.
 
 <p align="center">
-  <img src="assets/inline_explaining/inline_cli-connections.svg" alt="Multiple connections with scoped permissions" width="100%">
+  <img src="../assets/Inline_Explaining/inline_cli-connections.svg" alt="Multiple connections with scoped permissions" width="100%">
 </p>
 
 ### Create a connection

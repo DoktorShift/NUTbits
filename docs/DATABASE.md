@@ -1,4 +1,4 @@
-<img src="assets/headers/doc-database.svg" alt="Storage Backends" width="100%">
+<img src="../assets/headers/doc-database.svg" alt="Storage Backends" width="100%">
 
 # Storage Backends
 

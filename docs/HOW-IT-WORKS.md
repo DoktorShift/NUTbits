@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/headers/doc-how-it-works.svg" alt="How NUTbits Works" width="100%">
+  <img src="../assets/headers/doc-how-it-works.svg" alt="How NUTbits Works" width="100%">
 </p>
 
 ## What is NUTbits?
@@ -22,13 +22,13 @@ These two worlds can't talk to each other natively. NUTbits bridges the gap.
 ## The Flow
 
 <p align="center">
-  <img src="assets/Inline_Explaining/inline_how-it-works-flow.svg" alt="NUTbits flow diagram" width="100%">
+  <img src="../assets/Inline_Explaining/inline_how-it-works-flow.svg" alt="NUTbits flow diagram" width="100%">
 </p>
 
 ## What Happens When You Send a Payment
 
 <p align="center">
-  <img src="assets/Inline_Explaining/inline_how-it-works-send.svg" alt="Send payment sequence" width="100%">
+  <img src="../assets/Inline_Explaining/inline_how-it-works-send.svg" alt="Send payment sequence" width="100%">
 </p>
 
 Each part does what it's best at: LNbits manages wallets and users, the mint handles Lightning, NUTbits connects them.
@@ -36,7 +36,7 @@ Each part does what it's best at: LNbits manages wallets and users, the mint han
 ## What Happens When You Receive a Payment
 
 <p align="center">
-  <img src="assets/Inline_Explaining/inline_how-it-works-receive.svg" alt="Receive payment sequence" width="100%">
+  <img src="../assets/Inline_Explaining/inline_how-it-works-receive.svg" alt="Receive payment sequence" width="100%">
 </p>
 
 ## What Does This Unlock?

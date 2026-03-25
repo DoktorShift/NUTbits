@@ -1,4 +1,4 @@
-<img src="assets/headers/doc-backup.svg" alt="Backup & Recovery" width="100%">
+<img src="../assets/headers/doc-backup.svg" alt="Backup & Recovery" width="100%">
 
 # Backup & Recovery
 

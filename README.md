@@ -21,7 +21,9 @@ npm install && cp .env.example .env
 npm start
 ```
 
-Paste the NWC connection string into LNbits (or any NWC client) as your funding source.
+NUTbits has two parts: the **service** (`npm start`) and the **management console** (`nutbits`). The service runs in one terminal and handles all NWC traffic. The console runs in a second terminal and lets you create connections, check balances, and manage everything without restarting the service.
+
+The default NWC string printed on startup works, but you'll want to use the console to create dedicated connections with scoped permissions and spending limits - one for LNbits, another for a POS, each with its own rules. See [Management Console](#management-console) below.
 
 ## Configuration
 
