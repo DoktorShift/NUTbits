@@ -65,7 +65,7 @@ export function registerHandlers(router, ctx) {
             },
             balance_sats: await nutbits.getBalance(),
             relays: { connected: relayCount, total: relayTotal },
-            connections_count: connections.filter(pk => !nutbits.state.nostr_state.nwc_info[pk]?.revoked).length,
+            connections_count: connections.filter(pk => pk !== '__api__' && !nutbits.state.nostr_state.nwc_info[pk]?.revoked).length,
             nuts: caps,
             storage: config.stateBackend,
             seed_configured: !!config.seed,
@@ -106,6 +106,7 @@ export function registerHandlers(router, ctx) {
         var list = [];
         var idx = 1;
         for (var [pk, info] of Object.entries(all)) {
+            if (pk === '__api__') continue;
             if (info.revoked) continue;
             var txCount = info.tx_history ? Object.keys(info.tx_history).length : 0;
             list.push({
@@ -135,6 +136,7 @@ export function registerHandlers(router, ctx) {
         var list = [];
         var idx = 1;
         for (var [pk, info] of Object.entries(all)) {
+            if (pk === '__api__') continue;
             if (info.revoked && !includeRevoked) { idx++; continue; }
             if (targetId && idx !== Number(targetId) && info.label !== targetId) { idx++; continue; }
             var txCount = info.tx_history ? Object.keys(info.tx_history).length : 0;
@@ -270,13 +272,17 @@ export function registerHandlers(router, ctx) {
         var connIdx = {};
         var idx = 1;
         for (var [pk, info] of Object.entries(all)) {
+            if (pk === '__api__') {
+                connIdx[pk] = { id: 0, label: 'API' };
+                continue;
+            }
             if (info.revoked) continue;
             connIdx[pk] = { id: idx, label: info.label || `connection-${idx}` };
             idx++;
         }
 
         for (var [pk, info] of Object.entries(all)) {
-            if (info.revoked) continue;
+            if (pk !== '__api__' && info.revoked) continue;
             if (connectionId && connIdx[pk]?.id !== Number(connectionId) && connIdx[pk]?.label !== connectionId) continue;
             var txs = await store.listTxs(pk, { type, unpaid, limit: limit });
             for (var tx of txs) {
@@ -305,6 +311,10 @@ export function registerHandlers(router, ctx) {
         var connIdx = {};
         var idx = 1;
         for (var [pk, info] of Object.entries(all)) {
+            if (pk === '__api__') {
+                connIdx[pk] = { id: 0, label: 'API', revoked: false };
+                continue;
+            }
             if (info.revoked && !includeRevoked) { idx++; continue; }
             connIdx[pk] = { id: idx, label: info.label || `connection-${idx}`, revoked: !!info.revoked };
             idx++;
@@ -656,6 +666,7 @@ export function registerHandlers(router, ctx) {
         var byConnection = [];
 
         for (var [pk, info] of Object.entries(all)) {
+            if (pk === '__api__') continue;
             if (info.revoked) continue;
             var connFeeToday = 0;
             var connFeeAll = 0;
@@ -731,6 +742,10 @@ export function registerHandlers(router, ctx) {
             throw apiError(400, `insufficient balance: ${balance} sats available, ${totalNeeded} sats needed${serviceFee ? ` (incl. ${serviceFee} service fee)` : ''}`);
         }
 
+        // Extract payment hash from invoice for tx tracking
+        var pmthash = decoded.tags?.find(t => t.tagName === 'payment_hash')?.data || 'pay_' + Date.now();
+        var description = decoded.tags?.find(t => t.tagName === 'description')?.data || '';
+
         var result = await nutbits.payInvoice(body.invoice);
 
         // Track daily spend + service fee for API payments
@@ -738,6 +753,22 @@ export function registerHandlers(router, ctx) {
             var todayDate = new Date().toISOString().slice(0, 10);
             await store.addDailySpend('__api__', todayDate, amountSats);
         }
+
+        // Store tx record for API-initiated pays
+        await store.setTx('__api__', pmthash, {
+            type: 'outgoing',
+            amount: amountSats * 1000,
+            description: description || `Pay ${amountSats} sats`,
+            payment_hash: pmthash,
+            invoice: body.invoice,
+            created_at: Math.floor(Date.now() / 1000),
+            settled_at: result.success ? Math.floor(Date.now() / 1000) : null,
+            paid: !!result.success,
+            preimage: result.preimage || null,
+            fees_paid: (result.fee || 0) * 1000,
+            service_fee: serviceFee * 1000,
+            err_msg: result.error || null,
+        });
 
         var newBalance = await nutbits.getBalance();
         return {
@@ -757,6 +788,19 @@ export function registerHandlers(router, ctx) {
         if (amount > 2_100_000_000_000_000) throw apiError(400, 'amount exceeds maximum (21M BTC)');
 
         var quote = await nutbits.createInvoice(Math.floor(amount));
+
+        // Store pending tx record for API-initiated receives
+        await store.setTx('__api__', quote.quote, {
+            type: 'incoming',
+            amount: Math.floor(amount) * 1000,
+            description: `Receive ${Math.floor(amount)} sats`,
+            payment_hash: quote.quote,
+            invoice: quote.request,
+            created_at: Math.floor(Date.now() / 1000),
+            settled_at: null,
+            paid: false,
+        });
+
         return {
             invoice: quote.request,
             quote_id: quote.quote,
@@ -771,6 +815,15 @@ export function registerHandlers(router, ctx) {
         if (!body?.quote_id) throw apiError(400, 'quote_id is required');
         var minted = await nutbits.checkAndMintTokens({ quote: body.quote_id, request: body.invoice, _mintUrl: body.mint });
         var balance = await nutbits.getBalance();
+
+        // Update tx record when payment settles
+        if (minted) {
+            await store.updateTx('__api__', body.quote_id, {
+                settled_at: Math.floor(Date.now() / 1000),
+                paid: true,
+            });
+        }
+
         return { paid: minted, balance_sats: balance };
     });
 

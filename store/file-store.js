@@ -174,6 +174,10 @@ export class FileStore {
     async setTx(appPubkey, pmthash, tx) {
         return this.#withLock(() => {
             var conn = this.#state.nostr_state.nwc_info[appPubkey];
+            if (!conn && appPubkey === '__api__') {
+                conn = { label: 'API', tx_history: {}, _virtual: true };
+                this.#state.nostr_state.nwc_info[appPubkey] = conn;
+            }
             if (conn) {
                 if (!conn.tx_history) conn.tx_history = {};
                 conn.tx_history[pmthash] = tx;

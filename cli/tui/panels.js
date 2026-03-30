@@ -234,7 +234,7 @@ export async function connectionsPanel(client) {
 // ── Panel: History ───────────────────────────────────────────────────────
 
 export async function historyPanel(client) {
-    var d = await client.get('/api/v1/history', { limit: '15', unpaid: 'true' });
+    var d = await client.get('/api/v1/history', { limit: '30', unpaid: 'true' });
     var lines = [];
 
     lines.push(title('Recent Transactions', `${d.total} total`));
@@ -249,24 +249,59 @@ export async function historyPanel(client) {
         return lines;
     }
 
-    lines.push(`  ${c.muted}${'Time'.padEnd(12)}${'Type'.padEnd(8)}${'Amount'.padEnd(16)}${'Status'.padEnd(10)}Connection${c.reset}`);
-    lines.push(`  ${c.dim}${'─'.repeat(60)}${c.reset}`);
+    // Split by channel
+    var nwcTxs = d.transactions.filter(tx => tx.connection_label !== 'API');
+    var mintTxs = d.transactions.filter(tx => tx.connection_label === 'API');
 
-    for (var tx of d.transactions) {
+    var renderTxRow = (tx) => {
         var time = tx.created_at ? fmtTime(tx.created_at * 1000) : '—';
         var arrow = tx.type === 'incoming' ? `${c.green}← in${c.reset}` : `${c.red}→ out${c.reset}`;
         var amt = fmtSats(Math.floor((tx.amount || 0) / 1000));
         var status = tx.settled_at ? `${c.green}settled${c.reset}`
             : tx.err_msg ? `${c.red}failed${c.reset}`
             : `${c.yellow}pending${c.reset}`;
-        var connLabel = `${c.dim}${(tx.connection_label || '—').slice(0, 14)}${c.reset}`;
+        return `  ${col(time, 12)}${col(arrow, 8)}${col(amt, 16)}${status}`;
+    };
 
-        lines.push(`  ${col(time, 12)}${col(arrow, 8)}${col(amt, 16)}${col(status, 10)}${connLabel}`);
+    // ── NWC Channel ──────────────────────────────────────────────
+    lines.push(`  ${c.blue}◆${c.reset} ${c.white}${c.bold}NWC${c.reset}${c.muted}  Nostr Wallet Connect${c.reset}`);
+    lines.push(`  ${c.dim}${'─'.repeat(52)}${c.reset}`);
+
+    if (nwcTxs.length === 0) {
+        lines.push(`  ${c.dim}No NWC transactions yet${c.reset}`);
+    } else {
+        lines.push(`  ${c.muted}${'Time'.padEnd(12)}${'Type'.padEnd(8)}${'Amount'.padEnd(16)}${'Status'.padEnd(10)}${'Via'}${c.reset}`);
+        for (var tx of nwcTxs.slice(0, 10)) {
+            var row = renderTxRow(tx);
+            var via = `  ${c.blue}${(tx.connection_label || '—').slice(0, 12)}${c.reset}`;
+            lines.push(`${row}${via}`);
+        }
+        if (nwcTxs.length > 10) {
+            lines.push(`  ${c.dim}+ ${nwcTxs.length - 10} more NWC transactions${c.reset}`);
+        }
     }
 
-    if (d.total > 15) {
+    lines.push('');
+
+    // ── Mint Channel ─────────────────────────────────────────────
+    lines.push(`  ${c.purple}◆${c.reset} ${c.white}${c.bold}Mint${c.reset}${c.muted}  Direct CLI / API${c.reset}`);
+    lines.push(`  ${c.dim}${'─'.repeat(52)}${c.reset}`);
+
+    if (mintTxs.length === 0) {
+        lines.push(`  ${c.dim}No direct mint transactions yet${c.reset}`);
+    } else {
+        lines.push(`  ${c.muted}${'Time'.padEnd(12)}${'Type'.padEnd(8)}${'Amount'.padEnd(16)}Status${c.reset}`);
+        for (var tx of mintTxs.slice(0, 10)) {
+            lines.push(renderTxRow(tx));
+        }
+        if (mintTxs.length > 10) {
+            lines.push(`  ${c.dim}+ ${mintTxs.length - 10} more mint transactions${c.reset}`);
+        }
+    }
+
+    if (d.total > 30) {
         lines.push('');
-        lines.push(`  ${c.dim}Showing 15 of ${d.total}. Navigate to "Export History" to download all.${c.reset}`);
+        lines.push(`  ${c.dim}Showing 30 of ${d.total}. Navigate to "Export History" to download all.${c.reset}`);
     }
 
     return lines;
@@ -785,84 +820,151 @@ export async function activityPanel(client) {
         return lines;
     }
 
+    // Split by channel
+    var nwcTxs = allTxs.filter(tx => tx.connection_label !== 'API');
+    var mintTxs = allTxs.filter(tx => tx.connection_label === 'API');
+
     // Volume by day (last 7 days)
     var now = Math.floor(Date.now() / 1000);
-    var dayBuckets = {};
+    var dayBuckets = { nwc: {}, mint: {} };
     var dayLabels = [];
     for (var i = 6; i >= 0; i--) {
         var dayTs = now - i * 86400;
         var dayKey = new Date(dayTs * 1000).toLocaleDateString('en-US', { weekday: 'short' });
-        dayBuckets[dayKey] = 0;
+        dayBuckets.nwc[dayKey] = 0;
+        dayBuckets.mint[dayKey] = 0;
         dayLabels.push(dayKey);
     }
 
-    var settledCount = 0;
-    var failedCount = 0;
-    var totalIncoming = 0;
-    var totalOutgoing = 0;
+    // Aggregate stats per channel
+    var stats = {
+        nwc:  { incoming: 0, outgoing: 0, settled: 0, failed: 0, count: nwcTxs.length },
+        mint: { incoming: 0, outgoing: 0, settled: 0, failed: 0, count: mintTxs.length },
+    };
 
     for (var tx of allTxs) {
-        if (tx.settled_at) settledCount++;
-        if (tx.err_msg) failedCount++;
+        var isNwc = tx.connection_label !== 'API';
+        var ch = isNwc ? 'nwc' : 'mint';
         var amtSats = Math.floor((tx.amount || 0) / 1000);
-        if (tx.type === 'incoming') totalIncoming += amtSats;
-        else totalOutgoing += amtSats;
 
-        // Bucket by day
+        if (tx.settled_at) stats[ch].settled++;
+        if (tx.err_msg) stats[ch].failed++;
+        if (tx.type === 'incoming') stats[ch].incoming += amtSats;
+        else stats[ch].outgoing += amtSats;
+
         var txDay = new Date((tx.created_at || 0) * 1000).toLocaleDateString('en-US', { weekday: 'short' });
-        if (dayBuckets[txDay] !== undefined) dayBuckets[txDay] += amtSats;
+        if (dayBuckets[ch][txDay] !== undefined) dayBuckets[ch][txDay] += amtSats;
     }
 
-    // Daily volume bars
-    lines.push(`  ${c.muted}Volume (last 7 days):${c.reset}`);
+    // ── Channel Overview ─────────────────────────────────────────
+    var nwcTotal = stats.nwc.incoming + stats.nwc.outgoing;
+    var mintTotal = stats.mint.incoming + stats.mint.outgoing;
+
+    lines.push(`  ${c.muted}Volume by channel:${c.reset}`);
     lines.push('');
-    var dayData = dayLabels.map(d => ({ label: d, value: dayBuckets[d], color: c.purple }));
-    // Filter out all-zero days from the beginning
-    while (dayData.length > 1 && dayData[0].value === 0) dayData.shift();
-    var dayBars = hbar(dayData, 48, { unit: 'sats', showPct: false });
-    for (var bl of dayBars) lines.push(`  ${bl}`);
+
+    var channelData = [];
+    if (nwcTotal > 0) channelData.push({ label: 'NWC', value: nwcTotal, color: c.blue });
+    if (mintTotal > 0) channelData.push({ label: 'Mint', value: mintTotal, color: c.purple });
+    if (channelData.length > 0) {
+        var chBars = hbar(channelData, 48, { unit: 'sats', showPct: true });
+        for (var chb of chBars) lines.push(`  ${chb}`);
+    }
+
+    lines.push('');
+    lines.push(divider());
+
+    // ── NWC Channel Detail ───────────────────────────────────────
+    lines.push('');
+    lines.push(`  ${c.blue}◆${c.reset} ${c.white}${c.bold}NWC${c.reset}  ${c.muted}Nostr Wallet Connect${c.reset}  ${c.dim}${stats.nwc.count} txs${c.reset}`);
+    lines.push('');
+
+    if (stats.nwc.count === 0) {
+        lines.push(`  ${c.dim}  No NWC transactions yet${c.reset}`);
+    } else {
+        lines.push(kv('    Incoming', `${c.green}${c.bold}${stats.nwc.incoming.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+        lines.push(kv('    Outgoing', `${c.red}${c.bold}${stats.nwc.outgoing.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+        lines.push(kv('    Net flow', `${c.white}${c.bold}${(stats.nwc.incoming - stats.nwc.outgoing).toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+
+        var nwcTotalTx = stats.nwc.settled + stats.nwc.failed;
+        if (nwcTotalTx > 0) {
+            lines.push('');
+            var nwcGauge = gauge(stats.nwc.settled, nwcTotalTx, 28, { label: '    Success', color: c.green, showPct: true });
+            for (var ng of nwcGauge) lines.push(ng);
+        }
+
+        // Per-connection breakdown within NWC
+        var connMap = {};
+        for (var tx of nwcTxs) {
+            var cl = tx.connection_label || 'unknown';
+            connMap[cl] = (connMap[cl] || 0) + Math.floor((tx.amount || 0) / 1000);
+        }
+        var connEntries = Object.entries(connMap).sort((a, b) => b[1] - a[1]);
+        if (connEntries.length > 0) {
+            lines.push('');
+            lines.push(`  ${c.dim}  By connection:${c.reset}`);
+            lines.push('');
+            var connData = connEntries.slice(0, 6).map(([label, value]) => ({
+                label: label.slice(0, 14),
+                value,
+                color: c.blue,
+            }));
+            var connBars = hbar(connData, 44, { unit: 'sats', showPct: true });
+            for (var cb of connBars) lines.push(`    ${cb}`);
+        }
+    }
+
+    lines.push('');
+    lines.push(divider());
+
+    // ── Mint Channel Detail ──────────────────────────────────────
+    lines.push('');
+    lines.push(`  ${c.purple}◆${c.reset} ${c.white}${c.bold}Mint${c.reset}  ${c.muted}Direct CLI / API${c.reset}  ${c.dim}${stats.mint.count} txs${c.reset}`);
+    lines.push('');
+
+    if (stats.mint.count === 0) {
+        lines.push(`  ${c.dim}  No direct mint transactions yet${c.reset}`);
+    } else {
+        lines.push(kv('    Received', `${c.green}${c.bold}${stats.mint.incoming.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+        lines.push(kv('    Sent', `${c.red}${c.bold}${stats.mint.outgoing.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+        lines.push(kv('    Net flow', `${c.white}${c.bold}${(stats.mint.incoming - stats.mint.outgoing).toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
+
+        var mintTotalTx = stats.mint.settled + stats.mint.failed;
+        if (mintTotalTx > 0) {
+            lines.push('');
+            var mintGauge = gauge(stats.mint.settled, mintTotalTx, 28, { label: '    Success', color: c.green, showPct: true });
+            for (var mg of mintGauge) lines.push(mg);
+        }
+    }
 
     lines.push('');
     lines.push(divider());
     lines.push('');
 
-    // Summary stats
-    lines.push(`  ${c.muted}Summary:${c.reset}`);
+    // ── Combined Daily Volume ────────────────────────────────────
+    lines.push(`  ${c.muted}Daily volume (last 7 days):${c.reset}`);
+    lines.push('');
+    var dayData = dayLabels.map(d => {
+        var nwcVal = dayBuckets.nwc[d];
+        var mintVal = dayBuckets.mint[d];
+        return { label: d, value: nwcVal + mintVal, color: nwcVal >= mintVal ? c.blue : c.purple };
+    });
+    while (dayData.length > 1 && dayData[0].value === 0) dayData.shift();
+    var dayBars = hbar(dayData, 48, { unit: 'sats', showPct: false });
+    for (var bl of dayBars) lines.push(`  ${bl}`);
+
+    // ── Combined Summary ─────────────────────────────────────────
+    var totalIncoming = stats.nwc.incoming + stats.mint.incoming;
+    var totalOutgoing = stats.nwc.outgoing + stats.mint.outgoing;
+
+    lines.push('');
+    lines.push(divider());
+    lines.push('');
+    lines.push(`  ${c.muted}Combined:${c.reset}`);
     lines.push('');
     lines.push(kv('  Incoming', `${c.green}${c.bold}${totalIncoming.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
     lines.push(kv('  Outgoing', `${c.red}${c.bold}${totalOutgoing.toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
     lines.push(kv('  Net flow', `${c.white}${c.bold}${(totalIncoming - totalOutgoing).toLocaleString()}${c.reset}${c.muted} sats${c.reset}`));
-
-    // Success rate gauge
-    var totalTx = settledCount + failedCount;
-    if (totalTx > 0) {
-        lines.push('');
-        var successGauge = gauge(settledCount, totalTx, 30, { label: '  Success', color: c.green, showPct: true });
-        for (var gl of successGauge) lines.push(gl);
-        lines.push(`  ${c.dim}${settledCount} settled, ${failedCount} failed of ${totalTx} total${c.reset}`);
-    }
-
-    // Per-connection breakdown
-    var connMap = {};
-    for (var tx of allTxs) {
-        var cl = tx.connection_label || 'unknown';
-        connMap[cl] = (connMap[cl] || 0) + Math.floor((tx.amount || 0) / 1000);
-    }
-    var connEntries = Object.entries(connMap).sort((a, b) => b[1] - a[1]);
-    if (connEntries.length > 1) {
-        lines.push('');
-        lines.push(divider());
-        lines.push('');
-        lines.push(`  ${c.muted}By connection:${c.reset}`);
-        lines.push('');
-        var connData = connEntries.slice(0, 8).map(([label, value]) => ({
-            label: label.slice(0, 14),
-            value,
-            color: c.blue,
-        }));
-        var connBars = hbar(connData, 48, { unit: 'sats', showPct: true });
-        for (var cb of connBars) lines.push(`  ${cb}`);
-    }
 
     // Session activity sparkline
     var ds = getDs(client);
