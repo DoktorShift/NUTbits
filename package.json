@@ -1,7 +1,7 @@
 {
   "name": "nutbits",
   "version": "0.8.0",
-  "description": "Cashu ecash to NWC bridge — use any Cashu mint as a Lightning funding source for LNbits",
+  "description": "Cashu ecash to NWC bridge - use any Cashu mint as a Lightning funding source for LNbits",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "main": "nutbits.js",

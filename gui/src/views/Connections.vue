@@ -328,6 +328,33 @@ watch(() => nwcModalConn.value?.nwc_string, (val) => {
   if (val && showNwcModal.value) setTimeout(renderNwcQr, 50)
 })
 
+// Render QR on the success modal after creating a new connection
+async function renderSuccessQr() {
+  var nwcString = createdConnection.value?.nwc_string
+  var canvas = document.getElementById('success-qr-canvas')
+  if (!canvas || !nwcString) return
+  try {
+    var QRModule = await import('qrcode')
+    var QRCode = QRModule.default || QRModule
+    await QRCode.toCanvas(canvas, nwcString.toUpperCase(), {
+      width: 260,
+      margin: 3,
+      color: { dark: '#1a1a2e', light: '#f5f0e8' },
+    })
+  } catch {
+    var ctx = canvas.getContext('2d')
+    canvas.width = 260; canvas.height = 60
+    ctx.fillStyle = '#666'
+    ctx.font = '13px monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText('QR code unavailable', 130, 30)
+  }
+}
+
+watch(showSuccessModal, (open) => {
+  if (open) setTimeout(renderSuccessQr, 300)
+}, { flush: 'post' })
+
 onMounted(() => {
   connectionsStore.fetch()
   statusStore.fetch()
@@ -764,9 +791,12 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- QR placeholder -->
-          <div class="bg-nutbits-800 border border-nutbits-700 rounded-lg p-6 flex items-center justify-center">
-            <span class="text-nutbits-400 text-sm">QR code placeholder - will be rendered here</span>
+          <!-- QR Code -->
+          <div class="flex justify-center">
+            <div class="bg-nutbits-800 border border-nutbits-700 rounded-xl p-5 shadow-[0_0_30px_rgba(245,158,11,0.06)]">
+              <canvas id="success-qr-canvas" class="rounded-lg" />
+              <p class="text-center text-[10px] text-nutbits-500 mt-3 tracking-wide uppercase">Scan with your wallet app</p>
+            </div>
           </div>
         </div>
 
