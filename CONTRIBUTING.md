@@ -47,7 +47,6 @@ Have an idea? Open an issue and describe it. We especially welcome ideas around:
 - `var` for declarations (project convention)
 - Keep it simple - NUTbits is one main file + store modules
 - Follow existing patterns
-- Comment the *why*, not the *what*
 
 ## Open Backlog
 
@@ -57,6 +56,8 @@ These are things we'd love help with:
 - **Tests**: Unit tests for store backends, integration tests for payment flows
 - **BOLT12**: Support for BOLT12 offers (NUT-25)
 - **Monitoring**: Health check endpoint, metrics
+- **Documentation**: Improve docs for new users
+- **Experience**: introduce and improve user experience around cashu with common implementation patterns
 
 ## Questions?
 

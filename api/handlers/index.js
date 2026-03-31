@@ -2,11 +2,36 @@
 // Registers all routes on the router with service context bound
 
 import { sumProofs } from '@cashu/cashu-ts';
+import { validateLightningAddress, fetchPayRequest, requestLnurlInvoice } from 'nostr-core';
 import bolt11Lib from 'bolt11';
 import fs from 'node:fs';
 
 // Valid hex pubkey pattern
 var HEX_PUBKEY = /^[0-9a-f]{64}$/;
+
+// ── lud16 (Lightning Address) validation ────────────────────────────────────
+
+var LUD16_MAX_LEN = 320;
+
+// Validate format, resolve via LNURL-pay, return normalized address.
+async function validateAndResolveLud16(lud16) {
+    if (typeof lud16 !== 'string' || lud16.length > LUD16_MAX_LEN) {
+        throw apiError(400, 'lud16 must be a valid Lightning Address (max 320 chars)');
+    }
+    var normalized = lud16.toLowerCase().trim();
+    if (!validateLightningAddress(normalized)) {
+        throw apiError(400, 'lud16 must be in format user@domain.com');
+    }
+    // Resolve via LNURL-pay (LUD-16) to verify the address actually works
+    var [name, domain] = normalized.split('@');
+    var lnurlPayUrl = `https://${domain}/.well-known/lnurlp/${name}`;
+    try {
+        await fetchPayRequest(lnurlPayUrl);
+    } catch (e) {
+        throw apiError(422, `Lightning Address could not be resolved: ${domain} (${e.message})`);
+    }
+    return normalized;
+}
 
 // Allowed NWC permission names
 var PERM_MAP = {
@@ -18,6 +43,16 @@ var PERM_MAP = {
     lookup: 'lookup_invoice',
 };
 var ALLOWED_PERMS = new Set([...Object.keys(PERM_MAP), ...Object.values(PERM_MAP)]);
+
+// Parse LNURL metadata JSON string into a readable description
+function parseLnurlMeta(metadataStr) {
+    try {
+        var entries = JSON.parse(metadataStr);
+        if (!Array.isArray(entries)) return null;
+        var text = entries.find(e => e[0] === 'text/plain');
+        return text ? text[1] : null;
+    } catch { return null; }
+}
 
 // Sensitive fields to redact from log data (recursive)
 var REDACT_KEYS = new Set(['secret', 'C', 'nwc_string', 'app_privkey', 'user_secret', 'statePassphrase', 'invoice', 'bolt11', 'preimage', 'seed']);
@@ -34,8 +69,18 @@ function redactLogData(data, depth = 0) {
     return clean;
 }
 
+// Build a current NWC string from connection parts, always reflecting latest lud16 and relays
+function buildNwcString(info, relays) {
+    if (!info.app_pubkey || !info.user_secret) return info.nwc_string || null;
+    var rls = relays && relays.length ? relays : (info.relay ? [info.relay] : []);
+    var relayParams = rls.map(r => `relay=${encodeURIComponent(r)}`).join('&');
+    var nwc = `nostr+walletconnect://${info.app_pubkey}?${relayParams}&secret=${info.user_secret}`;
+    if (info.lud16) nwc += `&lud16=${encodeURIComponent(info.lud16)}`;
+    return nwc;
+}
+
 export function registerHandlers(router, ctx) {
-    var { nutbits, store, mintManager, config, log } = ctx;
+    var { nutbits, store, mintManager, config, log, createWalletForMint, detectMintCaps } = ctx;
 
     // ── GET /api/v1/status ───────────────────────────────────────────
 
@@ -54,7 +99,7 @@ export function registerHandlers(router, ctx) {
         var connections = Object.keys(nutbits.state.nostr_state.nwc_info);
 
         return {
-            version: config.version || '0.7.0',
+            version: config.version || '0.8.0',
             uptime_ms: Date.now() - ctx.startedAt,
             mint: {
                 name: mintInfo?.name || 'unknown',
@@ -113,6 +158,7 @@ export function registerHandlers(router, ctx) {
                 id: idx++,
                 app_pubkey: pk,
                 label: info.label || `connection-${idx - 1}`,
+                nwc_string: buildNwcString(info, config.relays),
                 permissions: info.permissions || [],
                 balance_msat: info.balance || 0,
                 tx_count: txCount,
@@ -121,6 +167,7 @@ export function registerHandlers(router, ctx) {
                 max_daily_sats: info.max_daily_sats || 0,
                 max_payment_sats: info.max_payment_sats || 0,
                 mint: info.mymint,
+                lud16: info.lud16 || null,
             });
         }
         return { connections: list };
@@ -144,7 +191,7 @@ export function registerHandlers(router, ctx) {
                 id: idx,
                 app_pubkey: pk,
                 label: info.label || `connection-${idx}`,
-                nwc_string: info.nwc_string || null,
+                nwc_string: buildNwcString(info, config.relays),
                 permissions: info.permissions || [],
                 balance_msat: info.balance || 0,
                 tx_count: txCount,
@@ -157,6 +204,7 @@ export function registerHandlers(router, ctx) {
                 max_payment_sats: info.max_payment_sats || 0,
                 service_fee_ppm: info.service_fee_ppm ?? null,
                 service_fee_base: info.service_fee_base ?? null,
+                lud16: info.lud16 || null,
             });
             idx++;
         }
@@ -182,6 +230,12 @@ export function registerHandlers(router, ctx) {
 
         var mintUrl = body.mint || mintManager.activeMintUrl;
 
+        // Validate and resolve lud16 (Lightning Address) if provided
+        var lud16 = null;
+        if (body.lud16) {
+            lud16 = await validateAndResolveLud16(body.lud16);
+        }
+
         // Serialize connection creation to prevent key-diff race conditions
         var prev = connectLock;
         var release;
@@ -190,7 +244,7 @@ export function registerHandlers(router, ctx) {
 
         try {
             var keysBefore = new Set(Object.keys(nutbits.state.nostr_state.nwc_info));
-            var nwcString = await nutbits.createNWCconnection(mintUrl, perms, config.relays);
+            var nwcString = await nutbits.createNWCconnection(mintUrl, perms, config.relays, undefined, true, lud16);
 
             var newPk = null;
             for (var key of Object.keys(nutbits.state.nostr_state.nwc_info)) {
@@ -206,6 +260,7 @@ export function registerHandlers(router, ctx) {
             // Per-connection fee override (null = use global default)
             if (body.service_fee_ppm !== undefined) conn.service_fee_ppm = Math.max(0, Math.floor(Number(body.service_fee_ppm) || 0));
             if (body.service_fee_base !== undefined) conn.service_fee_base = Math.max(0, Math.floor(Number(body.service_fee_base) || 0));
+            if (lud16) conn.lud16 = lud16;
             await store.updateConnection(newPk, {
                 label: conn.label,
                 created_at: conn.created_at,
@@ -213,6 +268,7 @@ export function registerHandlers(router, ctx) {
                 max_payment_sats: conn.max_payment_sats,
                 service_fee_ppm: conn.service_fee_ppm,
                 service_fee_base: conn.service_fee_base,
+                lud16: conn.lud16 || null,
             });
 
             // Calculate the connection's display ID (1-based index of non-revoked connections)
@@ -229,6 +285,7 @@ export function registerHandlers(router, ctx) {
                 app_pubkey: newPk,
                 label: conn.label,
                 permissions: perms,
+                lud16: lud16 || null,
             };
         } finally {
             release();
@@ -257,6 +314,43 @@ export function registerHandlers(router, ctx) {
         await store.updateConnection(pubkey, { revoked: true, revoked_at: conn.revoked_at });
 
         return { revoked: true, pubkey };
+    });
+
+    // ── PATCH /api/v1/connections/:pubkey ──────────────────────────────
+
+    router.patch('/api/v1/connections/:pubkey', async ({ params, body }) => {
+        var pubkey = params.pubkey;
+        if (!HEX_PUBKEY.test(pubkey)) throw apiError(400, 'invalid pubkey format');
+
+        var conn = nutbits.state.nostr_state.nwc_info[pubkey];
+        if (!conn) throw apiError(404, 'connection not found');
+        if (conn.revoked) throw apiError(400, 'cannot update a revoked connection');
+
+        var updates = {};
+
+        // Update lud16 (set or clear)
+        if (body.lud16 !== undefined) {
+            if (body.lud16 === null || body.lud16 === '') {
+                conn.lud16 = null;
+                updates.lud16 = null;
+            } else {
+                var normalized = await validateAndResolveLud16(body.lud16);
+                conn.lud16 = normalized;
+                updates.lud16 = normalized;
+            }
+
+            // Rebuild the NWC string so it reflects the new lud16
+            var newNwc = buildNwcString(conn, config.relays);
+            conn.nwc_string = newNwc;
+            updates.nwc_string = newNwc;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            throw apiError(400, 'no updatable fields provided');
+        }
+
+        await store.updateConnection(pubkey, updates);
+        return { updated: true, pubkey, ...updates };
     });
 
     // ── GET /api/v1/history ──────────────────────────────────────────
@@ -392,6 +486,53 @@ export function registerHandlers(router, ctx) {
         return { mints, active_mint: mintManager.activeMintUrl };
     });
 
+    // ── POST /api/v1/mints/active ───────────────────────────────────
+
+    router.post('/api/v1/mints/active', async ({ body }) => {
+        if (!body?.url || typeof body.url !== 'string') throw apiError(400, 'url is required');
+
+        var url = body.url.trim();
+        if (!mintManager.orderedMints.includes(url)) throw apiError(404, 'mint not configured');
+
+        if (url === mintManager.activeMintUrl) {
+            return { active_mint: mintManager.activeMintUrl, changed: false };
+        }
+
+        var wallet = mintManager.wallets.get(url);
+        if (!wallet) {
+            if (typeof createWalletForMint !== 'function') throw apiError(500, 'mint switch unavailable');
+            wallet = createWalletForMint(url);
+            mintManager.wallets.set(url, wallet);
+        }
+
+        try {
+            await wallet.loadMint();
+            if (typeof detectMintCaps === 'function') detectMintCaps(wallet, url);
+        } catch (e) {
+            mintManager.mintHealth.set(url, {
+                healthy: false,
+                lastCheck: Date.now(),
+                consecutiveFailures: (mintManager.mintHealth.get(url)?.consecutiveFailures || 0) + 1,
+                lastError: e.message,
+            });
+            throw apiError(502, `mint is not reachable: ${e.message}`);
+        }
+
+        var oldMint = mintManager.activeMintUrl;
+        mintManager.activeMintUrl = url;
+        mintManager.mintHealth.set(url, {
+            healthy: true,
+            lastCheck: Date.now(),
+            consecutiveFailures: 0,
+            lastError: null,
+        });
+        await store.setActiveMintUrl(url);
+        try { await nutbits.refreshBalance(); } catch (e) { /* ignore */ }
+        log.info('API: active mint changed', { from: oldMint, to: url });
+
+        return { active_mint: mintManager.activeMintUrl, previous_mint: oldMint, changed: true };
+    });
+
     // ── GET /api/v1/nuts ─────────────────────────────────────────────
 
     router.get('/api/v1/nuts', async () => {
@@ -470,7 +611,7 @@ export function registerHandlers(router, ctx) {
 
     var ENV_DESCRIPTIONS = new Map([
         ['NUTBITS_MINT_URL', { desc: 'Cashu mint URL', restart: true }],
-        ['NUTBITS_MINT_URLS', { desc: 'Comma-separated mint URLs (failover)', restart: true }],
+        ['NUTBITS_MINT_URLS', { desc: 'Comma-separated mint URLs used for connections and failover', restart: true }],
         ['NUTBITS_RELAYS', { desc: 'Comma-separated Nostr relays', restart: true }],
         ['NUTBITS_STATE_PASSPHRASE', { desc: 'Encryption passphrase', restart: true, sensitive: true }],
         ['NUTBITS_SEED', { desc: 'Deterministic seed (NUT-13)', restart: true, sensitive: true }],
@@ -703,19 +844,92 @@ export function registerHandlers(router, ctx) {
         };
     });
 
+    // ── GET /api/v1/lnurl/resolve ──────────────────────────────────────
+    // Resolves a Lightning Address to LNURL-pay metadata for the GUI
+
+    router.get('/api/v1/lnurl/resolve', async ({ query }) => {
+        var address = (query.address || '').trim().toLowerCase();
+        if (!address) throw apiError(400, 'address query parameter is required');
+        if (!validateLightningAddress(address)) throw apiError(400, 'invalid Lightning Address format');
+
+        var [name, domain] = address.split('@');
+        var lnurlPayUrl = `https://${domain}/.well-known/lnurlp/${name}`;
+        var payRequest;
+        try {
+            payRequest = await fetchPayRequest(lnurlPayUrl);
+        } catch (e) {
+            throw apiError(422, `could not resolve: ${e.message}`);
+        }
+
+        return {
+            address,
+            domain,
+            callback: !!payRequest.callback,
+            min_sats: Math.ceil((payRequest.minSendable || 1000) / 1000),
+            max_sats: Math.floor((payRequest.maxSendable || 100000000000) / 1000),
+            description: payRequest.metadata ? parseLnurlMeta(payRequest.metadata) : null,
+            allows_nostr: !!payRequest.allowsNostr,
+            nostr_pubkey: payRequest.nostrPubkey || null,
+            comment_allowed: payRequest.commentAllowed || 0,
+        };
+    });
+
     // ── POST /api/v1/pay ─────────────────────────────────────────────
 
     router.post('/api/v1/pay', async ({ body }) => {
         if (!body?.invoice) throw apiError(400, 'invoice is required');
         if (typeof body.invoice !== 'string' || body.invoice.length > 8192) throw apiError(400, 'invalid invoice');
 
-        // Decode and validate invoice before paying
+        var invoiceToPay = body.invoice.trim();
+        var resolvedFromLud16 = false;
+
+        // Lightning Address resolution: user@domain -> fetch LNURL-pay -> get invoice
+        if (validateLightningAddress(invoiceToPay)) {
+            var lnAmount = Number(body.amount_sats);
+            if (!lnAmount || lnAmount <= 0) throw apiError(400, 'amount_sats is required when paying a Lightning Address');
+
+            var [lnUser, lnDomain] = invoiceToPay.toLowerCase().split('@');
+            var lnurlPayUrl = `https://${lnDomain}/.well-known/lnurlp/${lnUser}`;
+            var payRequest;
+            try {
+                payRequest = await fetchPayRequest(lnurlPayUrl);
+            } catch (e) {
+                throw apiError(422, `could not resolve Lightning Address: ${e.message}`);
+            }
+
+            var amountMsats = lnAmount * 1000;
+            if (payRequest.minSendable && amountMsats < payRequest.minSendable) {
+                throw apiError(400, `amount below minimum: ${Math.ceil(payRequest.minSendable / 1000)} sats`);
+            }
+            if (payRequest.maxSendable && amountMsats > payRequest.maxSendable) {
+                throw apiError(400, `amount above maximum: ${Math.floor(payRequest.maxSendable / 1000)} sats`);
+            }
+
+            var callbackResult;
+            try {
+                callbackResult = await requestLnurlInvoice(payRequest, amountMsats);
+            } catch (e) {
+                throw apiError(422, `Lightning Address callback failed: ${e.message}`);
+            }
+            if (!callbackResult?.pr) throw apiError(422, 'Lightning Address did not return an invoice');
+            invoiceToPay = callbackResult.pr;
+            resolvedFromLud16 = true;
+        }
+
+        // Decode and validate the BOLT11 invoice
         var decoded;
-        try { decoded = bolt11Lib.decode(body.invoice); }
-        catch (e) { throw apiError(400, 'cannot decode invoice'); }
+        try { decoded = bolt11Lib.decode(invoiceToPay); }
+        catch (e) { throw apiError(400, `cannot decode invoice: ${e.message}`); }
 
         var amountSats = decoded.satoshis;
-        if (!amountSats) throw apiError(400, 'amountless invoices not supported');
+        if (!amountSats) {
+            // For LNURL-resolved invoices, use the requested amount
+            if (resolvedFromLud16 && body.amount_sats) {
+                amountSats = Number(body.amount_sats);
+            } else {
+                throw apiError(400, 'amountless invoices not supported');
+            }
+        }
 
         // Enforce spending limits at API level (same logic as NWC handler)
         if (config.maxPaymentSats && amountSats > config.maxPaymentSats) {
@@ -746,7 +960,12 @@ export function registerHandlers(router, ctx) {
         var pmthash = decoded.tags?.find(t => t.tagName === 'payment_hash')?.data || 'pay_' + Date.now();
         var description = decoded.tags?.find(t => t.tagName === 'description')?.data || '';
 
-        var result = await nutbits.payInvoice(body.invoice);
+        var result;
+        try {
+            result = await nutbits.payInvoice(invoiceToPay);
+        } catch (e) {
+            throw apiError(502, `payment failed: ${e.message}`);
+        }
 
         // Track daily spend + service fee for API payments
         if (result.success) {
@@ -758,9 +977,9 @@ export function registerHandlers(router, ctx) {
         await store.setTx('__api__', pmthash, {
             type: 'outgoing',
             amount: amountSats * 1000,
-            description: description || `Pay ${amountSats} sats`,
+            description: description || (resolvedFromLud16 ? `Pay ${amountSats} sats to ${body.invoice}` : `Pay ${amountSats} sats`),
             payment_hash: pmthash,
-            invoice: body.invoice,
+            invoice: invoiceToPay,
             created_at: Math.floor(Date.now() / 1000),
             settled_at: result.success ? Math.floor(Date.now() / 1000) : null,
             paid: !!result.success,
@@ -771,12 +990,14 @@ export function registerHandlers(router, ctx) {
         });
 
         var newBalance = await nutbits.getBalance();
-        return {
+        var response = {
             ...result,
             amount_sats: amountSats,
             service_fee_sats: serviceFee,
             balance_sats: newBalance,
         };
+        if (resolvedFromLud16) response.lud16 = body.invoice.trim().toLowerCase();
+        return response;
     });
 
     // ── POST /api/v1/receive ─────────────────────────────────────────
@@ -915,7 +1136,10 @@ function persistToEnv(key, value) {
     value = String(value).replace(/[\r\n]/g, '');
     var envPath = '.env';
     try {
-        if (!fs.existsSync(envPath)) return; // no .env file, skip silently
+        if (!fs.existsSync(envPath)) {
+            fs.writeFileSync(envPath, `${key}=${value}\n`);
+            return;
+        }
         var content = fs.readFileSync(envPath, 'utf8');
         var lines = content.split('\n');
         var found = false;

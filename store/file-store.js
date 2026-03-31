@@ -3,6 +3,7 @@
 
 import fs from 'fs';
 import { encryptState, decryptState } from './crypto-utils.js';
+import { isPersistableConnection } from './connection-utils.js';
 
 export class FileStore {
     #state = { mints: {}, nostr_state: { nwc_info: {} }, activeMintUrl: null, counters: {}, dailySpend: {} };
@@ -55,6 +56,7 @@ export class FileStore {
     #flush() {
         var nwcInfoClean = {};
         for (var [pk, info] of Object.entries(this.#state.nostr_state.nwc_info)) {
+            if (!isPersistableConnection(pk, info)) continue;
             var { user_secret, ...rest } = info;
             nwcInfoClean[pk] = rest;
         }

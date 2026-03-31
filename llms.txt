@@ -1,4 +1,4 @@
-# NUTbits
+# NUTbits v0.8.0
 
 > Cashu ecash to NWC bridge - use any Cashu mint as a Lightning funding source for LNbits and any NWC-compatible app.
 
@@ -16,36 +16,79 @@ License: AGPL-3.0. Author: DoktorShift.
 - NIP-44 is the preferred encryption for NWC messages. NIP-04 is the legacy fallback, auto-detected per client. Always prefer NIP-44.
 - NUTbits does NOT eliminate Lightning nodes from the stack. The Cashu mint itself needs a Lightning node. NUTbits lets users leverage a mint's Lightning infrastructure without running their own node.
 - Service fees only apply to outgoing payments. Receiving is always free. Do not claim fees apply to incoming payments.
-- When discussing NWC methods, the supported set is: get_info, get_balance, make_invoice, pay_invoice, lookup_invoice, list_transactions. Do not reference unsupported methods.
+- When discussing NWC methods, the supported set is: get_info, get_balance, make_invoice, pay_invoice, lookup_invoice, list_transactions. Unknown methods return NOT_IMPLEMENTED.
 - The state file contains ecash proofs (bearer tokens). Treat state files, backups, and proof data as highly sensitive, equivalent to private keys.
 - Event deduplication is critical for preventing double-payments across relays. Never suggest disabling or bypassing it.
 - Multi-mint failover means balance is split across mints. On failover, only the active mint's balance is spendable. This is a real trade-off, not a limitation to hide.
+- Lightning Addresses (lud16) are supported across CLI, API, and GUI. They are resolved via LNURL-pay (LUD-16) using nostr-core before being accepted or paid.
+- The Pay endpoint accepts both BOLT11 invoices and Lightning Addresses. For addresses, amount_sats is required in the request body.
+- NWC connection strings can include `&lud16=...` as a non-standard NIP-47 extension. Editing a connection's lud16 regenerates the NWC string.
+- State encryption uses scrypt with N=65536. Existing databases auto-migrate from legacy params on first startup.
+- Proof restoration failures write encrypted recovery files instead of logging secrets.
+- NUTBITS_SEED should be backed up immediately after first run. Without the seed, proof recovery (NUT-09, NUT-13) is impossible.
+- NUTBITS_MINT_URL is only used when NUTBITS_MINT_URLS is empty. Once multi-mint is set, the single-mint field is ignored entirely.
 
 ## Core Documentation
 
-- [README.md](README.md): Project overview, configuration reference, supported NUTs and NIPs, trust model
+- [README.md](README.md): Project overview, full configuration reference, supported NUTs/NIPs, NWC methods, trust model
 - [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
 - [INSTALL.md](docs/INSTALL.md): Setup guide for bare metal, Docker, and LNbits integration
+- [SERVICE.md](docs/SERVICE.md): 24/7 backend service setup with launchd and systemd
 - [CLI.md](docs/CLI.md): Full CLI and TUI command reference, connection management, service fees
-- [CONSOLE.md](docs/CONSOLE.md): How to use the interactive TUI dashboard
+- [CONSOLE.md](docs/CONSOLE.md): How to use the TUI, CLI, and GUI together, with full GUI page reference
+- [AGENTS.md](docs/AGENTS.md): Agent-facing repo guidance, structure, style, and boundaries
 
 ## Architecture
 
-- [nutbits.js](nutbits.js): Core bridge logic - mint management, NWC protocol, payment processing (~1400 lines)
+- [nutbits.js](nutbits.js): Core bridge logic - mint management, NWC protocol, payment processing
 - [api/server.js](api/server.js): Local management API server (Unix socket + optional HTTP)
-- [api/handlers/index.js](api/handlers/index.js): REST API endpoint implementations
+- [api/handlers/index.js](api/handlers/index.js): 25 REST API endpoints (connections, payments, config, LNURL, logs, backup/restore)
 - [store/index.js](store/index.js): Storage factory with audit logging wrapper
 - [bin/nutbits.js](bin/nutbits.js): CLI entry point and command dispatcher
+- [gui/](gui): Browser GUI (Vue 3 + Tailwind CSS) using the same local management API as CLI/TUI
+- [scripts/nutbits-gui-server.js](scripts/nutbits-gui-server.js): Static server for the built GUI
 
 ## Operations
 
 - [DATABASE.md](docs/DATABASE.md): Storage backends - file (default), SQLite (recommended), MySQL
-- [BACKUP.md](docs/BACKUP.md): Backup procedures, encrypted state export, seed-based recovery
+- [BACKUP.md](docs/BACKUP.md): Backup procedures, encrypted state export, seed-based recovery (NUT-09, NUT-13)
 - [STATE.md](docs/STATE.md): Deep dive into the encrypted state file format and decryption
-- [SECURITY.md](SECURITY.md): Security architecture and threat model
+- [scripts/nutbits-start.sh](scripts/nutbits-start.sh): Start backend + GUI (`--daemon` or `--interactive`)
+- [scripts/nutbits-stop.sh](scripts/nutbits-stop.sh): Stop backend + GUI
+- [scripts/nutbits-restart.sh](scripts/nutbits-restart.sh): Restart backend + GUI
+- [scripts/nutbits-update.sh](scripts/nutbits-update.sh): Pull latest code, install deps, rebuild GUI, restart NUTbits
+- [scripts/nutbits-service-mac-install.sh](scripts/nutbits-service-mac-install.sh): Install backend as macOS launchd service
+- [scripts/nutbits-service-mac-remove.sh](scripts/nutbits-service-mac-remove.sh): Remove macOS launchd service
+- [scripts/nutbits-service-linux-install.sh](scripts/nutbits-service-linux-install.sh): Install backend as Linux systemd user service
+- [scripts/nutbits-service-linux-remove.sh](scripts/nutbits-service-linux-remove.sh): Remove Linux systemd user service
+
+## Interfaces
+
+- `npm start`: backend only, in your terminal
+- `nutbits`: interactive TUI dashboard
+- `nutbits <command>`: one-shot CLI command (balance, connections, connect, pay, receive, history, fees, mints, relays, logs, watch, config, export, backup, restore)
+- `npm run gui`: serve the web GUI
+- `npm run nutbits`: backend + GUI in the background
+- `npm run nutbits:interactive`: GUI in background, backend in your terminal
+- `npm run nutbits:stop`: stop backend + GUI
+- `npm run service:mac`: install 24/7 backend service on macOS
+- `npm run service:linux`: install 24/7 backend service on Linux
+- GUI pages: Dashboard, Connections, History, Pay, Receive, Mints, Relays, NUTs, Fees, Settings, Logs
+- GUI default URL: `http://127.0.0.1:8080`
+- API default URL: `http://127.0.0.1:3338`
+- Run npm scripts from the repository root, not from inside `scripts/`
+
+## Agent Notes
+
+- Prefer the existing docs before inferring behavior.
+- The GUI, CLI, and TUI all talk to the same local management API.
+- `npm start` is the simplest interactive operator mode.
+- `npm run nutbits` is the simplest full local GUI mode.
+- OS services are for backend-only 24/7 runtime. The GUI is not part of the launchd/systemd service setup.
+- Do not tell users to run `npm run ...` from inside `scripts/`; npm scripts are defined in the root `package.json`.
 
 ## Optional
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): Contribution guidelines
 - [docker-compose.yml](docker-compose.yml): Docker deployment configuration
-- [.env.example](.env): Full configuration reference with all environment variables
+- [.env.example](.env.example): Full configuration reference with all environment variables

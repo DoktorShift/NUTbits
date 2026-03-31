@@ -12,6 +12,8 @@ import {
 } from 'nostr-core';
 import { Wallet, sumProofs, MintQuoteState, NetworkError, HttpResponseError, MintOperationError, hasValidDleq } from '@cashu/cashu-ts';
 import { createStore } from './store/index.js';
+import { encryptState as encryptStateForRecovery } from './store/crypto-utils.js';
+import { isRestorableNwcConnection } from './store/connection-utils.js';
 import { startApiServer } from './api/server.js';
 import bolt11Lib from 'bolt11';
 import crypto from 'crypto';
@@ -87,16 +89,28 @@ var validateMintUrl = url => {
     }
 };
 
-// ── Security: Event Deduplication ───────────────────────────────────────────
+// ── Security: Event Deduplication (time-windowed) ───────────────────────────
 
-var processedEvents = new Set();
+var processedEvents = new Map(); // eventId -> timestamp
 var DEDUP_MAX = 10000;
+var DEDUP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 var isDuplicate = eventId => {
     if (processedEvents.has(eventId)) return true;
-    processedEvents.add(eventId);
+    var now = Date.now();
+    processedEvents.set(eventId, now);
+    // Prune expired entries when map gets large
     if (processedEvents.size > DEDUP_MAX) {
-        var arr = [...processedEvents];
-        processedEvents = new Set(arr.slice(-Math.floor(DEDUP_MAX / 2)));
+        for (var [id, ts] of processedEvents) {
+            if (now - ts > DEDUP_TTL_MS) processedEvents.delete(id);
+        }
+        // Hard cap: if TTL pruning wasn't enough, drop oldest entries
+        if (processedEvents.size > DEDUP_MAX) {
+            var excess = processedEvents.size - Math.floor(DEDUP_MAX / 2);
+            for (var [id] of processedEvents) {
+                if (excess-- <= 0) break;
+                processedEvents.delete(id);
+            }
+        }
     }
     return false;
 };
@@ -281,7 +295,8 @@ var verifyProofsDleq = (proofs, wallet, mintUrl) => {
                 log.error('NUT-12: INVALID DLEQ - proof rejected', { mint: mintUrl, amount: p.amount });
             }
         } catch (e) {
-            log.warn('NUT-12: DLEQ check failed, accepting proof', { error: e.message, amount: p.amount });
+            // Verification error (not invalid DLEQ) - accept proof to avoid losing funds
+            log.warn('NUT-12: DLEQ check error, accepting proof', { error: e.message, mint: mintUrl, amount: p.amount });
             verified.push(p);
         }
     }
@@ -523,27 +538,25 @@ var nutbits = {
         return false;
     },
 
-    // Poll for invoice payment (NUT-4)
-    pollInvoice: async (quote, app_pubkey, attempt = 0) => {
-        if (attempt >= config.maxRetries) {
-            log.warn('pollInvoice: max retries', { quote: quote.quote });
-            return;
+    // Poll for invoice payment (NUT-4) - iterative to avoid stack overflow
+    pollInvoice: async (quote, app_pubkey) => {
+        for (var attempt = 0; attempt < config.maxRetries; attempt++) {
+            try {
+                var minted = await nutbits.checkAndMintTokens(quote, app_pubkey);
+                if (minted) return;
+            } catch (e) {
+                log.error('pollInvoice error', { error: e.message });
+            }
+            // Check expiry
+            var pmthash = getInvoicePmthash(quote.request);
+            var txEntry = nutbits.state.nostr_state.nwc_info[app_pubkey]?.tx_history?.[pmthash];
+            if (txEntry?.expires_at && Math.floor(Date.now() / 1000) >= txEntry.expires_at) {
+                log.info('pollInvoice: invoice expired', { pmthash });
+                return;
+            }
+            await wait(config.checkInterval * 1000);
         }
-        try {
-            var minted = await nutbits.checkAndMintTokens(quote, app_pubkey);
-            if (minted) return;
-        } catch (e) {
-            log.error('pollInvoice error', { error: e.message });
-        }
-        // Check expiry
-        var pmthash = getInvoicePmthash(quote.request);
-        var txEntry = nutbits.state.nostr_state.nwc_info[app_pubkey]?.tx_history?.[pmthash];
-        if (txEntry?.expires_at && Math.floor(Date.now() / 1000) >= txEntry.expires_at) {
-            log.info('pollInvoice: invoice expired', { pmthash });
-            return;
-        }
-        await wait(config.checkInterval * 1000);
-        return nutbits.pollInvoice(quote, app_pubkey, attempt + 1);
+        log.warn('pollInvoice: max retries', { quote: quote.quote });
     },
 
     // NUT-17: Wait for invoice payment via WebSocket (with polling fallback)
@@ -636,14 +649,21 @@ var nutbits = {
                 try {
                     await store.addProofs(payMintUrl, proofsToRestore);
                 } catch (restoreErr) {
-                    // Last resort: log the proofs so they can be manually recovered
+                    // Last resort: write proofs to an encrypted recovery file (never log secrets)
                     log.error('CRITICAL: failed to restore proofs after payment failure', {
                         error: restoreErr.message,
                         mint: payMintUrl,
                         proofCount: proofsToRestore.length,
                         totalSats: sumProofs(proofsToRestore),
-                        proofs: JSON.stringify(proofsToRestore),
                     });
+                    try {
+                        var recoveryPath = (config.stateFile || './nutbits_state.enc') + '.recovery-' + Date.now() + '.enc';
+                        var recoveryBlob = encryptStateForRecovery(config.statePassphrase, JSON.stringify(proofsToRestore));
+                        fs.writeFileSync(recoveryPath, recoveryBlob, { mode: 0o600 });
+                        log.error('CRITICAL: proofs written to encrypted recovery file', { path: recoveryPath });
+                    } catch (writeErr) {
+                        log.error('CRITICAL: could not write recovery file - proofs may be lost', { error: writeErr.message });
+                    }
                 }
                 await nutbits.refreshBalance();
             };
@@ -677,7 +697,7 @@ var nutbits = {
 
     // ── NWC Connection ─────────────────────────────────────────────────────
 
-    createNWCconnection: async (mymint, permissions = ['pay_invoice', 'get_balance', 'make_invoice', 'lookup_invoice', 'list_transactions', 'get_info'], myrelays = config.relays, app_pubkey) => {
+    createNWCconnection: async (mymint, permissions = ['pay_invoice', 'get_balance', 'make_invoice', 'lookup_invoice', 'list_transactions', 'get_info'], myrelays = config.relays, app_pubkey, waitForRelayReady = true, lud16 = null) => {
         mymint = validateMintUrl(mymint);
 
         var getRecipientFromNostrEvent = event => {
@@ -716,6 +736,9 @@ var nutbits = {
         // Track whether each client prefers NIP-44
         var clientUsesNip44 = {};
 
+        // Cached blockheight/hash to avoid hammering mempool.space
+        var blockCache = { height: 0, hash: '', ts: 0 };
+
         var sendNWCResponse = async (state, replyObj, eventPubkey, eventId, app_pubkey) => {
             var reply = JSON.stringify(replyObj);
             var useNip44 = clientUsesNip44[eventPubkey] ?? true;
@@ -748,6 +771,7 @@ var nutbits = {
             var evtAppPubkey = getRecipientFromNostrEvent(event);
             if (!evtAppPubkey || !(evtAppPubkey in nutbits.state.nostr_state.nwc_info)) return;
             var state = nutbits.state.nostr_state.nwc_info[evtAppPubkey];
+            if (state.revoked) return; // revoked connections must not process events
             if (event.pubkey !== state['user_pubkey']) return;
 
             // Check NIP-40 expiration
@@ -782,14 +806,17 @@ var nutbits = {
 
                 // ── get_info ───────────────────────────────────────────
                 if (command.method === 'get_info') {
-                    var blockheight = 0;
-                    var blockhash = '';
-                    try {
-                        var bh = await fetch('https://mempool.space/api/blocks/tip/height', { signal: AbortSignal.timeout(5000) });
-                        blockheight = Number(await bh.text());
-                        var bhr = await fetch(`https://mempool.space/api/block-height/${blockheight}`, { signal: AbortSignal.timeout(5000) });
-                        blockhash = await bhr.text();
-                    } catch (e) { log.debug('blockheight fetch failed', { error: e.message }); }
+                    var blockheight = blockCache.height;
+                    var blockhash = blockCache.hash;
+                    if (Date.now() - blockCache.ts > 120_000) { // cache 2 min
+                        try {
+                            var bh = await fetch('https://mempool.space/api/blocks/tip/height', { signal: AbortSignal.timeout(5000) });
+                            blockheight = Number(await bh.text());
+                            var bhr = await fetch(`https://mempool.space/api/block-height/${blockheight}`, { signal: AbortSignal.timeout(5000) });
+                            blockhash = await bhr.text();
+                            blockCache = { height: blockheight, hash: blockhash, ts: Date.now() };
+                        } catch (e) { log.debug('blockheight fetch failed', { error: e.message }); }
+                    }
                     // Build response - standard NIP-47 fields + optional service_fee metadata
                     var infoResult = {
                         alias: 'NUTbits',
@@ -835,6 +862,11 @@ var nutbits = {
                             event.pubkey, event.id, evtAppPubkey);
                     }
                     var amountSats = Math.floor(params.amount / 1000);
+                    if (amountSats <= 0 || amountSats > 2_100_000_000_000_000) {
+                        return await sendNWCResponse(state,
+                            nwcError(command.method, 'OTHER', 'amount out of range'),
+                            event.pubkey, event.id, evtAppPubkey);
+                    }
                     var quote = await nutbits.createInvoice(amountSats);
                     var decoded = bolt11Lib.decode(quote.request);
                     var pmthash = getInvoicePmthash(quote.request);
@@ -856,7 +888,9 @@ var nutbits = {
                         metadata: {},
                     };
                     await store.setTx(evtAppPubkey, pmthash, state.tx_history[pmthash]);
-                    nutbits.waitForPayment(quote, evtAppPubkey);
+                    nutbits.waitForPayment(quote, evtAppPubkey).catch(e =>
+                        log.error('waitForPayment failed', { error: e.message, quote: quote.quote })
+                    );
                     return await sendNWCResponse(state,
                         nwcResult(command.method, formatTransaction(state.tx_history[pmthash])),
                         event.pubkey, event.id, evtAppPubkey);
@@ -905,7 +939,8 @@ var nutbits = {
                     if (params.from) txs = txs.filter(tx => tx.created_at >= params.from);
                     if (params.until) txs = txs.filter(tx => tx.created_at <= params.until);
                     if (params.offset) txs = txs.slice(params.offset);
-                    if (params.limit) txs = txs.slice(0, params.limit);
+                    var limit = Math.min(Number(params.limit) || 50, 200);
+                    txs = txs.slice(0, limit);
                     return await sendNWCResponse(state,
                         nwcResult(command.method, { transactions: txs.map(formatTransaction) }),
                         event.pubkey, event.id, evtAppPubkey);
@@ -1051,6 +1086,11 @@ var nutbits = {
                     }), event.pubkey, event.id, evtAppPubkey);
                 }
 
+                // ── Unknown method fallback ───────────────────────────
+                return await sendNWCResponse(state,
+                    nwcError(command.method, 'NOT_IMPLEMENTED', 'method not supported'),
+                    event.pubkey, event.id, evtAppPubkey);
+
             } catch (e) {
                 log.error('handleEvent error', { method: command?.method, error: e.message });
                 try {
@@ -1140,6 +1180,7 @@ var nutbits = {
             var user_pubkey = getPublicKey(hexToBytes(user_secret));
             var relayParams = myrelays.map(r => `relay=${encodeURIComponent(r)}`).join('&');
             var nwc_string = `nostr+walletconnect://${app_pubkey_new}?${relayParams}&secret=${user_secret}`;
+            if (lud16) nwc_string += `&lud16=${encodeURIComponent(lud16)}`;
 
             nutbits.state.nostr_state.nwc_info[app_pubkey_new] = {
                 permissions,
@@ -1152,6 +1193,7 @@ var nutbits = {
                 relay: myrelays[0],
                 balance: 0,
                 tx_history: {},
+                lud16: lud16 || null,
             };
             app_pubkey = app_pubkey_new;
             await store.setConnection(app_pubkey, nutbits.state.nostr_state.nwc_info[app_pubkey]);
@@ -1160,10 +1202,15 @@ var nutbits = {
         await startRelayLoop(app_pubkey);
 
         var connected = false;
-        for (var attempt = 0; attempt < 10; attempt++) {
+        if (waitForRelayReady) {
+            for (var attempt = 0; attempt < 10; attempt++) {
+                var relays = nutbits.state.nostr_state.pools[app_pubkey] || [];
+                if (relays.some(r => r.connected)) { connected = true; break; }
+                await wait(1000);
+            }
+        } else {
             var relays = nutbits.state.nostr_state.pools[app_pubkey] || [];
-            if (relays.some(r => r.connected)) { connected = true; break; }
-            await wait(1000);
+            connected = relays.some(r => r.connected);
         }
         if (connected) log.info('NWC connection ready');
         else log.warn('no relays connected - retrying in background');
@@ -1346,6 +1393,14 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
         process.exit(1);
     }
 
+    if (config.statePassphrase.length < 8) {
+        console.log('');
+        console.log(`  ${c.yellow}${c.bold}WARNING: Weak passphrase${c.reset}`);
+        console.log(`  ${c.dim}NUTBITS_STATE_PASSPHRASE is under 8 characters.${c.reset}`);
+        console.log(`  ${c.dim}This encrypts real money - use a strong passphrase.${c.reset}`);
+        console.log('');
+    }
+
     // ── Phase 1: Boot Screen ─────────────────────────────────────
 
     console.log('');
@@ -1439,14 +1494,18 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
     await bootWait(80);
 
     // ── NWC connections + relays (with spinner - these take time) ─
-    var pubkeys = Object.keys(nutbits.state.nostr_state.nwc_info);
+    var allConnections = nutbits.state.nostr_state.nwc_info;
+    var pubkeys = Object.entries(allConnections)
+        .filter(([pk, info]) => isRestorableNwcConnection(pk, info))
+        .map(([pk]) => pk);
+    var skippedConnections = Object.keys(allConnections).length - pubkeys.length;
     var nwcString = null;
     var connSp = bootSpinner('Connections');
     connSp.start();
     if (pubkeys.length > 0) {
         for (var pk of pubkeys) {
-            var info = nutbits.state.nostr_state.nwc_info[pk];
-            await nutbits.createNWCconnection(info.mymint, info.permissions, config.relays, pk);
+            var info = allConnections[pk];
+            await nutbits.createNWCconnection(info.mymint, info.permissions, config.relays, pk, false);
         }
         connSp.stop(`${c.green}●${c.reset}`, `${pubkeys.length} restored`);
     } else {
@@ -1487,6 +1546,9 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
     if (relayCount === 0) {
         for (var rUrl of config.relays) bootWarnings.push(`  ${c.yellow}!${c.reset}  ${c.dim}${rUrl} not reachable${c.reset}`);
     }
+    if (skippedConnections > 0) {
+        bootWarnings.push(`  ${c.yellow}!${c.reset}  ${c.dim}Skipped ${skippedConnections} internal/invalid saved connection${skippedConnections === 1 ? '' : 's'} during restore${c.reset}`);
+    }
     await bootWait(80);
 
     // ── NUTs ──────────────────────────────────────────────────────
@@ -1502,7 +1564,17 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
     // ── Management API ───────────────────────────────────────────
     if (config.apiEnabled) {
         try {
-            await startApiServer({ nutbits, store, mintManager, config, log, startedAt, seedFromEnv: !!process.env.NUTBITS_SEED });
+            await startApiServer({
+                nutbits,
+                store,
+                mintManager,
+                config,
+                log,
+                startedAt,
+                seedFromEnv: !!process.env.NUTBITS_SEED,
+                createWalletForMint,
+                detectMintCaps,
+            });
             bootLine(`${c.green}●${c.reset}`, 'API', `listening on ${config.apiSocket || '~/.nutbits/nutbits.sock'}`);
         } catch (e) {
             bootLine(`${c.yellow}●${c.reset}`, 'API', `failed to start: ${e.message}`);

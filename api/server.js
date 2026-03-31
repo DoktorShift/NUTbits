@@ -50,10 +50,36 @@ export async function startApiServer(ctx) {
     var handler = async (req, res) => {
         var startTime = Date.now();
         var urlPath = (req.url || '/').split('?')[0];
+        var origin = req.headers.origin || '';
 
         res.setHeader('Content-Type', 'application/json');
-        // No CORS headers - CLI uses socket/direct HTTP, not browser
-        // CORS will be added when the web dashboard is built
+        setLocalCorsHeaders(req, res);
+
+        if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+
+        if (urlPath === '/api/v1/bootstrap' && req.method === 'GET') {
+            if (!isLocalBootstrapRequest(req)) {
+                ctx.log?.warn?.('API: bootstrap denied', { origin, host: req.headers.host || '', remote: req.socket.remoteAddress || '' });
+                res.writeHead(403);
+                res.end(JSON.stringify({ ok: false, error: 'forbidden' }));
+                return;
+            }
+
+            res.setHeader('Cache-Control', 'no-store');
+            res.writeHead(200);
+            res.end(JSON.stringify({
+                ok: true,
+                data: {
+                    token,
+                    api_url: httpPort ? `http://127.0.0.1:${httpPort}` : null,
+                },
+            }));
+            return;
+        }
 
         // Auth - reject empty tokens
         if (!auth(req)) {
@@ -72,9 +98,9 @@ export async function startApiServer(ctx) {
             return;
         }
 
-        // Parse body for POST/DELETE
+        // Parse body for POST/PATCH/DELETE
         var body = null;
-        if (req.method === 'POST' || req.method === 'DELETE') {
+        if (req.method === 'POST' || req.method === 'PATCH' || req.method === 'DELETE') {
             // Enforce Content-Type to prevent CSRF via text/plain
             var ct = req.headers['content-type'] || '';
             if (!ct.includes('application/json')) {
@@ -153,6 +179,41 @@ export async function startApiServer(ctx) {
     process.on('exit', cleanup);
     process.on('SIGINT', cleanup);
     process.on('SIGTERM', cleanup);
+}
+
+function setLocalCorsHeaders(req, res) {
+    var origin = req.headers.origin || '';
+    if (!isLoopbackOrigin(origin)) return;
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', '600');
+    res.setHeader('Vary', 'Origin');
+}
+
+function isLocalBootstrapRequest(req) {
+    var origin = req.headers.origin || '';
+    if (origin && isLoopbackOrigin(origin)) return true;
+    var host = req.headers.host || '';
+    var remote = req.socket.remoteAddress || '';
+    return isLoopbackHost(host.split(':')[0]) && isLoopbackAddress(remote);
+}
+
+function isLoopbackOrigin(origin) {
+    try {
+        var url = new URL(origin);
+        return isLoopbackHost(url.hostname);
+    } catch (e) {
+        return false;
+    }
+}
+
+function isLoopbackHost(hostname) {
+    return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1' || hostname === '[::1]';
+}
+
+function isLoopbackAddress(address) {
+    return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
 }
 
 // ── Body Parser (with size limit) ────────────────────────────────────────

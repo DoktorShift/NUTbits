@@ -1,6 +1,98 @@
-# NUTbits - Complete Documentation
+# NUTbits v0.8.0
 
-> Cashu ecash to NWC bridge. This file contains all project documentation concatenated for LLM consumption.
+> Cashu ecash to NWC bridge - use any Cashu mint as a Lightning funding source for LNbits and any NWC-compatible app.
+
+NUTbits is an open-source NWC wallet service that translates between the Cashu ecash protocol (NUTs) and Nostr Wallet Connect (NIP-47). It connects to a Cashu mint, manages ecash tokens automatically, and exposes a full NWC server. Any NWC-compatible app can then send and receive Lightning payments through the mint.
+
+Primary use case: plug the NWC connection string into LNbits as a funding source, and the ecash mint powers the entire LNbits instance with 60+ extensions.
+
+Built with Node.js (ES modules). Key dependencies: @cashu/cashu-ts, nostr-core, bolt11.
+License: AGPL-3.0. Author: DoktorShift.
+
+## Instructions
+
+- Cashu ecash is custodial. The mint holds the funds. Always state this clearly when explaining the trust model.
+- Ecash proofs are cryptographically bound to the mint that issued them. Proofs from Mint A cannot be spent through Mint B.
+- NIP-44 is the preferred encryption for NWC messages. NIP-04 is the legacy fallback, auto-detected per client. Always prefer NIP-44.
+- NUTbits does NOT eliminate Lightning nodes from the stack. The Cashu mint itself needs a Lightning node. NUTbits lets users leverage a mint's Lightning infrastructure without running their own node.
+- Service fees only apply to outgoing payments. Receiving is always free. Do not claim fees apply to incoming payments.
+- When discussing NWC methods, the supported set is: get_info, get_balance, make_invoice, pay_invoice, lookup_invoice, list_transactions. Unknown methods return NOT_IMPLEMENTED.
+- The state file contains ecash proofs (bearer tokens). Treat state files, backups, and proof data as highly sensitive, equivalent to private keys.
+- Event deduplication is critical for preventing double-payments across relays. Never suggest disabling or bypassing it.
+- Multi-mint failover means balance is split across mints. On failover, only the active mint's balance is spendable. This is a real trade-off, not a limitation to hide.
+- Lightning Addresses (lud16) are supported across CLI, API, and GUI. They are resolved via LNURL-pay (LUD-16) using nostr-core before being accepted or paid.
+- The Pay endpoint accepts both BOLT11 invoices and Lightning Addresses. For addresses, amount_sats is required in the request body.
+- NWC connection strings can include `&lud16=...` as a non-standard NIP-47 extension. Editing a connection's lud16 regenerates the NWC string.
+- State encryption uses scrypt with N=65536. Existing databases auto-migrate from legacy params on first startup.
+- Proof restoration failures write encrypted recovery files instead of logging secrets.
+- NUTBITS_SEED should be backed up immediately after first run. Without the seed, proof recovery (NUT-09, NUT-13) is impossible.
+- NUTBITS_MINT_URL is only used when NUTBITS_MINT_URLS is empty. Once multi-mint is set, the single-mint field is ignored entirely.
+
+## Core Documentation
+
+- [README.md](README.md): Project overview, full configuration reference, supported NUTs/NIPs, NWC methods, trust model
+- [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
+- [INSTALL.md](docs/INSTALL.md): Setup guide for bare metal, Docker, and LNbits integration
+- [SERVICE.md](docs/SERVICE.md): 24/7 backend service setup with launchd and systemd
+- [CLI.md](docs/CLI.md): Full CLI and TUI command reference, connection management, service fees
+- [CONSOLE.md](docs/CONSOLE.md): How to use the TUI, CLI, and GUI together, with full GUI page reference
+- [AGENTS.md](docs/AGENTS.md): Agent-facing repo guidance, structure, style, and boundaries
+
+## Architecture
+
+- [nutbits.js](nutbits.js): Core bridge logic - mint management, NWC protocol, payment processing
+- [api/server.js](api/server.js): Local management API server (Unix socket + optional HTTP)
+- [api/handlers/index.js](api/handlers/index.js): 25 REST API endpoints (connections, payments, config, LNURL, logs, backup/restore)
+- [store/index.js](store/index.js): Storage factory with audit logging wrapper
+- [bin/nutbits.js](bin/nutbits.js): CLI entry point and command dispatcher
+- [gui/](gui): Browser GUI (Vue 3 + Tailwind CSS) using the same local management API as CLI/TUI
+- [scripts/nutbits-gui-server.js](scripts/nutbits-gui-server.js): Static server for the built GUI
+
+## Operations
+
+- [DATABASE.md](docs/DATABASE.md): Storage backends - file (default), SQLite (recommended), MySQL
+- [BACKUP.md](docs/BACKUP.md): Backup procedures, encrypted state export, seed-based recovery (NUT-09, NUT-13)
+- [STATE.md](docs/STATE.md): Deep dive into the encrypted state file format and decryption
+- [scripts/nutbits-start.sh](scripts/nutbits-start.sh): Start backend + GUI (`--daemon` or `--interactive`)
+- [scripts/nutbits-stop.sh](scripts/nutbits-stop.sh): Stop backend + GUI
+- [scripts/nutbits-restart.sh](scripts/nutbits-restart.sh): Restart backend + GUI
+- [scripts/nutbits-update.sh](scripts/nutbits-update.sh): Pull latest code, install deps, rebuild GUI, restart NUTbits
+- [scripts/nutbits-service-mac-install.sh](scripts/nutbits-service-mac-install.sh): Install backend as macOS launchd service
+- [scripts/nutbits-service-mac-remove.sh](scripts/nutbits-service-mac-remove.sh): Remove macOS launchd service
+- [scripts/nutbits-service-linux-install.sh](scripts/nutbits-service-linux-install.sh): Install backend as Linux systemd user service
+- [scripts/nutbits-service-linux-remove.sh](scripts/nutbits-service-linux-remove.sh): Remove Linux systemd user service
+
+## Interfaces
+
+- `npm start`: backend only, in your terminal
+- `nutbits`: interactive TUI dashboard
+- `nutbits <command>`: one-shot CLI command (balance, connections, connect, pay, receive, history, fees, mints, relays, logs, watch, config, export, backup, restore)
+- `npm run gui`: serve the web GUI
+- `npm run nutbits`: backend + GUI in the background
+- `npm run nutbits:interactive`: GUI in background, backend in your terminal
+- `npm run nutbits:stop`: stop backend + GUI
+- `npm run service:mac`: install 24/7 backend service on macOS
+- `npm run service:linux`: install 24/7 backend service on Linux
+- GUI pages: Dashboard, Connections, History, Pay, Receive, Mints, Relays, NUTs, Fees, Settings, Logs
+- GUI default URL: `http://127.0.0.1:8080`
+- API default URL: `http://127.0.0.1:3338`
+- Run npm scripts from the repository root, not from inside `scripts/`
+
+## Agent Notes
+
+- Prefer the existing docs before inferring behavior.
+- The GUI, CLI, and TUI all talk to the same local management API.
+- `npm start` is the simplest interactive operator mode.
+- `npm run nutbits` is the simplest full local GUI mode.
+- OS services are for backend-only 24/7 runtime. The GUI is not part of the launchd/systemd service setup.
+- Do not tell users to run `npm run ...` from inside `scripts/`; npm scripts are defined in the root `package.json`.
+
+## Optional
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): Contribution guidelines
+- [docker-compose.yml](docker-compose.yml): Docker deployment configuration
+- [.env.example](.env.example): Full configuration reference with all environment variables
+
 
 ---
 
@@ -27,31 +119,106 @@ npm install && cp .env.example .env
 npm start
 ```
 
-Paste the NWC connection string into LNbits (or any NWC client) as your funding source.
+NUTbits has three main parts:
+
+- the **service** (`npm start`) that handles NWC traffic
+- the **management console** (`nutbits`) with CLI and TUI modes
+- the **web GUI** in `gui/`, served by `npm run gui`
+
+The service usually runs in one terminal or in the background. The console and GUI connect to the same local API, so you can manage the same NUTbits instance from terminal or browser.
+
+The default NWC string printed on startup works, but you'll want to use the console to create dedicated connections with scoped permissions and spending limits - one for LNbits, another for a POS, each with its own rules. See [Management Console](#management-console) below.
+
+## Running Modes
+
+Run these commands from the repository root, where `package.json` lives.
+
+### Pick One
+
+```bash
+npm start                        # backend only, in your terminal
+npm run nutbits                  # backend + GUI, in the background
+npm run service:mac              # macOS 24/7 backend service
+npm run service:linux            # Linux 24/7 backend service
+```
+
+That is the simplest mental model:
+
+- use `npm start` when you want the normal terminal experience
+- use `npm run nutbits` when you want the web GUI too
+- use `npm run service:mac` or `npm run service:linux` when you want the backend to keep running 24/7
+
+If you want the backend to run 24/7 under your operating system's service manager, see **[SERVICE.md](docs/SERVICE.md)**.
+
+### Local NUTbits Commands
+
+```bash
+npm run nutbits                  # backend + GUI in the background
+npm run nutbits:interactive      # GUI in background, backend in your terminal
+npm run nutbits:stop             # stop backend + GUI
+npm run nutbits:restart          # restart NUTbits mode
+npm run nutbits:update           # update, rebuild GUI, restart background NUTbits
+```
+
+These helper scripts live in `scripts/`. In background mode, logs go to `logs/nutbits.log` and `logs/gui.log`.
 
 ## Configuration
 
 All settings in `.env` (see `.env.example`):
 
+### Required
+
 | Variable | Default | Description |
 |---|---|---|
 | `NUTBITS_MINT_URL` | `https://mint.minibits.cash/Bitcoin` | Cashu mint URL ([find mints](https://bitcoinmints.com)) |
-| `NUTBITS_MINT_URLS` | _(optional)_ | Comma-separated mint URLs for failover (first = primary) |
-| `NUTBITS_RELAYS` | `wss://nostrue.com` | Comma-separated Nostr relays |
 | `NUTBITS_STATE_PASSPHRASE` | _(required)_ | Passphrase to encrypt state at rest |
-| `NUTBITS_STATE_FILE` | `./nutbits_state.enc` | Path to encrypted state file |
-| `NUTBITS_LOG_LEVEL` | `info` | `error`, `warn`, `info`, or `debug` |
-| `NUTBITS_FEE_RESERVE_PCT` | `1` | Percentage reserved for routing fees |
+
+### Wallet & Recovery
+
+| Variable | Default | Description |
+|---|---|---|
+| `NUTBITS_SEED` | _(auto-generated)_ | Deterministic wallet seed for proof recovery. Back this up. |
+| `NUTBITS_MINT_URLS` | _(optional)_ | Comma-separated mint URLs for multi-mint failover (first = primary). When set, overrides `NUTBITS_MINT_URL`. |
+| `NUTBITS_RELAYS` | `wss://nostrue.com` | Comma-separated Nostr relays for NWC |
+| `NUTBITS_STATE_BACKEND` | `file` | Storage backend: `file`, `sqlite`, or `mysql` |
+| `NUTBITS_STATE_FILE` | `./nutbits_state.enc` | Path to encrypted state file (file backend) |
+| `NUTBITS_SQLITE_PATH` | `./nutbits_state.db` | SQLite database path (sqlite backend) |
+| `NUTBITS_MYSQL_URL` | _(optional)_ | MySQL connection URL (mysql backend) |
+
+### Spending Limits
+
+| Variable | Default | Description |
+|---|---|---|
 | `NUTBITS_MAX_PAYMENT_SATS` | `0` | Max sats per payment (0 = no limit) |
 | `NUTBITS_DAILY_LIMIT_SATS` | `0` | Max sats per day (0 = no limit) |
-| `NUTBITS_HEALTH_CHECK_INTERVAL_MS` | `60000` | Mint health check interval in ms |
-| `NUTBITS_FAILOVER_COOLDOWN_MS` | `10000` | Cooldown before retrying a failed mint |
-| `NUTBITS_STATE_BACKEND` | `file` | Storage backend: `file`, `sqlite`, or `mysql` |
-| `NUTBITS_SQLITE_PATH` | `./nutbits_state.db` | SQLite database path |
-| `NUTBITS_MYSQL_URL` | _(optional)_ | MySQL connection URL |
-| `NUTBITS_SERVICE_FEE_PPM` | `0` | Service fee in parts per million on outgoing payments (0 = disabled) |
+| `NUTBITS_FEE_RESERVE_PCT` | `1` | Percentage reserved for Lightning routing fees |
+
+### Service Fees
+
+| Variable | Default | Description |
+|---|---|---|
+| `NUTBITS_SERVICE_FEE_PPM` | `0` | Fee in parts per million on outgoing payments (0 = disabled) |
 | `NUTBITS_SERVICE_FEE_BASE` | `0` | Flat base fee in sats per outgoing payment (0 = disabled) |
-| `NUTBITS_API_ENABLED` | `true` | Set to `false` to disable management API/CLI |
+
+### Network & Timing
+
+| Variable | Default | Description |
+|---|---|---|
+| `NUTBITS_HEALTH_CHECK_INTERVAL_MS` | `60000` | Mint health check interval |
+| `NUTBITS_FAILOVER_COOLDOWN_MS` | `10000` | Cooldown before retrying a failed mint |
+| `NUTBITS_INVOICE_CHECK_MAX_RETRIES` | `60` | Max retries for pending invoice checks |
+| `NUTBITS_INVOICE_CHECK_INTERVAL_SECS` | `20` | Seconds between pending invoice checks |
+| `NUTBITS_FETCH_TIMEOUT_MS` | `15000` | Timeout for mint API requests |
+
+### Management API
+
+| Variable | Default | Description |
+|---|---|---|
+| `NUTBITS_API_ENABLED` | `true` | Set to `false` to disable the management API, CLI, and GUI |
+| `NUTBITS_API_PORT` | _(optional)_ | HTTP port for the API (leave empty for Unix socket only) |
+| `NUTBITS_API_SOCKET` | _(auto)_ | Unix socket path (default: `~/.nutbits/nutbits.sock`) |
+| `NUTBITS_API_TOKEN` | _(auto)_ | Bearer token for API access (auto-generated on start) |
+| `NUTBITS_LOG_LEVEL` | `info` | `error`, `warn`, `info`, or `debug` |
 
 > **Storage:** See **[DATABASE.md](docs/DATABASE.md)** for backend comparison, setup, and migration.
 > **Backups:** See **[BACKUP.md](docs/BACKUP.md)** for backup and recovery procedures.
@@ -92,16 +259,20 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
 ## Supported NWC Methods (NIP-47)
 
+**Wallet operations:**
 - `get_info` - wallet metadata, capabilities, encryption support
 - `get_balance` - current balance in millisats
 - `make_invoice` - create a Lightning invoice (NUT-4 mint)
 - `pay_invoice` - pay a Lightning invoice (NUT-5 melt)
-- `lookup_invoice` - check invoice status
+- `lookup_invoice` - check invoice status by payment hash
 - `list_transactions` - transaction history with filtering
 
 **Notifications (push):**
 - `payment_received` - sent when an incoming invoice settles
 - `payment_sent` - sent when an outgoing payment completes
+
+**Lightning Address support:**
+Each NWC connection can optionally carry a Lightning Address (lud16). Apps that understand this parameter can use it for receiving payments. The address is included in the NWC connection string as `&lud16=user@domain.com` and is validated via LUD-16 resolution on create and edit.
 
 **Optional NIP-47 extensions** (non-breaking, clients can ignore or honor):
 - `get_info` response includes `service_fee` object when fees are enabled (ppm, base, applies_to)
@@ -109,7 +280,7 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
 ## How It Works
 
-<img src="assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Cashu NUTs → Mint → Lightning → Network" width="100%">
+<img src="assets/Inline_Explaining/flow.svg" alt="LNbits -> NWC -> NUTbits -> Cashu NUTs -> Mint -> Lightning -> Network" width="100%">
 
 1. NUTbits generates a keypair and creates an NWC connection string
 2. It subscribes to NWC request events (kind 23194) on configured Nostr relays
@@ -120,28 +291,63 @@ Encryption: NIP-44 (preferred) with NIP-04 fallback, auto-detected per client.
 
 State (keys, ecash proofs, transaction history) is encrypted with AES-256-GCM and persisted to disk.
 
+For a plain-language deep dive, see **[HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)**.
+
 ## Management Console
 
-NUTbits includes an interactive management console. Run `nutbits` in a second terminal to get a split-screen dashboard, or use individual commands:
+NUTbits includes a CLI and interactive TUI to manage the daemon **while it's running**. Open a second terminal and use `nutbits` to control connections, check balances, pay invoices, and monitor activity, all without restarting the service.
 
 ```bash
-nutbits                    # interactive TUI
-nutbits balance            # check balance
+nutbits                    # interactive TUI dashboard
+nutbits balance            # check balance across mints
 nutbits connections        # list NWC connections
-nutbits connect            # create new connection (guided)
+nutbits connect            # create new connection (guided wizard)
+nutbits connect --lud16 user@example.com   # attach a Lightning Address
+nutbits revoke <label>     # revoke a connection
 nutbits pay <invoice>      # pay a Lightning invoice
 nutbits receive <amount>   # create an invoice
+nutbits history            # transaction history
+nutbits fees               # view/manage service fees
+nutbits mints              # mint status and health
+nutbits relays             # relay connection status
+nutbits logs               # recent log output
+nutbits watch              # live activity monitor
+nutbits config             # view runtime configuration
 ```
 
-Create multiple NWC connections with scoped permissions and spending limits - one for LNbits with full access, another for a POS with pay-only and a daily cap.
+Create multiple NWC connections with scoped permissions and spending limits; one for LNbits with full access, another for a POS with pay-only and a daily cap. Revoke any connection without affecting the others.
 
-See **[CLI.md](docs/CLI.md)** for the full command reference.
+See **[CLI.md](docs/CLI.md)** for the full command reference and **[CONSOLE.md](docs/CONSOLE.md)** for TUI usage.
 
 > Set `NUTBITS_API_ENABLED=false` in `.env` to disable the management API entirely.
 
+## Web GUI
+
+NUTbits ships with a browser-based GUI in `gui/`. It talks to the same local management API as the CLI and TUI, so all three interfaces stay in sync.
+
+- Default local URL: `http://127.0.0.1:8080`
+- Backend API default: `http://127.0.0.1:3338`
+- The GUI can bootstrap the local API token automatically when the backend is running on loopback
+
+### GUI Pages
+
+| Page | What it does |
+|------|-------------|
+| **Dashboard** | Live overview: balance, connections, relays, uptime, mint health, recent transactions |
+| **Connections** | Create, view, export, and revoke NWC connections. Card and list views. QR codes for NWC strings. |
+| **History** | Transaction history with volume chart, type/connection filters, and CSV/JSON export |
+| **Pay** | Pay a Lightning invoice or LNURL/Lightning Address from the GUI |
+| **Receive** | Create a Lightning invoice with QR code |
+| **Mints** | Active mint details, multi-mint management, failover priority, NUT capability matrix |
+| **Relays** | Nostr relay status, add/remove relays |
+| **NUTs** | Detailed NUT protocol support for each mint |
+| **Fees** | Service fee earnings dashboard with 7-day chart and per-connection breakdown |
+| **Settings** | All configuration in one place: wallet, network, limits, fees, API, advanced |
+| **Logs** | Live log viewer with level filtering, search, and auto-refresh |
+
 ## Security
 
-- Encrypted state persistence (AES-256-GCM + scrypt)
+- Encrypted state persistence (AES-256-GCM + scrypt, N=65536)
 - Event deduplication across relays (prevents double-payments)
 - Per-payment and daily spend limits (global + per-connection)
 - Per-connection service fee scoping
@@ -149,8 +355,10 @@ See **[CLI.md](docs/CLI.md)** for the full command reference.
 - State file permissions restricted to owner (0600)
 - Atomic state writes (crash-safe)
 - Graceful shutdown with state save
+- Seed-based proof recovery (NUT-09, NUT-13)
+- DLEQ proof verification (NUT-12)
 
-All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [STATE.md](docs/STATE.md) for backup, recovery, and decryption instructions**. This is critical if you're running NUTbits with real funds.
+All wallet data (ecash proofs, NWC keys, transaction history) is stored in an encrypted state file. **Read [BACKUP.md](docs/BACKUP.md) for backup, recovery, and encryption details** - this is critical if you're running NUTbits with real funds.
 
 ## Multi-Mint Failover
 
@@ -161,7 +369,7 @@ NUTbits supports optional multi-mint failover for higher reliability. Configure 
 NUTBITS_MINT_URLS=https://your-primary-mint.com,https://your-backup-mint.com
 ```
 
-<img src="assets/Inline_Explaining/failover-5-panels.svg" alt="Multi-Mint Failover: Normal → Failover → Recovery" width="100%">
+<img src="assets/Inline_Explaining/failover-5-panels.svg" alt="Multi-Mint Failover: Normal -> Failover -> Recovery" width="100%">
 
 - On startup, NUTbits tries mints in order until one responds
 - If the active mint goes down, it automatically fails over to the next healthy mint
@@ -189,25 +397,29 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 
 | Document | Description |
 |----------|-------------|
-| [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide - what NUTbits does and why |
-| [CONSOLE.md](docs/CONSOLE.md) | How to use the TUI dashboard and CLI day-to-day |
+| [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide; what NUTbits does and why |
+| [CONSOLE.md](docs/CONSOLE.md) | How to use the TUI, CLI, and GUI day-to-day |
 | [CLI.md](docs/CLI.md) | Full command reference - flags, scripting, connections |
 | [INSTALL.md](docs/INSTALL.md) | Setup guide - bare metal, Docker, LNbits |
+| [SERVICE.md](docs/SERVICE.md) | 24/7 backend service setup with launchd and systemd |
 | [DATABASE.md](docs/DATABASE.md) | Storage backends - file, SQLite, MySQL |
 | [BACKUP.md](docs/BACKUP.md) | Backup, recovery, and encryption details |
 | [STATE.md](docs/STATE.md) | Deep dive into the encrypted state file |
+| [AGENTS.md](docs/AGENTS.md) | Agent/developer reference for building on NUTbits |
 
 ## Trust Model
 
 Ecash is custodial. The mint holds the funds. Standard risks apply: the mint can steal, get shut down, or get hacked. Only use mints you trust, and only with amounts you can afford to lose.
 
-NUTbits operators can optionally enable a service fee on outgoing payments. This fee is transparent, advertised in the NWC `get_info` response and reported separately in every `pay_invoice` response. Receiving payments is always free. By default, no fees are charged.
+NUTbits operators can optionally enable a service fee on outgoing payments. This fee is transparent - advertised in the NWC `get_info` response and reported separately in every `pay_invoice` response. Receiving payments is always free. By default, no fees are charged.
 
 ## Related Projects
 
 - [Cashu](https://cashu.space) - Ecash protocol for Bitcoin
 - [LNbits](https://lnbits.com) - Lightning accounts system
 - [Nostr Wallet Connect (NIP-47)](https://github.com/nostr-protocol/nips/blob/master/47.md) - Wallet protocol over Nostr
+- [nostr-core](https://nostr-core.netlify.app) - Nostr + LNURL library used by NUTbits
+- [@cashu/cashu-ts](https://www.npmjs.com/package/@cashu/cashu-ts) - Cashu TypeScript library
 - [supertestnet/bankify](https://github.com/supertestnet/bankify) - Original inspiration for this project
 - [bitcoinmints.com](https://bitcoinmints.com) - Directory of Cashu mints
 
@@ -215,39 +427,40 @@ NUTbits operators can optionally enable a service fee on outgoing payments. This
 
 [AGPL-3.0](LICENSE) - Free to use, modify, and distribute. If you run a modified version as a network service, you must share your source code.
 
+
 ---
 
 <p align="center">
-  <img src="assets/headers/doc-how-it-works.svg" alt="How NUTbits Works" width="100%">
+  <img src="../assets/headers/doc-how-it-works.svg" alt="How NUTbits Works" width="100%">
 </p>
 
 ## What is NUTbits?
 
 NUTbits is a **translator** that sits between a [Cashu](https://cashu.space) ecash mint and [LNbits](https://lnbits.com) (or any app that speaks [Nostr Wallet Connect](https://github.com/nostr-protocol/nips/blob/master/47.md)).
 
-It is **not** a wallet you open and click buttons in. You never interact with NUTbits directly. Instead, you use it as a **funding source** for LNbits. Plug in the NWC connection string and your LNbits instance can send and receive Lightning payments through the mint.
+It is **not** a wallet you open and click buttons in. You never interact with NUTbits directly. Instead, you use it as a **funding source** for LNbits; plug in the NWC connection string and your LNbits instance can send and receive Lightning payments through the mint.
 
-Think of it as a **funding source adapter** that makes any Cashu mint look like a Lightning wallet to LNbits.
+Think of it as a **funding source adapter** - it makes any Cashu mint look like a Lightning wallet to LNbits.
 
 ## The Problem It Solves
 
 Cashu mints and NWC apps speak different languages:
 
-- **Cashu mints** use the NUT protocol. They deal in ecash tokens (proofs), mint quotes, and melt quotes.
-- **NWC apps** use NIP-47 over Nostr. They send commands like "pay this invoice" or "create an invoice."
+- **Cashu mints** use the NUT protocol - they deal in ecash tokens (proofs), mint quotes, and melt quotes.
+- **NWC apps** use NIP-47 over Nostr - they send commands like "pay this invoice" or "create an invoice."
 
 These two worlds can't talk to each other natively. NUTbits bridges the gap.
 
 ## The Flow
 
 <p align="center">
-  <img src="assets/Inline_Explaining/inline_how-it-works-flow.svg" alt="NUTbits flow diagram" width="100%">
+  <img src="../assets/Inline_Explaining/inline_how-it-works-flow.svg" alt="NUTbits flow diagram" width="100%">
 </p>
 
 ## What Happens When You Send a Payment
 
 <p align="center">
-  <img src="assets/Inline_Explaining/inline_how-it-works-send.svg" alt="Send payment sequence" width="100%">
+  <img src="../assets/Inline_Explaining/inline_how-it-works-send.svg" alt="Send payment sequence" width="100%">
 </p>
 
 Each part does what it's best at: LNbits manages wallets and users, the mint handles Lightning, NUTbits connects them.
@@ -255,7 +468,7 @@ Each part does what it's best at: LNbits manages wallets and users, the mint han
 ## What Happens When You Receive a Payment
 
 <p align="center">
-  <img src="assets/Inline_Explaining/inline_how-it-works-receive.svg" alt="Receive payment sequence" width="100%">
+  <img src="../assets/Inline_Explaining/inline_how-it-works-receive.svg" alt="Receive payment sequence" width="100%">
 </p>
 
 ## What Does This Unlock?
@@ -269,7 +482,7 @@ This is useful when:
 - You're running a small setup and want something lightweight
 - You want to experiment with ecash-powered Lightning payments
 
-It's not a replacement for running your own node; it's a new option. Use whatever fits your setup best.
+It's not a replacement for running your own node - it's a new option. Use whatever fits your setup best.
 
 ## The Trade-off: Trust
 
@@ -290,7 +503,7 @@ If an operator charges service fees, these are optional and transparent, adverti
 
 ### Ecash Proofs
 
-When you "have a balance" in NUTbits, you actually hold **ecash proofs**, cryptographic tokens issued by the mint. Each proof has a specific sat value. NUTbits manages these automatically: selecting them for payments, storing new ones when you receive, and keeping them encrypted on disk.
+When you "have a balance" in NUTbits, you actually hold **ecash proofs** - cryptographic tokens issued by the mint. Each proof has a specific sat value. NUTbits manages these automatically: selecting them for payments, storing new ones when you receive, and keeping them encrypted on disk.
 
 ### NWC (Nostr Wallet Connect)
 
@@ -309,9 +522,9 @@ NUTbits can optionally charge a small fee on outgoing payments. This is disabled
 
 When enabled, the fee is deducted from the sender's balance on each outgoing payment. The fee stays as ecash in the operator's balance. **Receiving payments is always free**; no fee is ever taken on incoming.
 
-The fee is transparent: NWC clients that support it can read the fee policy from the `get_info` response and see the exact fee on each payment. Clients that don't support it simply ignore the extra field, and nothing breaks.
+The fee is transparent: NWC clients that support it can read the fee policy from the `get_info` response and see the exact fee on each payment. Clients that don't support it simply ignore the extra field; nothing breaks.
 
-This makes it possible to run NUTbits as a service for others, covering costs or earning a small margin. See **[CLI.md](docs/CLI.md#service-fees)** for setup.
+This makes it possible to run NUTbits as a service for others, covering costs or earning a small margin. See **[CLI.md](CLI.md#service-fees)** for setup.
 
 ## Who Is This For?
 
@@ -331,21 +544,22 @@ nutbits connections  # see your NWC connections
 nutbits connect      # create a new connection
 ```
 
-The management console lets you create multiple NWC connections with different permissions - one for LNbits with full access, another for a POS terminal with just pay and a daily spending cap. See **[CLI.md](docs/CLI.md)** for the full guide.
+The management console lets you create multiple NWC connections with different permissions - one for LNbits with full access, another for a POS terminal with just pay and a daily spending cap. See **[CLI.md](CLI.md)** for the full guide.
 
 ## Related Reading
 
-- [INSTALL.md](docs/INSTALL.md) - Get NUTbits running in 5 minutes
-- [CONSOLE.md](docs/CONSOLE.md) - How to use the TUI and CLI day-to-day
-- [CLI.md](docs/CLI.md) - Full command reference
-- [README.md](README.md) - Full technical reference
+- [INSTALL.md](INSTALL.md) - Get NUTbits running in 5 minutes
+- [CONSOLE.md](CONSOLE.md) - How to use the TUI and CLI day-to-day
+- [CLI.md](CLI.md) - Full command reference
+- [README.md](../README.md) - Full technical reference
 - [LNbits](https://lnbits.com) - Lightning accounts system that NUTbits was built to power
 - [Cashu protocol](https://cashu.space) - Learn about ecash for Bitcoin
 - [NIP-47 spec](https://github.com/nostr-protocol/nips/blob/master/47.md) - The NWC protocol NUTbits implements
 
+
 ---
 
-<img src="assets/headers/doc-install.svg" alt="Installation Guide" width="100%">
+<img src="../assets/headers/doc-install.svg" alt="Installation Guide" width="100%">
 
 # Installation
 
@@ -392,6 +606,8 @@ NUTBITS_STATE_PASSPHRASE=your-strong-passphrase-here
 npm start
 ```
 
+This keeps NUTbits attached to your terminal and shows the normal startup and log view.
+
 On first run, NUTbits prints your NWC connection string:
 
 ```
@@ -401,6 +617,40 @@ nostr+walletconnect://abc123...?relay=wss://nostrue.com&secret=xyz789...
 ```
 
 Copy this string. You'll need it to connect LNbits or any NWC client.
+
+### Stack Scripts
+
+NUTbits also ships with operational scripts in `scripts/`:
+
+Run these from the repository root.
+
+#### Most common
+
+```bash
+npm start                         # backend only, in your terminal
+npm run nutbits                  # backend + GUI, in the background
+npm run service:mac              # macOS 24/7 backend service
+npm run service:linux            # Linux 24/7 backend service
+```
+
+Use one of those depending on how you want to run NUTbits.
+
+```bash
+npm run nutbits                  # backend + GUI in the background
+npm run nutbits:interactive      # GUI in background, backend in your terminal
+npm run nutbits:stop             # stop backend + GUI
+npm run nutbits:restart          # restart background NUTbits mode
+npm run nutbits:update           # git pull, install deps, rebuild GUI, restart
+```
+
+Use `nutbits` when you want NUTbits and the GUI running in the background. Use `nutbits:interactive` when you want the GUI too, but still want to watch the backend in your terminal.
+
+If you want the backend to survive logout, reboot, and crashes, use an OS service manager instead:
+
+- macOS: `launchd`
+- Linux: `systemd --user`
+
+See **[SERVICE.md](SERVICE.md)** for the simple 24/7 setup.
 
 ### Management Console (optional)
 
@@ -422,7 +672,19 @@ No extra configuration needed. The CLI finds the running service and authenticat
 
 > Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
 
-See **[CLI.md](docs/CLI.md)** for the full setup and command reference.
+See **[CLI.md](CLI.md)** for the full setup and command reference.
+
+### Web GUI (optional)
+
+The repository also includes a browser GUI in `gui/`.
+
+If you used the scripts above, it is served automatically on:
+
+```bash
+http://127.0.0.1:8080
+```
+
+By default the GUI talks to the local backend on `http://127.0.0.1:3338` and can bootstrap the API token automatically for local use.
 
 ## Docker
 
@@ -475,7 +737,7 @@ nutbits history
 4. Paste the NWC connection string
 5. Save and restart LNbits
 
-<img src="assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Mint → Lightning → Network" width="100%">
+<img src="../assets/Inline_Explaining/flow.svg" alt="LNbits → NWC → NUTbits → Mint → Lightning → Network" width="100%">
 
 ## Funding Your Wallet
 
@@ -495,7 +757,7 @@ Check the logs for:
 [INFO] NWC connection ready
 ```
 
-From LNbits, check the balance. It should respond via NWC.
+From LNbits, check the balance; it should respond via NWC.
 
 ## Upgrading
 
@@ -506,27 +768,247 @@ npm install
 npm start
 ```
 
-Your state file is preserved across upgrades. If upgrading to a new storage backend, see [DATABASE.md](docs/DATABASE.md) for migration instructions.
+Or, if you use the stack scripts:
+
+```bash
+npm run nutbits:update
+```
+
+Your state file is preserved across upgrades. If upgrading to a new storage backend, see [DATABASE.md](DATABASE.md) for migration instructions.
+
 
 ---
 
 <p align="center">
-  <img src="assets/headers/doc-cli.svg" alt="NUTbits Management Console" width="100%">
+  <img src="../assets/headers/doc-console.svg" alt="Using the Console" width="100%">
+</p>
+
+## Three Ways to Interact
+
+NUTbits gives you three ways to use it. Same data, different style:
+
+| | TUI (dashboard) | CLI (commands) | GUI (browser) |
+|---|---|---|---|
+| **Launch** | `nutbits` | `nutbits <command>` | `http://127.0.0.1:8080` |
+| **What it is** | Full-screen interactive dashboard | Single command, one result | Browser dashboard and forms |
+| **Best for** | Watching and browsing | Doing things fast or scripting | Managing from a browser |
+| **Stays open** | Yes, auto-refreshes every 5s | No, runs and exits | Yes |
+
+**The simple rule:** `nutbits` with no arguments opens the dashboard. `nutbits <command>` performs one action. The GUI gives you the same backend through a browser.
+
+## Your First Time
+
+### 1. Start the service
+
+```bash
+npm start
+```
+
+This runs NUTbits in your terminal. Keep this terminal open.
+
+If you also want the GUI served locally, use:
+
+```bash
+npm run nutbits:interactive
+```
+
+If you want the simplest background stack instead, use:
+
+```bash
+npm run nutbits
+```
+
+### 2. Open the dashboard
+
+In a **second terminal**:
+
+```bash
+nutbits
+```
+
+The splash screen appears for a few seconds while it connects to your running instance. Then the dashboard opens with a menu on the left and live data on the right.
+
+### 3. Browse around
+
+- **Arrow keys** move through the menu
+- **Page Up/Down** scrolls long content
+- **?** opens a help overlay with all keyboard shortcuts
+- **q** or **Escape** exits the dashboard
+
+That's it. You're monitoring your NUTbits instance.
+
+## Typical Workflow
+
+### Monitoring (TUI stays open)
+
+```
+Terminal 1:  npm start           <- service running
+Terminal 2:  nutbits             <- dashboard open, watching
+```
+
+The dashboard auto-refreshes. When a payment comes in via NWC, you'll see the balance update and the transaction appear in history, without doing anything.
+
+### Taking action (CLI in the same or another terminal)
+
+```bash
+nutbits pay lnbc12000n1pj...     # pay an invoice
+nutbits receive 5000              # create an invoice for 5000 sats
+nutbits connect                   # create a new NWC connection
+nutbits connect --lud16 user@example.com  # with Lightning Address
+nutbits revoke 2                  # revoke connection #2
+```
+
+If you had the TUI open in another terminal, it picks up the change on the next refresh (within 5 seconds).
+
+### Quick check (CLI one-liners)
+
+Don't need the full dashboard? Just ask:
+
+```bash
+nutbits balance                   # how much do I have?
+nutbits connections               # what's connected?
+nutbits history                   # what happened recently?
+nutbits fees                      # how much have I earned?
+nutbits mints                     # which mints are healthy?
+nutbits relays                    # which relays are connected?
+nutbits logs                      # recent log output
+nutbits config                    # current runtime configuration
+nutbits export                    # download full history as CSV/JSON
+```
+
+Each prints the answer and returns to your prompt.
+
+## Combining TUI, CLI, and GUI
+
+You can have all three open at the same time:
+
+```
+Terminal 1:  npm start            <- service
+Terminal 2:  nutbits              <- TUI dashboard (monitoring)
+Terminal 3:  nutbits pay ...      <- CLI command (acting)
+Browser:     127.0.0.1:8080       <- GUI (overview/config)
+```
+
+Or use one terminal and switch between them:
+
+1. Open `nutbits` - browse the dashboard
+2. Press `q` to quit the TUI
+3. Run `nutbits pay lnbc...` - execute a payment
+4. Run `nutbits` again - see the updated state
+
+All approaches work. The TUI, CLI, and GUI talk to the same local API, so they always see the same data.
+
+## Actions Inside the TUI
+
+When you navigate to an action item (Pay, Receive, Connect, Revoke, Export History, Backup, Restore, Config) and press **Enter**, the TUI temporarily steps aside and runs the command interactively with the same prompts and flow as the CLI. When the command finishes, press Enter to return to the dashboard.
+
+```
+Dashboard -> navigate to "Pay" -> press Enter -> interactive pay flow -> "Press Enter to return" -> Dashboard
+```
+
+You never need to leave the TUI to do things. The dashboard shows you the current state, you navigate to what you want, press Enter, do it, come back.
+
+For data panels (Balance, History, Connections, etc.), Enter refreshes the data.
+
+## Scripting
+
+Every CLI command supports `--json` for machine-readable output:
+
+```bash
+nutbits balance --json | jq '.total_sats'
+nutbits connections --json | jq '.connections[].label'
+nutbits history --json --limit 5
+```
+
+Use this in scripts, cron jobs, or monitoring dashboards. The `--json` flag skips all formatting and returns raw API data.
+
+## Docker
+
+If you're running NUTbits in Docker, exec into the container:
+
+```bash
+docker compose exec nutbits nutbits              # TUI
+docker compose exec nutbits nutbits balance       # CLI
+```
+
+Add an alias for convenience:
+
+```bash
+alias nutbits="docker compose exec nutbits nutbits"
+```
+
+Then use it normally from your host.
+
+## GUI
+
+The web GUI is useful when you want a browser-based operator view instead of a terminal. It is especially handy for connection management, settings changes, exports, and general dashboard use.
+
+For local development or self-hosting outside Docker, the stack scripts serve it for you:
+
+```bash
+npm run nutbits
+```
+
+Default local URLs:
+
+- GUI: `http://127.0.0.1:8080`
+- API: `http://127.0.0.1:3338`
+
+Useful local commands:
+
+- `npm run nutbits` starts backend + GUI in background mode
+- `npm run nutbits:interactive` starts the GUI but keeps the backend in your current terminal
+- `npm run nutbits:stop` stops both
+
+Run these from the repository root, not from inside the `scripts/` directory.
+
+### GUI Pages
+
+| Page | What you can do |
+|------|----------------|
+| **Dashboard** | Live overview of balance, connections, relay status, uptime, mint health, and recent transactions split by NWC and Mint channels. Most elements are clickable and link to their detail pages. |
+| **Connections** | Create, view, and revoke NWC connections. Switch between card view (detailed) and list view (compact table). Show NWC string with QR code. Edit Lightning Addresses. Filter by mint. Export connection data. |
+| **History** | Transaction history with interactive volume chart (7D/30D). Filter by type (in/out), connection, and limit. Click any row for full details. Export as CSV or JSON. |
+| **Pay** | Pay a Lightning invoice or resolve a Lightning Address / LNURL from the browser. |
+| **Receive** | Create a Lightning invoice with a scannable QR code. |
+| **Mints** | Active mint details with NUT capability matrix. Add/remove/reorder mints for multi-mint failover. Switch active mint live. |
+| **Relays** | View Nostr relay connection status. Add or remove relays from your configuration. |
+| **NUTs** | Detailed NUT protocol support breakdown for each configured mint. |
+| **Fees** | Service fee earnings dashboard with 7-day bar chart, per-connection breakdown, and current fee policy. |
+| **Settings** | All NUTbits configuration organized in tabs: Wallet, Network, Limits, Fees, API, Advanced. Includes backup/restore and GUI connection settings. |
+| **Logs** | Live log viewer with level filtering (error/warn/info/debug), text search, auto-refresh, and expandable JSON payloads. |
+
+For true 24/7 backend operation, prefer the OS service setup in **[SERVICE.md](SERVICE.md)** over the convenience stack scripts.
+
+## Related
+
+- [CLI.md](CLI.md) - full command reference, flags, environment variables
+- [INSTALL.md](INSTALL.md) - getting NUTbits up and running
+- [SERVICE.md](SERVICE.md) - 24/7 backend service setup with launchd and systemd
+- [HOW-IT-WORKS.md](HOW-IT-WORKS.md) - what NUTbits does and why
+
+
+---
+
+<p align="center">
+  <img src="../assets/headers/doc-cli.svg" alt="NUTbits Management Console" width="100%">
 </p>
 
 ## What Is This?
 
-This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** (workflows, TUI vs CLI, tips), see **[CONSOLE.md](docs/CONSOLE.md)**.
+This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** (workflows, TUI vs CLI, tips), see **[CONSOLE.md](CONSOLE.md)**.
 
-NUTbits runs as a background service. The management console gives you a window into what's happening and lets you control it:
+NUTbits runs as a service. The management console gives you a window into what's happening and lets you control it:
 
 - **`nutbits`** - interactive TUI dashboard (monitor)
 - **`nutbits <command>`** - single CLI command (act)
 
 Both talk to the same local API. Same data, your choice of interface.
 
+There is also a browser GUI in `gui/`. It uses the same API, but this document focuses on terminal usage.
+
 <p align="center">
-  <img src="assets/inline_explaining/inline_cli-overview.svg" alt="Architecture: Service → API → TUI / CLI" width="100%">
+  <img src="../assets/Inline_Explaining/inline_cli-overview.svg" alt="Architecture: Service → API → TUI / CLI" width="100%">
 </p>
 
 ## Setup
@@ -564,6 +1046,22 @@ nutbits connect
 
 > **Don't want to `npm link`?** You can also use `npm run cli` or `node bin/nutbits.js` from the NUTbits directory.
 
+If you want the GUI served alongside the backend, start the stack with:
+
+```bash
+npm run nutbits:interactive
+```
+
+To stop the stack later:
+
+```bash
+npm run nutbits:stop
+```
+
+Run npm scripts from the repository root.
+
+For a true 24/7 backend service on macOS or Linux, see **[SERVICE.md](SERVICE.md)**.
+
 ### Docker
 
 The CLI is already inside the container. No extra setup:
@@ -582,7 +1080,7 @@ nutbits balance
 
 ### No configuration needed
 
-The CLI connects automatically. When NUTbits starts, it creates a local socket and auth token at `~/.nutbits/`. The CLI finds and reads these on its own, so there is nothing to configure.
+The CLI connects automatically. When NUTbits starts, it creates a local socket and auth token at `~/.nutbits/`. The CLI finds and reads these on its own; nothing to configure.
 
 ### Troubleshooting
 
@@ -629,12 +1127,12 @@ The CLI connects automatically. When NUTbits starts, it creates a local socket a
 One NUTbits instance, many NWC connections. Each with its own permissions and spending limits.
 
 <p align="center">
-  <img src="assets/inline_explaining/inline_cli-connections.svg" alt="Multiple connections with scoped permissions" width="100%">
+  <img src="../assets/Inline_Explaining/inline_cli-connections.svg" alt="Multiple connections with scoped permissions" width="100%">
 </p>
 
 ### Create a connection
 
-Just run `nutbits connect`. The guided menu walks you through it:
+Just run `nutbits connect` - the guided menu walks you through it:
 
 1. Give it a name
 2. Choose permissions (pay, receive, balance, history, info)
@@ -717,7 +1215,7 @@ Export data from your NUTbits instance. Three export types available:
 ### Interactive
 
 ```bash
-nutbits export                    # choose what to export interactively
+nutbits export                    # choose what to export
 ```
 
 ### Transaction history
@@ -732,9 +1230,10 @@ nutbits export history --format csv --type outgoing
 nutbits export history --format csv --type incoming
 nutbits export history --format csv --from 1710806400 --until 1711411200
 nutbits export history --format csv --connection "lnbits-main"
+nutbits export history --format csv --include-revoked  # include revoked connections
 ```
 
-CSV columns: `date`, `time`, `type`, `amount_sats`, `routing_fee_sats`, `service_fee_sats`, `status`, `connection`, `description`, `payment_hash`. Includes transactions from revoked connections for complete records.
+CSV columns: `date`, `time`, `type`, `amount_sats`, `routing_fee_sats`, `service_fee_sats`, `status`, `connection`, `description`, `payment_hash`. Use `--include-revoked` to include transactions from revoked connections for complete records.
 
 ### NWC connections
 
@@ -843,7 +1342,7 @@ On shared servers, the API is only accessible to the user running NUTbits. No ot
 
 ### Disabling the CLI
 
-If you don't need the management console at all and you're running NUTbits headless in production and want zero attack surface beyond NWC):
+If you don't need the management console at all, maybe you're running NUTbits headless in production and want zero attack surface beyond NWC:
 
 ```env
 NUTBITS_API_ENABLED=false
@@ -873,159 +1372,135 @@ The service runs normally. The socket is never created. No token file, no API, n
 --version         Show version
 ```
 
+
 ---
 
-<p align="center">
-  <img src="assets/headers/doc-console.svg" alt="Using the Console" width="100%">
-</p>
+<img src="../assets/headers/doc-state.svg" alt="Service Setup" width="100%">
 
-## Two Ways to Interact
+# Service Setup
 
-NUTbits gives you two tools. Same data, different experience:
+This page covers the simplest 24/7 backend service options for NUTbits:
 
-| | TUI (dashboard) | CLI (commands) |
-|---|---|---|
-| **Launch** | `nutbits` | `nutbits <command>` |
-| **What it is** | Full-screen interactive dashboard | Single command, one result |
-| **Best for** | Monitoring, browsing, exploring | Doing things - pay, receive, connect |
-| **Stays open** | Yes, auto-refreshes every 5s | No, runs and exits |
+- `launchd` on macOS
+- `systemd --user` on Linux
 
-**The simple rule:** no arguments = visual dashboard. With arguments = do something specific.
+These service installs are for the **backend only**. They keep `nutbits.js` running and restart it if it crashes.
 
-## Your First Time
-
-### 1. Start the service
+The GUI is still optional. If you want the browser GUI, run it separately with:
 
 ```bash
-npm start
+npm run gui
 ```
 
-This runs NUTbits in the foreground. Keep this terminal open.
+Or use the local NUTbits scripts when you do not need your operating system to manage the service:
 
-### 2. Open the dashboard
+```bash
+npm run nutbits
+npm run nutbits:stop
+```
 
-In a **second terminal**:
+## Before You Start
+
+Run these commands from the repository root:
+
+```bash
+npm install
+cp .env.example .env
+```
+
+Then edit `.env` and set at least:
+
+```bash
+NUTBITS_MINT_URL=https://your-mint.example.com
+NUTBITS_STATE_PASSPHRASE=your-strong-passphrase
+```
+
+## macOS: launchd
+
+Install and start the backend service:
+
+```bash
+npm run service:mac
+```
+
+Useful commands:
+
+```bash
+launchctl print gui/$(id -u)/dev.doktorshift.nutbits
+tail -f logs/nutbits.launchd.out.log
+tail -f logs/nutbits.launchd.err.log
+```
+
+Remove the service:
+
+```bash
+npm run service:mac:remove
+```
+
+What it does:
+
+- writes a LaunchAgent plist into `~/Library/LaunchAgents/`
+- runs `node /absolute/path/to/nutbits.js`
+- starts on login
+- restarts automatically if the backend exits
+
+## Linux: systemd
+
+Install and start the backend service:
+
+```bash
+npm run service:linux
+```
+
+Useful commands:
+
+```bash
+systemctl --user status nutbits
+journalctl --user -u nutbits -f
+```
+
+Remove the service:
+
+```bash
+npm run service:linux:remove
+```
+
+What it does:
+
+- writes a user unit to `~/.config/systemd/user/nutbits.service`
+- enables and starts it immediately
+- restarts automatically on failure
+
+To keep user services running after logout on Linux, you may also need:
+
+```bash
+loginctl enable-linger "$USER"
+```
+
+That is a Linux setting on your machine, not something specific to NUTbits.
+
+## Which Option Should You Use?
+
+- Use `launchd` on macOS for the simplest native 24/7 setup.
+- Use `systemd --user` on Linux for the simplest native 24/7 setup.
+- Use `npm run nutbits` only when you want a simple local background mode, not a real OS-managed service.
+
+## Day-to-Day
+
+Once the backend service is installed, you can still use:
 
 ```bash
 nutbits
+nutbits status
+nutbits balance
 ```
 
-The splash screen appears for a few seconds while it connects to your running instance. Then the dashboard opens with the menu on the left, live data on the right.
+The CLI and TUI connect to the same local API as before.
 
-### 3. Browse around
-
-- **Arrow keys** move through the menu
-- **Page Up/Down** scrolls long content
-- **?** opens a help overlay with all keyboard shortcuts
-- **q** or **Escape** exits the dashboard
-
-That's it. You're monitoring your NUTbits instance.
-
-## Typical Workflow
-
-### Monitoring (TUI stays open)
-
-```
-Terminal 1:  npm start           ← service running
-Terminal 2:  nutbits             ← dashboard open, watching
-```
-
-The dashboard auto-refreshes. When a payment comes in via NWC, you'll see the balance update and the transaction appear in history, without doing anything.
-
-### Taking action (CLI in the same or another terminal)
-
-```bash
-nutbits pay lnbc12000n1pj...     # pay an invoice
-nutbits receive 5000              # create an invoice for 5000 sats
-nutbits connect                   # create a new NWC connection
-nutbits revoke 2                  # revoke connection #2
-```
-
-If you had the TUI open in another terminal, it picks up the change on the next refresh (within 5 seconds).
-
-### Quick check (CLI one-liners)
-
-Don't need the full dashboard? Just ask:
-
-```bash
-nutbits balance                   # how much do I have?
-nutbits connections               # what's connected?
-nutbits history                   # what happened recently?
-nutbits fees                      # how much have I earned?
-nutbits export                    # download full history as CSV/JSON
-```
-
-Each prints the answer and returns to your prompt.
-
-## Combining TUI and CLI
-
-You can have both open at the same time:
-
-```
-Terminal 1:  npm start            ← service
-Terminal 2:  nutbits              ← TUI dashboard (monitoring)
-Terminal 3:  nutbits pay ...      ← CLI command (acting)
-```
-
-Or use one terminal and switch between them:
-
-1. Open `nutbits` - browse the dashboard
-2. Press `q` to quit the TUI
-3. Run `nutbits pay lnbc...` - execute a payment
-4. Run `nutbits` again - see the updated state
-
-Both approaches work. The TUI and CLI talk to the same local API, so they always see the same data.
-
-## Actions Inside the TUI
-
-When you navigate to an action item (Pay, Receive, Connect, Revoke, Export History, Backup, Restore, Config) and press **Enter**, the TUI temporarily steps aside and runs the command interactively, with the same prompts and flow as the CLI. When the command finishes, press Enter to return to the dashboard.
-
-```
-Dashboard → navigate to "Pay" → press Enter → interactive pay flow → "Press Enter to return" → Dashboard
-```
-
-You never need to leave the TUI to do things. The dashboard shows you the current state, you navigate to what you want, press Enter, do it, come back.
-
-For data panels (Balance, History, Connections, etc.), Enter refreshes the data.
-
-## Scripting
-
-Every CLI command supports `--json` for machine-readable output:
-
-```bash
-nutbits balance --json | jq '.total_sats'
-nutbits connections --json | jq '.connections[].label'
-nutbits history --json --limit 5
-```
-
-Use this in scripts, cron jobs, or monitoring dashboards. The `--json` flag skips all formatting and returns raw API data.
-
-## Docker
-
-If you're running NUTbits in Docker, exec into the container:
-
-```bash
-docker compose exec nutbits nutbits              # TUI
-docker compose exec nutbits nutbits balance       # CLI
-```
-
-Add an alias for convenience:
-
-```bash
-alias nutbits="docker compose exec nutbits nutbits"
-```
-
-Then use it normally from your host.
-
-## Related
-
-- [CLI.md](docs/CLI.md) - full command reference, flags, environment variables
-- [INSTALL.md](docs/INSTALL.md) - getting NUTbits up and running
-- [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) - what NUTbits does and why
 
 ---
 
-<img src="assets/headers/doc-database.svg" alt="Storage Backends" width="100%">
+<img src="../assets/headers/doc-database.svg" alt="Storage Backends" width="100%">
 
 # Storage Backends
 
@@ -1057,7 +1532,7 @@ NUTBITS_STATE_PASSPHRASE=your-passphrase
 
 **Limitation:** Two concurrent payments can still read stale proof data between async `await` points. The mutex serializes writes but not reads. For single-user setups this rarely matters. For LNbits with concurrent users, use SQLite or MySQL.
 
-> See [STATE.md](docs/STATE.md) for encryption details and manual decryption.
+> See [STATE.md](STATE.md) for encryption details and manual decryption.
 
 ## SQLite Backend (recommended)
 
@@ -1074,7 +1549,7 @@ NUTBITS_STATE_PASSPHRASE=your-passphrase
 # NUTBITS_SQLITE_PATH=./nutbits.db
 ```
 
-**How it works:** Each proof, connection, and transaction is a row in the database. Sensitive fields (private keys, proof secrets, invoices) are encrypted per-column with AES-256-GCM. Proof operations use SQLite transactions for atomicity, so two concurrent payments cannot select the same proofs.
+**How it works:** Each proof, connection, and transaction is a row in the database. Sensitive fields (private keys, proof secrets, invoices) are encrypted per-column with AES-256-GCM. Proof operations use SQLite transactions for atomicity; two concurrent payments cannot select the same proofs.
 
 **Schema:**
 
@@ -1161,9 +1636,10 @@ LNbits funding source              → sqlite
 Multiple NUTbits instances         → mysql
 ```
 
+
 ---
 
-<img src="assets/headers/doc-backup.svg" alt="Backup & Recovery" width="100%">
+<img src="../assets/headers/doc-backup.svg" alt="Backup & Recovery" width="100%">
 
 # Backup & Recovery
 
@@ -1177,7 +1653,7 @@ Your NUTbits state contains **ecash proofs (real money)** and **NWC private keys
 | `sqlite` | `nutbits_state.db` | Single database file |
 | `mysql` | Database dump | Use `mysqldump` |
 
-**Always back up your `.env` file too.** It contains `NUTBITS_STATE_PASSPHRASE` (required to decrypt everything), your seed, and service fee configuration.
+**Always back up your `.env` file too** - it contains `NUTBITS_STATE_PASSPHRASE` (required to decrypt everything), your seed, and service fee configuration.
 
 > Store the passphrase and the data separately. One without the other is useless.
 
@@ -1260,7 +1736,7 @@ seed + counter 2  →  ask mint  →  "never seen this"     →  done
 
 ### When does it run?
 
-**Automatically on startup**: if NUTbits has a seed configured but no proofs stored for a mint, it attempts recovery. You don't need to do anything.
+**Automatically on startup** - if NUTbits has a seed configured but no proofs stored for a mint, it attempts recovery. You don't need to do anything.
 
 ### Manual recovery after data loss
 
@@ -1345,14 +1821,15 @@ node decrypt_state.js "your-passphrase"
 - **The `.tmp` file** is a write-in-progress artifact; the main file is always the valid one
 - **File permissions** are set to `0600` (owner-only) automatically
 
+
 ---
 
-<img src="assets/headers/doc-state.svg" alt="Encrypted State File" width="100%">
+<img src="../assets/headers/doc-state.svg" alt="Encrypted State File" width="100%">
 
 # Encrypted State File (`.enc`)
 
-> This document covers the **file backend** specifically. For SQLite and MySQL, see [DATABASE.md](docs/DATABASE.md).
-> For backup procedures across all backends, see [BACKUP.md](docs/BACKUP.md).
+> This document covers the **file backend** specifically. For SQLite and MySQL, see [DATABASE.md](DATABASE.md).
+> For backup procedures across all backends, see [BACKUP.md](BACKUP.md).
 
 The `.enc` file is the default storage backend (`NUTBITS_STATE_BACKEND=file`). It holds your entire wallet (ecash proofs, NWC keys, transaction history) in a single AES-256-GCM encrypted file.
 
@@ -1419,11 +1896,11 @@ When decrypted, the state is a JSON object:
 
 1. A random **salt** is generated per save
 2. `NUTBITS_STATE_PASSPHRASE` + salt run through **scrypt** to derive a 32-byte AES key
-3. JSON encrypted with **AES-256-GCM** (authenticated, detects tampering)
-4. Written to `.enc.tmp` first, then renamed to `.enc` (atomic, crash-safe)
+3. JSON encrypted with **AES-256-GCM** (authenticated; detects tampering)
+4. Written to `.enc.tmp` first, then renamed to `.enc` (atomic; crash-safe)
 5. File permissions set to `0600` (owner read/write only)
 
-A **write mutex** serializes all writes, so concurrent operations cannot corrupt the file.
+A **write mutex** serializes all writes; concurrent operations cannot corrupt the file.
 
 ## Decrypt Manually
 
@@ -1470,127 +1947,181 @@ console.log(JSON.stringify(JSON.parse(d.update(enc, null, 'utf8') + d.final('utf
 | LNbits with concurrent payments | `sqlite` - atomic proof operations |
 | Multi-server production | `mysql` - shared remote database |
 
-See [DATABASE.md](docs/DATABASE.md) for setup and migration instructions.
+See [DATABASE.md](DATABASE.md) for setup and migration instructions.
+
 
 ---
 
-<img src="assets/headers/doc-security.svg" alt="Security Policy" width="100%">
+# AGENTS.md
 
-# Security Policy
+## Project overview
 
-## Disclaimer
+NUTbits is a Cashu ecash to NWC (Nostr Wallet Connect) bridge. It connects to a Cashu mint, manages ecash proofs, and exposes a full NIP-47 wallet service over Nostr relays. Any NWC-compatible app (LNbits, Alby, Amethyst, etc.) can use it to send and receive Lightning payments through the mint.
 
-NUTbits is provided **as-is, without warranty of any kind**. This software handles ecash tokens (real money). By using NUTbits, you acknowledge:
+- **Runtime:** Node.js >= 18, ES modules (`import`/`export`, `"type": "module"`)
+- **Dependencies:** `@cashu/cashu-ts`, `nostr-core`, `bolt11`, `dotenv`
+- **Optional deps:** `better-sqlite3` (SQLite backend), `mysql2` (MySQL backend), `qrcode-terminal` (QR display in CLI)
+- **License:** AGPL-3.0
 
-- **Ecash is custodial.** The mint holds the funds. The mint can be compromised, shut down, or act maliciously.
-- **NUTbits is a bridge, not a bank.** It translates between Cashu and NWC. It does not custody funds independently; the mint does.
-- **You are responsible for your own setup.** Passphrase strength, seed backup, mint selection, server security - all yours.
-- **No guarantee of funds safety.** Software bugs, network failures, or mint issues can lead to loss of funds. Only use amounts you can afford to lose.
+## Setup commands
 
-The authors and contributors of NUTbits accept **no liability** for lost funds, security breaches, or damages of any kind arising from the use of this software.
+```bash
+git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
+npm install
+cp .env.example .env
+# Edit .env: set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
+npm start                # Start the bridge service
+nutbits                  # Launch interactive TUI (in another terminal)
+```
 
-## Reporting Vulnerabilities
+## Project structure
 
-If you discover a security vulnerability, **please report it responsibly**.
+```
+nutbits.js               # Core bridge: mint management, NWC protocol, payment flows (~1500 lines)
+bin/nutbits.js           # CLI entry point, command dispatch, argument parsing
+api/
+  server.js              # HTTP/Unix socket server, request handler, auth (GET/POST/PATCH/DELETE)
+  router.js              # URL routing with param matching
+  middleware/auth.js      # Bearer token auth
+  handlers/index.js      # All REST API endpoints
+cli/
+  commands/              # One file per CLI command (status, pay, receive, connect, etc.)
+  tui/                   # Terminal UI (app.js, layout.js, menu.js, panels.js)
+  colors.js              # ANSI color helpers
+  render.js              # Output formatting (tables, key-value, headings)
+  prompts.js             # Interactive prompts (input, select, confirm, spinner)
+  client.js              # API client for CLI-to-service communication
+store/
+  index.js               # Storage factory + audit logging wrapper
+  file-store.js          # Encrypted file backend (AES-256-GCM)
+  sqlite-store.js        # SQLite backend with scrypt migration
+  mysql-store.js         # MySQL backend with scrypt migration
+  crypto-utils.js        # Shared encryption: AES-256-GCM, scrypt key derivation (N=65536)
+  connection-utils.js    # Connection key validation helpers
+gui/
+  src/views/             # Vue 3 pages: Dashboard, Mints, Relays, Connections, Pay, Receive, History, Fees, Settings
+  src/stores/            # Pinia stores: mints, relays, connections, balance, history, fees, config, status, logs
+  src/components/ui/     # Shared components: Badge, Modal, StatCard, BarChart, Sparkline, HelpTip, Spinner, EmptyState
+  src/api/client.js      # API client (GET/POST/PATCH/DELETE with auto-detect/bootstrap)
+```
 
-- **Do not** open a public GitHub issue for security vulnerabilities
-- **Email:** [doktorshift@proton.me](mailto:doktorshift@proton.me)
-- **Nostr:** DM [DoktorShift](https://njump.me/npub17c2szua46mc8ndp4grvy4z5465x0qxjge8tqx7vyu0vkqr24y2hssuuy6f)
+## Code style
 
-Include:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
+- ES modules everywhere. No CommonJS, no `require()`.
+- `var` (not `let`/`const`) - this is an intentional project convention.
+- Semicolons at line ends.
+- Minimal dependencies - stdlib preferred over npm packages.
+- No TypeScript, no build step. Raw JS, runs directly with `node`.
+- Comments use `// ── Section Name ──` dividers for major blocks.
 
-We will acknowledge your report and work on a fix. Once resolved, we will credit you (unless you prefer anonymity).
+Example of project style:
+```javascript
+var calcServiceFee = (amountSats, connState) => {
+    var ppm = connState?.service_fee_ppm ?? config.serviceFeePpm
+    var base = connState?.service_fee_base ?? config.serviceFeeBase
+    if (!ppm && !base) return 0
+    return Math.floor(amountSats * ppm / 1_000_000) + base
+}
+```
 
-## Security Measures in NUTbits
+## Domain knowledge
 
-- **AES-256-GCM encryption** for all stored data (proofs, private keys)
-- **scrypt key derivation** from your passphrase
-- **NUT-12 DLEQ verification** to detect counterfeit tokens
-- **NUT-13 deterministic secrets** for seed-based proof recovery
-- **Per-payment mutex** to prevent concurrent proof corruption
-- **Atomic file writes** (write to `.tmp`, rename) to prevent corruption on crash
-- **Event deduplication** to prevent replay attacks / double-payments
-- **NWC secrets masked** in all log output
+Agents working on this codebase need to understand these concepts:
 
-## Best Practices
+**Cashu ecash:**
+- Mints issue blind-signed ecash tokens (proofs). Proofs are bearer instruments; whoever holds them can spend them.
+- Proofs are cryptographically bound to the issuing mint. Proofs from Mint A cannot be used at Mint B.
+- Minting (NUT-04): user pays a Lightning invoice, receives ecash proofs.
+- Melting (NUT-05): user surrenders ecash proofs, mint pays a Lightning invoice.
+- Ecash is custodial. The mint operator can see all operations.
 
-- Use a strong, unique `NUTBITS_STATE_PASSPHRASE`
-- Save your `NUTBITS_SEED` in a password manager
-- Use SQLite or MySQL backend for concurrent access (LNbits)
-- Only use mints you trust
-- Keep your server updated and access-controlled
-- Don't expose NUTbits to the public internet - it communicates via Nostr relays only
+**NWC (Nostr Wallet Connect / NIP-47):**
+- A protocol for wallet communication over Nostr relays.
+- Client sends kind-23194 events (requests). Wallet responds with kind-23195 events (responses).
+- Messages are encrypted (NIP-44 preferred, NIP-04 fallback).
+- Supported methods: `get_info`, `get_balance`, `make_invoice`, `pay_invoice`, `lookup_invoice`, `list_transactions`.
 
----
+**How NUTbits bridges them:**
+- Incoming `pay_invoice` → melt ecash through mint → Lightning payment sent.
+- Incoming `make_invoice` → create mint quote → return Lightning invoice → on payment, mint ecash.
+- Service fees are deducted from the sender's ecash on outgoing payments only.
 
-<img src="assets/headers/doc-contributing.svg" alt="Contributing" width="100%">
+## API endpoints
 
-# Contributing to NUTbits
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/v1/status` | Dashboard data (balance, connections, mint health) |
+| GET | `/api/v1/balance` | Per-mint balance breakdown |
+| GET | `/api/v1/connections` | List active NWC connections (includes lud16) |
+| GET | `/api/v1/connections/export` | Connection details including NWC strings (sensitive) |
+| POST | `/api/v1/connections` | Create NWC connection (accepts lud16, resolves via LNURL) |
+| PATCH | `/api/v1/connections/:pubkey` | Update connection metadata (lud16 set/clear) |
+| DELETE | `/api/v1/connections/:pubkey` | Revoke a connection |
+| POST | `/api/v1/pay` | Pay a Lightning invoice OR Lightning Address (auto-detects) |
+| POST | `/api/v1/receive` | Create a Lightning invoice (accepts mint selection) |
+| POST | `/api/v1/receive/check` | Check if invoice was paid |
+| GET | `/api/v1/lnurl/resolve` | Resolve a Lightning Address to LNURL-pay metadata |
+| GET | `/api/v1/history` | Transaction history with filtering |
+| GET | `/api/v1/history/export` | Export history as CSV/JSON |
+| GET | `/api/v1/mints` | Mint info and health status |
+| POST | `/api/v1/mints/active` | Switch active mint at runtime |
+| GET | `/api/v1/nuts` | NUT support matrix |
+| GET | `/api/v1/relays` | Relay connection status |
+| GET | `/api/v1/config` | Running configuration |
+| POST | `/api/v1/config` | Update config at runtime (hot-reloadable keys) |
+| GET | `/api/v1/config/env` | Read .env file variables and metadata |
+| POST | `/api/v1/config/env` | Write to .env file |
+| GET | `/api/v1/fees` | Service fee revenue tracking |
+| GET | `/api/v1/logs` | Recent log entries |
+| GET | `/api/v1/backup` | Download encrypted state backup |
+| POST | `/api/v1/restore` | Restore wallet from seed |
 
-Welcome! NUTbits is an open-source project and contributions are appreciated.
+Auth: Bearer token via `Authorization` header. Token auto-generated at startup, written to `~/.nutbits/nutbits.sock.token`.
 
-## Standing on the Shoulders of Giants
+## Lightning Address (lud16) support
 
-NUTbits wouldn't exist without the incredible work of:
+NUTbits supports Lightning Addresses across all interfaces:
 
-- **[Calle](https://github.com/callebtc)** and the **[Cashu](https://cashu.space)** team - for creating the ecash protocol and the [cashu-ts](https://github.com/cashubtc/cashu-ts) library that powers NUTbits
-- **[supertestnet](https://github.com/supertestnet)** - whose [bankify](https://github.com/supertestnet/bankify) project was the original inspiration for this bridge
-- **[LNbits](https://github.com/lnbits/lnbits)** team - for building the Lightning accounts system that NUTbits was designed to power
-- **[nostr-core](https://www.npmjs.com/package/nostr-core)** by [Pratik227](https://github.com/Pratik227) - for the Nostr protocol library
+- **NWC connections:** lud16 can be attached at creation or updated via PATCH. It is appended to the NWC connection string as `&lud16=...` (non-standard NIP-47 extension). Format is validated and the address is resolved via LNURL-pay (LUD-16) using `nostr-core` before accepting.
+- **Pay endpoint:** `POST /api/v1/pay` accepts `{ invoice: "user@domain.com", amount_sats: 1000 }`. It detects the Lightning Address, resolves it to a BOLT11 invoice via LNURL-pay, validates min/max sendable, and pays.
+- **Resolve endpoint:** `GET /api/v1/lnurl/resolve?address=user@domain.com` returns LNURL-pay metadata (min/max sats, description, nostr zap support, comment length) without paying.
+- **GUI:** The Send page auto-detects Lightning Addresses as you type, resolves them after 800ms debounce, and shows metadata (description, limits, nostr support) with an expandable details section.
+- **CLI:** `nutbits connect --lud16 user@domain.com` and interactive Step 4 in `nutbits connect`.
 
-If you contribute to NUTbits, you're building on all of their work. Thank you to everyone in the Bitcoin, Lightning, Cashu, and Nostr ecosystems.
+## Boundaries
 
-## How to Contribute
+**Always:**
+- Encrypt state at rest with AES-256-GCM (scrypt N=65536). Never store raw proofs unencrypted.
+- Handle ecash proofs atomically (all-or-nothing swaps). Never leave partial proof state.
+- Deduplicate NWC events across relays to prevent double-payments (time-windowed, 10min TTL).
+- Mask NWC strings, private keys, and proof data in all log output.
+- Validate mint URLs - HTTPS only, no private IP ranges, no localhost.
+- On proof restore failure, write encrypted recovery file (never log proof secrets).
+- Validate Lightning Addresses by resolving them via LNURL-pay before accepting.
+- Reject revoked connections from processing NWC events.
 
-### Report Bugs
+**Ask first:**
+- Changes to NWC protocol handling or supported methods.
+- Modifications to state encryption or key derivation.
+- Changes to the service fee calculation logic.
+- Adding new dependencies.
 
-Found something broken? [Open an issue](https://github.com/DoktorShift/nutbits/issues/new). Include:
-- What happened
-- What you expected
-- Your NUTbits version (`package.json`) and Node.js version
-- Relevant logs (mask any secrets!)
+**Never:**
+- Log private keys, NWC connection strings, or raw ecash proof data.
+- Skip event deduplication.
+- Commit `.env` files, state files (`.enc`, `.db`), or socket token files.
+- Store passwords or secrets in plaintext.
+- Use `let` or `const` - project convention is `var`.
 
-### Suggest Features
+## Security hardening (recent)
 
-Have an idea? Open an issue and describe it. We especially welcome ideas around:
-- New NUT support (NUT-15 multi-path payments is on the backlog!)
-- Better error messages and UX
-- New storage backends
-- Testing and reliability improvements
-
-### Submit Code
-
-1. Fork the repo
-2. Create a branch (`git checkout -b my-feature`)
-3. Make your changes
-4. Test locally (`npm start` - check it works end-to-end)
-5. Open a pull request
-
-### Code Style
-
-- Plain JavaScript (ES modules, no TypeScript, no build step)
-- `var` for declarations (project convention)
-- Keep it simple - NUTbits is one main file + store modules
-- Follow existing patterns
-- Comment the *why*, not the *what*
-
-## Open Backlog
-
-These are things we'd love help with:
-
-- **NUT-15**: Multi-path payments - split a payment across multiple mints
-- **Tests**: Unit tests for store backends, integration tests for payment flows
-- **BOLT12**: Support for BOLT12 offers (NUT-25)
-- **Monitoring**: Health check endpoint, metrics
-
-## Questions?
-
-Open an issue or reach out to [DoktorShift](https://github.com/DoktorShift) on GitHub or via [Nostr](https://njump.me/npub17c2szua46mc8ndp4grvy4z5465x0qxjge8tqx7vyu0vkqr24y2hssuuy6f).
-
-Thanks for considering contributing!
-
----
-
+- **Scrypt KDF:** Key derivation uses N=65536 (4x stronger than Node defaults). Existing databases auto-migrate on first startup; the version marker is written inside the same transaction as the re-encryption for crash safety.
+- **DLEQ verification:** Invalid DLEQ proofs are rejected. Verification errors (e.g., missing keyset) still accept the proof with a warning to avoid losing funds.
+- **Recovery files:** If proof restoration fails after a payment error, proofs are written to an encrypted `.recovery-*.enc` file (mode 0600) instead of being logged.
+- **Event dedup:** Uses a time-windowed Map (10min TTL) with a hard cap fallback instead of arbitrary Set truncation.
+- **Weak passphrase warning:** Boot warns if `NUTBITS_STATE_PASSPHRASE` is under 8 characters.
+- **Revoked connections:** Blocked from NWC event processing and skipped during boot restoration.
+- **Unknown NWC methods:** Return `NOT_IMPLEMENTED` error instead of being silently ignored.
+- **list_transactions limit:** Capped at 200 results to prevent unbounded data retrieval.
+- **make_invoice validation:** Rejects amounts <= 0 or > 21M BTC.
+- **Blockheight cache:** mempool.space API responses cached for 2 minutes.

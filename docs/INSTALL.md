@@ -45,6 +45,8 @@ NUTBITS_STATE_PASSPHRASE=your-strong-passphrase-here
 npm start
 ```
 
+This keeps NUTbits attached to your terminal and shows the normal startup and log view.
+
 On first run, NUTbits prints your NWC connection string:
 
 ```
@@ -54,6 +56,40 @@ nostr+walletconnect://abc123...?relay=wss://nostrue.com&secret=xyz789...
 ```
 
 Copy this string. You'll need it to connect LNbits or any NWC client.
+
+### Stack Scripts
+
+NUTbits also ships with operational scripts in `scripts/`:
+
+Run these from the repository root.
+
+#### Most common
+
+```bash
+npm start                         # backend only, in your terminal
+npm run nutbits                  # backend + GUI, in the background
+npm run service:mac              # macOS 24/7 backend service
+npm run service:linux            # Linux 24/7 backend service
+```
+
+Use one of those depending on how you want to run NUTbits.
+
+```bash
+npm run nutbits                  # backend + GUI in the background
+npm run nutbits:interactive      # GUI in background, backend in your terminal
+npm run nutbits:stop             # stop backend + GUI
+npm run nutbits:restart          # restart background NUTbits mode
+npm run nutbits:update           # git pull, install deps, rebuild GUI, restart
+```
+
+Use `nutbits` when you want NUTbits and the GUI running in the background. Use `nutbits:interactive` when you want the GUI too, but still want to watch the backend in your terminal.
+
+If you want the backend to survive logout, reboot, and crashes, use an OS service manager instead:
+
+- macOS: `launchd`
+- Linux: `systemd --user`
+
+See **[SERVICE.md](SERVICE.md)** for the simple 24/7 setup.
 
 ### Management Console (optional)
 
@@ -76,6 +112,18 @@ No extra configuration needed. The CLI finds the running service and authenticat
 > Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
 
 See **[CLI.md](CLI.md)** for the full setup and command reference.
+
+### Web GUI (optional)
+
+The repository also includes a browser GUI in `gui/`.
+
+If you used the scripts above, it is served automatically on:
+
+```bash
+http://127.0.0.1:8080
+```
+
+By default the GUI talks to the local backend on `http://127.0.0.1:3338` and can bootstrap the API token automatically for local use.
 
 ## Docker
 
@@ -157,6 +205,12 @@ cd nutbits
 git pull
 npm install
 npm start
+```
+
+Or, if you use the stack scripts:
+
+```bash
+npm run nutbits:update
 ```
 
 Your state file is preserved across upgrades. If upgrading to a new storage backend, see [DATABASE.md](DATABASE.md) for migration instructions.

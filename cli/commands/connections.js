@@ -50,6 +50,7 @@ export async function run(client, args) {
             if (conn.service_fee_base) feeStr.push(`${conn.service_fee_base} sat base`);
             print(kv('  Service fee', `${c.muted}${feeStr.join(' + ')}${c.reset}`));
         }
+        if (conn.lud16) print(kv('  Lightning Address', `${c.cyan}${conn.lud16}${c.reset}`));
         if (conn.created_at) print(kv('  Created', `${c.dim}${new Date(conn.created_at * 1000).toLocaleString()}${c.reset}`));
         print('');
 

@@ -6,6 +6,7 @@ export class Router {
 
     get(path, handler)    { this.#routes.push({ method: 'GET', path, handler }); return this; }
     post(path, handler)   { this.#routes.push({ method: 'POST', path, handler }); return this; }
+    patch(path, handler)  { this.#routes.push({ method: 'PATCH', path, handler }); return this; }
     delete(path, handler) { this.#routes.push({ method: 'DELETE', path, handler }); return this; }
 
     match(method, url) {

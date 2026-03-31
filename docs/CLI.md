@@ -6,12 +6,14 @@
 
 This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** (workflows, TUI vs CLI, tips), see **[CONSOLE.md](CONSOLE.md)**.
 
-NUTbits runs as a background service. The management console gives you a window into what's happening and lets you control it:
+NUTbits runs as a service. The management console gives you a window into what's happening and lets you control it:
 
 - **`nutbits`** - interactive TUI dashboard (monitor)
 - **`nutbits <command>`** - single CLI command (act)
 
 Both talk to the same local API. Same data, your choice of interface.
+
+There is also a browser GUI in `gui/`. It uses the same API, but this document focuses on terminal usage.
 
 <p align="center">
   <img src="../assets/Inline_Explaining/inline_cli-overview.svg" alt="Architecture: Service → API → TUI / CLI" width="100%">
@@ -51,6 +53,22 @@ nutbits connect
 ```
 
 > **Don't want to `npm link`?** You can also use `npm run cli` or `node bin/nutbits.js` from the NUTbits directory.
+
+If you want the GUI served alongside the backend, start the stack with:
+
+```bash
+npm run nutbits:interactive
+```
+
+To stop the stack later:
+
+```bash
+npm run nutbits:stop
+```
+
+Run npm scripts from the repository root.
+
+For a true 24/7 backend service on macOS or Linux, see **[SERVICE.md](SERVICE.md)**.
 
 ### Docker
 

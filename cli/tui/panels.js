@@ -224,6 +224,7 @@ export async function connectionsPanel(client) {
         lines.push(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${conn.label || '—'}${c.reset}`);
         lines.push(`     ${perms.join(`${c.dim} | ${c.reset}`)}`);
         lines.push(`     ${fmtSats(Math.floor((conn.balance_msat || 0) / 1000))}  ${c.dim}${conn.tx_count || 0} transactions${c.reset}`);
+        if (conn.lud16) lines.push(`     ${c.cyan}${conn.lud16}${c.reset}`);
         if (conn.max_daily_sats) lines.push(`     ${c.dim}daily limit: ${conn.max_daily_sats.toLocaleString()} sats${c.reset}`);
         lines.push('');
     }

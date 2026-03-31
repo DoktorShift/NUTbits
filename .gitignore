@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+gui/dist/
 
 # Environment (contains passphrase, seed, secrets)
 .env
@@ -19,11 +20,22 @@ nutbits_state.enc.migrated
 *.db-wal
 *.db-shm
 
+# Exports and recovery files (may contain secrets/NWC strings)
+nutbits-connections-*.json
+nutbits-export-*.csv
+nutbits-export-*.json
+*.recovery-*.json
+*.recovery-*.enc
+
 # Unpublished blog drafts
 blog/_drafts/
 
 # Claude Code
 .claude/
+
+# Local runtime output
+.run/
+logs/
 
 # OS files
 .DS_Store

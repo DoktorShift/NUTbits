@@ -1,6 +1,6 @@
 {
   "name": "nutbits",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Cashu ecash to NWC bridge — use any Cashu mint as a Lightning funding source for LNbits",
   "type": "module",
   "license": "AGPL-3.0-or-later",
@@ -10,7 +10,20 @@
   },
   "scripts": {
     "start": "node nutbits.js",
-    "cli": "node bin/nutbits.js"
+    "cli": "node bin/nutbits.js",
+    "build:gui": "npm --prefix gui run build",
+    "gui": "node scripts/nutbits-gui-server.js",
+    "nutbits": "./scripts/nutbits-start.sh --daemon",
+    "nutbits:interactive": "./scripts/nutbits-start.sh --interactive",
+    "nutbits:stop": "./scripts/nutbits-stop.sh",
+    "nutbits:restart": "./scripts/nutbits-restart.sh --daemon",
+    "nutbits:restart:interactive": "./scripts/nutbits-restart.sh --interactive",
+    "nutbits:update": "./scripts/nutbits-update.sh --daemon",
+    "nutbits:update:interactive": "./scripts/nutbits-update.sh --interactive",
+    "service:mac": "./scripts/nutbits-service-mac-install.sh",
+    "service:mac:remove": "./scripts/nutbits-service-mac-remove.sh",
+    "service:linux": "./scripts/nutbits-service-linux-install.sh",
+    "service:linux:remove": "./scripts/nutbits-service-linux-remove.sh"
   },
   "engines": {
     "node": ">=18"

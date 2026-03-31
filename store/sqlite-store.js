@@ -3,7 +3,8 @@
 
 import crypto from 'crypto';
 import fs from 'fs';
-import { deriveKey, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
+import { deriveKey, deriveKeyLegacy, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
+import { isPersistableConnection } from './connection-utils.js';
 
 var SCHEMA_VERSION = 1;
 
@@ -114,12 +115,18 @@ export class SqliteStore {
 
     async getConnection(appPubkey) {
         var row = this.#db.prepare('SELECT data_enc, user_pubkey, balance FROM connections WHERE app_pubkey = ?').get(appPubkey);
-        if (!row) return null;
+        var txRows = this.#db.prepare('SELECT payment_hash, data_enc FROM transactions WHERE app_pubkey = ?').all(appPubkey);
+        if (!row) {
+            if (appPubkey !== '__api__' || txRows.length === 0) return null;
+            return {
+                label: 'API',
+                tx_history: Object.fromEntries(txRows.map(tx => [tx.payment_hash, JSON.parse(decryptValue(this.#key, tx.data_enc))])),
+                _virtual: true,
+            };
+        }
         var data = JSON.parse(decryptValue(this.#key, row.data_enc));
         data.balance = row.balance;
-        // Load tx_history
         data.tx_history = {};
-        var txRows = this.#db.prepare('SELECT payment_hash, data_enc FROM transactions WHERE app_pubkey = ?').all(appPubkey);
         for (var tx of txRows) {
             data.tx_history[tx.payment_hash] = JSON.parse(decryptValue(this.#key, tx.data_enc));
         }
@@ -132,10 +139,13 @@ export class SqliteStore {
         for (var row of rows) {
             result[row.app_pubkey] = await this.getConnection(row.app_pubkey);
         }
+        var apiConn = await this.getConnection('__api__');
+        if (apiConn) result.__api__ = apiConn;
         return result;
     }
 
     async setConnection(appPubkey, info) {
+        if (!isPersistableConnection(appPubkey, info)) return;
         var { tx_history, balance, user_pubkey, ...rest } = info;
         this.#db.prepare(
             'INSERT OR REPLACE INTO connections (app_pubkey, data_enc, user_pubkey, balance) VALUES (?, ?, ?, ?)'
@@ -298,7 +308,47 @@ export class SqliteStore {
             salt = crypto.randomBytes(16);
             this.#db.prepare("INSERT INTO config (key, value) VALUES ('encryption_salt', ?)").run(salt.toString('hex'));
         }
-        this.#key = deriveKey(this.#passphrase, salt);
+
+        // Check if DB was created with legacy scrypt params
+        var versionRow = this.#db.prepare("SELECT value FROM config WHERE key = 'scrypt_version'").get();
+        if (versionRow && versionRow.value === '2') {
+            this.#key = deriveKey(this.#passphrase, salt);
+        } else if (!row) {
+            // Fresh DB - use strong params from the start
+            this.#key = deriveKey(this.#passphrase, salt);
+            this.#db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('scrypt_version', '2')").run();
+        } else {
+            // Existing DB with legacy params - migrate all encrypted data
+            var legacyKey = deriveKeyLegacy(this.#passphrase, salt);
+            var newKey = deriveKey(this.#passphrase, salt);
+            this.#migrateScryptParams(legacyKey, newKey);
+            this.#key = newKey;
+        }
+    }
+
+    #migrateScryptParams(oldKey, newKey) {
+        this.#db.transaction(() => {
+            var proofs = this.#db.prepare('SELECT proof_id, proof_enc FROM proofs').all();
+            var updateProof = this.#db.prepare('UPDATE proofs SET proof_enc = ? WHERE proof_id = ?');
+            for (var p of proofs) {
+                updateProof.run(encryptValue(newKey, decryptValue(oldKey, p.proof_enc)), p.proof_id);
+            }
+
+            var conns = this.#db.prepare('SELECT app_pubkey, data_enc FROM connections').all();
+            var updateConn = this.#db.prepare('UPDATE connections SET data_enc = ? WHERE app_pubkey = ?');
+            for (var c of conns) {
+                updateConn.run(encryptValue(newKey, decryptValue(oldKey, c.data_enc)), c.app_pubkey);
+            }
+
+            var txs = this.#db.prepare('SELECT payment_hash, app_pubkey, data_enc FROM transactions').all();
+            var updateTx = this.#db.prepare('UPDATE transactions SET data_enc = ? WHERE payment_hash = ? AND app_pubkey = ?');
+            for (var t of txs) {
+                updateTx.run(encryptValue(newKey, decryptValue(oldKey, t.data_enc)), t.payment_hash, t.app_pubkey);
+            }
+
+            // Version marker inside transaction - atomic with re-encryption
+            this.#db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('scrypt_version', '2')").run();
+        })();
     }
 
     #isEmpty() {
@@ -337,11 +387,12 @@ export class SqliteStore {
                 }
 
                 // Migrate NWC connections
-                var nwcInfo = restored.nostr_state?.nwc_info || {};
-                for (var [appPk, info] of Object.entries(nwcInfo)) {
-                    var { tx_history, balance, user_pubkey, ...rest } = info;
-                    this.#db.prepare(
-                        'INSERT OR REPLACE INTO connections (app_pubkey, data_enc, user_pubkey, balance) VALUES (?, ?, ?, ?)'
+            var nwcInfo = restored.nostr_state?.nwc_info || {};
+            for (var [appPk, info] of Object.entries(nwcInfo)) {
+                if (!isPersistableConnection(appPk, info)) continue;
+                var { tx_history, balance, user_pubkey, ...rest } = info;
+                this.#db.prepare(
+                    'INSERT OR REPLACE INTO connections (app_pubkey, data_enc, user_pubkey, balance) VALUES (?, ?, ?, ?)'
                     ).run(appPk, encryptValue(this.#key, JSON.stringify({ ...rest, user_pubkey })), user_pubkey || '', balance || 0);
 
                     if (tx_history) {

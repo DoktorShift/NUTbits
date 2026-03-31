@@ -3,7 +3,8 @@
 
 import crypto from 'crypto';
 import fs from 'fs';
-import { deriveKey, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
+import { deriveKey, deriveKeyLegacy, encryptValue, decryptValue, decryptState, proofId } from './crypto-utils.js';
+import { isPersistableConnection } from './connection-utils.js';
 
 var SCHEMA_VERSION = 1;
 
@@ -141,12 +142,18 @@ export class MysqlStore {
 
     async getConnection(appPubkey) {
         var [rows] = await this.#pool.execute('SELECT data_enc, user_pubkey, balance FROM connections WHERE app_pubkey = ?', [appPubkey]);
-        if (!rows[0]) return null;
+        var [txRows] = await this.#pool.execute('SELECT payment_hash, data_enc FROM transactions WHERE app_pubkey = ?', [appPubkey]);
+        if (!rows[0]) {
+            if (appPubkey !== '__api__' || txRows.length === 0) return null;
+            return {
+                label: 'API',
+                tx_history: Object.fromEntries(txRows.map(tx => [tx.payment_hash, JSON.parse(decryptValue(this.#key, tx.data_enc))])),
+                _virtual: true,
+            };
+        }
         var data = JSON.parse(decryptValue(this.#key, rows[0].data_enc));
         data.balance = rows[0].balance;
-        // Load tx_history
         data.tx_history = {};
-        var [txRows] = await this.#pool.execute('SELECT payment_hash, data_enc FROM transactions WHERE app_pubkey = ?', [appPubkey]);
         for (var tx of txRows) {
             data.tx_history[tx.payment_hash] = JSON.parse(decryptValue(this.#key, tx.data_enc));
         }
@@ -159,10 +166,13 @@ export class MysqlStore {
         for (var row of rows) {
             result[row.app_pubkey] = await this.getConnection(row.app_pubkey);
         }
+        var apiConn = await this.getConnection('__api__');
+        if (apiConn) result.__api__ = apiConn;
         return result;
     }
 
     async setConnection(appPubkey, info) {
+        if (!isPersistableConnection(appPubkey, info)) return;
         var { tx_history, balance, user_pubkey, ...rest } = info;
         await this.#pool.execute(
             'INSERT INTO connections (app_pubkey, data_enc, user_pubkey, balance) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE data_enc = VALUES(data_enc), user_pubkey = VALUES(user_pubkey), balance = VALUES(balance)',
@@ -337,13 +347,64 @@ export class MysqlStore {
     async #initEncryptionKey() {
         var [rows] = await this.#pool.execute("SELECT v FROM config WHERE k = 'encryption_salt'");
         var salt;
-        if (rows[0]) {
+        var isExisting = !!rows[0];
+        if (isExisting) {
             salt = Buffer.from(rows[0].v, 'hex');
         } else {
             salt = crypto.randomBytes(16);
             await this.#pool.execute("INSERT INTO config (k, v) VALUES ('encryption_salt', ?)", [salt.toString('hex')]);
         }
-        this.#key = deriveKey(this.#passphrase, salt);
+
+        // Check if DB was created with legacy scrypt params
+        var [vRows] = await this.#pool.execute("SELECT v FROM config WHERE k = 'scrypt_version'");
+        if (vRows[0] && vRows[0].v === '2') {
+            this.#key = deriveKey(this.#passphrase, salt);
+        } else if (!isExisting) {
+            // Fresh DB - use strong params from the start
+            this.#key = deriveKey(this.#passphrase, salt);
+            await this.#pool.execute("INSERT INTO config (k, v) VALUES ('scrypt_version', '2')");
+        } else {
+            // Existing DB with legacy params - migrate all encrypted data
+            var legacyKey = deriveKeyLegacy(this.#passphrase, salt);
+            var newKey = deriveKey(this.#passphrase, salt);
+            await this.#migrateScryptParams(legacyKey, newKey);
+            this.#key = newKey;
+        }
+    }
+
+    async #migrateScryptParams(oldKey, newKey) {
+        var conn = await this.#pool.getConnection();
+        try {
+            await conn.beginTransaction();
+
+            var [proofs] = await conn.execute('SELECT proof_id, proof_enc FROM proofs');
+            for (var p of proofs) {
+                await conn.execute('UPDATE proofs SET proof_enc = ? WHERE proof_id = ?',
+                    [encryptValue(newKey, decryptValue(oldKey, p.proof_enc)), p.proof_id]);
+            }
+
+            var [conns] = await conn.execute('SELECT app_pubkey, data_enc FROM connections');
+            for (var c of conns) {
+                await conn.execute('UPDATE connections SET data_enc = ? WHERE app_pubkey = ?',
+                    [encryptValue(newKey, decryptValue(oldKey, c.data_enc)), c.app_pubkey]);
+            }
+
+            var [txs] = await conn.execute('SELECT payment_hash, app_pubkey, data_enc FROM transactions');
+            for (var t of txs) {
+                await conn.execute('UPDATE transactions SET data_enc = ? WHERE payment_hash = ? AND app_pubkey = ?',
+                    [encryptValue(newKey, decryptValue(oldKey, t.data_enc)), t.payment_hash, t.app_pubkey]);
+            }
+
+            // Version marker inside transaction - atomic with re-encryption
+            await conn.execute("INSERT INTO config (k, v) VALUES ('scrypt_version', '2') ON DUPLICATE KEY UPDATE v = '2'");
+
+            await conn.commit();
+        } catch (e) {
+            await conn.rollback();
+            throw e;
+        } finally {
+            conn.release();
+        }
     }
 
     async #isEmpty() {
@@ -383,6 +444,7 @@ export class MysqlStore {
 
             var nwcInfo = restored.nostr_state?.nwc_info || {};
             for (var [appPk, info] of Object.entries(nwcInfo)) {
+                if (!isPersistableConnection(appPk, info)) continue;
                 var { tx_history, balance, user_pubkey, ...rest } = info;
                 await conn.execute(
                     'INSERT INTO connections (app_pubkey, data_enc, user_pubkey, balance) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE data_enc = VALUES(data_enc)',
