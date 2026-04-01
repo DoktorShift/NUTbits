@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="g9" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent9" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <!-- Forward path gradient: amber → green -->
+    <linearGradient id="fwd9" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <!-- Return path gradient: green → amber -->
+    <linearGradient id="ret9" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <!-- Glow filters -->
+    <filter id="glow-green" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-amber" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
+    </filter>
+    <filter id="glow-line" x="-20%" y="-100%" width="140%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#g9)"/>
+
+  <!-- ── Visual: Two-node bridge with glowing connection paths ── -->
+
+  <!-- App node — left -->
+  <!-- Outer glow ring -->
+  <circle cx="730" cy="260" r="54" fill="none" stroke="#58a6ff" stroke-width="1" opacity="0.12"/>
+  <circle cx="730" cy="260" r="62" fill="none" stroke="#58a6ff" stroke-width="0.5" opacity="0.06"/>
+  <circle cx="730" cy="260" r="48" fill="#1a1e24" stroke="#58a6ff" stroke-width="2"/>
+  <!-- Connected state: green ring overlay -->
+  <circle cx="730" cy="260" r="48" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0.3"/>
+  <text x="730" y="255" text-anchor="middle" font-size="20" fill="#58a6ff" font-weight="bold">A</text>
+  <text x="730" y="275" text-anchor="middle" font-size="10" fill="#484f58">your app</text>
+
+  <!-- NUTbits node — right -->
+  <!-- Outer glow rings -->
+  <circle cx="1060" cy="260" r="54" fill="none" stroke="#f59e0b" stroke-width="1" opacity="0.15"/>
+  <circle cx="1060" cy="260" r="62" fill="none" stroke="#f59e0b" stroke-width="0.5" opacity="0.08"/>
+  <circle cx="1060" cy="260" r="70" fill="none" stroke="#f59e0b" stroke-width="0.5" opacity="0.04"/>
+  <circle cx="1060" cy="260" r="48" fill="#1a1e24" stroke="#f59e0b" stroke-width="2"/>
+  <!-- Pixel nut hex shape -->
+  <polygon points="1060,228 1074,236 1074,252 1060,260 1046,252 1046,236" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+  <polygon points="1060,252 1074,260 1074,276 1060,284 1046,276 1046,260" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="1060" cy="252" r="3" fill="#f59e0b"/>
+  <text x="1060" y="328" text-anchor="middle" font-size="12" fill="#f59e0b">NUTbits</text>
+
+  <!-- ── Forward path (top arc): app → NUTbits ── -->
+  <!-- Dark track -->
+  <path d="M 778 260 C 850 240, 850 200, 895 200 C 940 200, 940 240, 1012 260"
+        stroke="#21262d" stroke-width="2" stroke-linecap="round"/>
+  <!-- Glowing line underneath (wide, blurred) -->
+  <path d="M 778 260 C 850 240, 850 200, 895 200 C 940 200, 940 240, 1012 260"
+        stroke="url(#fwd9)" stroke-width="6" stroke-linecap="round" opacity="0.15"
+        filter="url(#glow-line)"/>
+  <!-- Bright solid line -->
+  <path d="M 778 260 C 850 240, 850 200, 895 200 C 940 200, 940 240, 1012 260"
+        stroke="url(#fwd9)" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+  <!-- Motion dots along the forward path (frozen positions simulating movement) -->
+  <circle cx="810" cy="244" r="4" fill="#f59e0b" opacity="0.3" filter="url(#glow-amber)"/>
+  <circle cx="852" cy="214" r="5" fill="#d4a017" opacity="0.55" filter="url(#glow-amber)"/>
+  <circle cx="895" cy="200" r="6" fill="#6dd4a0" opacity="0.8" filter="url(#glow-green)"/>
+  <circle cx="940" cy="214" r="5" fill="#34d399" opacity="0.55" filter="url(#glow-green)"/>
+  <circle cx="980" cy="240" r="4" fill="#34d399" opacity="0.3" filter="url(#glow-green)"/>
+
+  <!-- ── Return path (bottom arc): NUTbits → app ── -->
+  <!-- Dark track -->
+  <path d="M 1012 260 C 940 280, 940 320, 895 320 C 850 320, 850 280, 778 260"
+        stroke="#21262d" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Glowing line underneath -->
+  <path d="M 1012 260 C 940 280, 940 320, 895 320 C 850 320, 850 280, 778 260"
+        stroke="url(#ret9)" stroke-width="5" stroke-linecap="round" opacity="0.1"
+        filter="url(#glow-line)"/>
+  <!-- Bright dashed line -->
+  <path d="M 1012 260 C 940 280, 940 320, 895 320 C 850 320, 850 280, 778 260"
+        stroke="url(#ret9)" stroke-width="1.5" stroke-linecap="round" opacity="0.5"
+        stroke-dasharray="8,6"/>
+  <!-- Motion dots along return path -->
+  <circle cx="980" cy="276" r="3.5" fill="#34d399" opacity="0.25" filter="url(#glow-green)"/>
+  <circle cx="938" cy="306" r="4" fill="#6dd4a0" opacity="0.45" filter="url(#glow-green)"/>
+  <circle cx="895" cy="320" r="5" fill="#d4a017" opacity="0.6" filter="url(#glow-amber)"/>
+  <circle cx="852" cy="306" r="4" fill="#f59e0b" opacity="0.45" filter="url(#glow-amber)"/>
+  <circle cx="810" cy="276" r="3.5" fill="#f59e0b" opacity="0.25" filter="url(#glow-amber)"/>
+
+  <!-- Center label: NWC (forward) -->
+  <rect x="862" y="178" width="66" height="22" rx="11" fill="#1a1e24" stroke="#34d399" stroke-width="1" opacity="0.8"/>
+  <text x="895" y="193" text-anchor="middle" font-size="9" fill="#34d399" font-weight="bold">NWC</text>
+
+  <!-- Center label: callback (return) -->
+  <rect x="862" y="318" width="66" height="22" rx="11" fill="#1a1e24" stroke="#f59e0b" stroke-width="1" opacity="0.8"/>
+  <text x="895" y="333" text-anchor="middle" font-size="9" fill="#f59e0b">callback</text>
+
+  <!-- Ambient glow behind nodes (large soft circles) -->
+  <circle cx="730" cy="260" r="80" fill="#34d399" opacity="0.025" filter="url(#glow-soft)"/>
+  <circle cx="1060" cy="260" r="80" fill="#f59e0b" opacity="0.035" filter="url(#glow-soft)"/>
+
+  <!-- ── Flow steps below the bridge ── -->
+
+  <circle cx="700" cy="430" r="14" fill="#1a1e24" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="700" y="435" text-anchor="middle" font-size="12" fill="#58a6ff" font-weight="bold">1</text>
+  <text x="726" y="428" font-size="11" fill="#c9d1d9">Tap connect</text>
+  <text x="726" y="444" font-size="10" fill="#484f58">app opens deep link</text>
+
+  <circle cx="700" cy="486" r="14" fill="#1a1e24" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="700" y="491" text-anchor="middle" font-size="12" fill="#f59e0b" font-weight="bold">2</text>
+  <text x="726" y="484" font-size="11" fill="#c9d1d9">Approve</text>
+  <text x="726" y="500" font-size="10" fill="#484f58">user reviews permissions</text>
+
+  <circle cx="700" cy="542" r="14" fill="#1a1e24" stroke="#34d399" stroke-width="1.5"/>
+  <text x="700" y="547" text-anchor="middle" font-size="12" fill="#34d399" font-weight="bold">3</text>
+  <text x="726" y="540" font-size="11" fill="#c9d1d9">Connected</text>
+  <text x="726" y="556" font-size="10" fill="#484f58">NWC string returned via callback</text>
+
+  <!-- Permission column -->
+  <text x="990" y="420" font-size="10" fill="#484f58" font-weight="bold">FULL CAPABILITIES</text>
+
+  <rect x="990" y="432" width="76" height="22" rx="4" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1028" y="447" text-anchor="middle" font-size="9" fill="#34d399">pay</text>
+  <rect x="1074" y="432" width="76" height="22" rx="4" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1112" y="447" text-anchor="middle" font-size="9" fill="#34d399">receive</text>
+
+  <rect x="990" y="460" width="76" height="22" rx="4" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1028" y="475" text-anchor="middle" font-size="9" fill="#8b949e">balance</text>
+  <rect x="1074" y="460" width="76" height="22" rx="4" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1112" y="475" text-anchor="middle" font-size="9" fill="#8b949e">info</text>
+
+  <rect x="990" y="488" width="76" height="22" rx="4" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1028" y="503" text-anchor="middle" font-size="9" fill="#8b949e">history</text>
+  <rect x="1074" y="488" width="76" height="22" rx="4" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="1112" y="503" text-anchor="middle" font-size="9" fill="#8b949e">lookup</text>
+
+  <!-- Before / After -->
+  <rect x="80" y="430" width="530" height="44" rx="6" fill="#1a1e24" stroke="#30363d" stroke-width="1"/>
+  <text x="100" y="456" font-size="11" fill="#ff5f56">Before</text>
+  <text x="160" y="456" font-size="11" fill="#484f58">Copy 200-char string, switch apps, paste, hope it works.</text>
+
+  <rect x="80" y="484" width="530" height="44" rx="6" fill="#1a1e24" stroke="#27c93f" stroke-width="1.5"/>
+  <text x="100" y="510" font-size="11" fill="#27c93f">After</text>
+  <text x="160" y="510" font-size="11" fill="#8b949e">Tap. Approve. Connected. Under 3 seconds.</text>
+
+  <!-- ── Title ── -->
+  <text x="80" y="160" font-size="42" fill="#c9d1d9" font-weight="bold">One Tap</text>
+  <text x="80" y="215" font-size="42" fill="#c9d1d9" font-weight="bold">to a Wallet</text>
+
+  <text x="80" y="270" font-size="17" fill="#8b949e">Deep link NUTbits into any app.</text>
+  <text x="80" y="295" font-size="17" fill="#8b949e">No QR codes. No copy-paste. Just approve.</text>
+
+  <!-- NIP badge -->
+  <rect x="80" y="336" width="80" height="26" rx="6" fill="#1a1e24" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="120" y="354" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">NIP-47</text>
+  <text x="172" y="354" font-size="11" fill="#484f58">deep links</text>
+
+  <!-- Top accent bar -->
+  <rect width="1200" height="4" fill="url(#accent9)"/>
+
+  <!-- Watermark -->
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#30363d" font-weight="bold">NUTbits</text>
+</svg>

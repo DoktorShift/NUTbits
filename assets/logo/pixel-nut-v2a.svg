@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    Pixel Nut v2a: "Glow Sprite"
+    Warm pixel nut with ambient amber glow aura.
+    Rich shading from cream highlights to deep brown shadows.
+  -->
+  <defs>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feFlood flood-color="#f59e0b" flood-opacity="0.18" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="#0f0e0d"/>
+
+  <g filter="url(#glow)">
+    <!-- Stem -->
+    <rect x="226" y="72" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="258" y="72" width="28" height="28" rx="3" fill="#625a52"/>
+
+    <!-- Cap row — warm amber -->
+    <rect x="194" y="104" width="28" height="28" rx="3" fill="#d97706"/>
+    <rect x="226" y="104" width="28" height="28" rx="3" fill="#fbbf24"/>
+    <rect x="258" y="104" width="28" height="28" rx="3" fill="#f59e0b"/>
+    <rect x="290" y="104" width="28" height="28" rx="3" fill="#d97706"/>
+
+    <!-- Body row 1 — top highlight -->
+    <rect x="162" y="136" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="194" y="136" width="28" height="28" rx="3" fill="#c8beb4"/>
+    <rect x="226" y="136" width="28" height="28" rx="3" fill="#e8e0d8"/>
+    <rect x="258" y="136" width="28" height="28" rx="3" fill="#c8beb4"/>
+    <rect x="290" y="136" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="322" y="136" width="28" height="28" rx="3" fill="#8a8078"/>
+
+    <!-- Body row 2 -->
+    <rect x="130" y="168" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="162" y="168" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="194" y="168" width="28" height="28" rx="3" fill="#c8beb4"/>
+    <rect x="226" y="168" width="28" height="28" rx="3" fill="#e8e0d8"/>
+    <rect x="258" y="168" width="28" height="28" rx="3" fill="#c8beb4"/>
+    <rect x="290" y="168" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="322" y="168" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="354" y="168" width="28" height="28" rx="3" fill="#3a3735"/>
+
+    <!-- Body row 3 (widest) -->
+    <rect x="114" y="200" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="146" y="200" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="178" y="200" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="210" y="200" width="28" height="28" rx="3" fill="#c8beb4"/>
+    <rect x="242" y="200" width="28" height="28" rx="3" fill="#e8e0d8"/>
+    <rect x="274" y="200" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="306" y="200" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="338" y="200" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="370" y="200" width="28" height="28" rx="3" fill="#3a3735"/>
+
+    <!-- Body row 4 -->
+    <rect x="114" y="232" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="146" y="232" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="178" y="232" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="210" y="232" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="242" y="232" width="28" height="28" rx="3" fill="#c8beb4"/>
+    <rect x="274" y="232" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="306" y="232" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="338" y="232" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="370" y="232" width="28" height="28" rx="3" fill="#2a2827"/>
+
+    <!-- Body row 5 -->
+    <rect x="114" y="264" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="146" y="264" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="178" y="264" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="210" y="264" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="242" y="264" width="28" height="28" rx="3" fill="#a99f96"/>
+    <rect x="274" y="264" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="306" y="264" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="338" y="264" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="370" y="264" width="28" height="28" rx="3" fill="#2a2827"/>
+
+    <!-- Body row 6 -->
+    <rect x="130" y="296" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="162" y="296" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="194" y="296" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="226" y="296" width="28" height="28" rx="3" fill="#8a8078"/>
+    <rect x="258" y="296" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="290" y="296" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="322" y="296" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="354" y="296" width="28" height="28" rx="3" fill="#1a1918"/>
+
+    <!-- Body row 7 -->
+    <rect x="146" y="328" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="178" y="328" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="210" y="328" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="242" y="328" width="28" height="28" rx="3" fill="#625a52"/>
+    <rect x="274" y="328" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="306" y="328" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="338" y="328" width="28" height="28" rx="3" fill="#1a1918"/>
+
+    <!-- Body row 8 -->
+    <rect x="178" y="360" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="210" y="360" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="242" y="360" width="28" height="28" rx="3" fill="#3a3735"/>
+    <rect x="274" y="360" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="306" y="360" width="28" height="28" rx="3" fill="#1a1918"/>
+
+    <!-- Body row 9 — tip -->
+    <rect x="210" y="392" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="242" y="392" width="28" height="28" rx="3" fill="#2a2827"/>
+    <rect x="274" y="392" width="28" height="28" rx="3" fill="#1a1918"/>
+  </g>
+</svg>

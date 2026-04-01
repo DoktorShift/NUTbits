@@ -1,14 +1,17 @@
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useStatusStore } from './stores/status.js'
 import { useToast } from './composables/useToast.js'
 import api from './api/client.js'
 import AppLayout from './components/layout/AppLayout.vue'
 
+const route = useRoute()
 const statusStore = useStatusStore()
 const { addToast } = useToast()
 
 const isConnected = computed(() => statusStore.backendConnected)
+const isFullscreen = computed(() => route.meta?.fullscreen === true)
 
 onMounted(async () => {
   // Auto-detect API token on startup
@@ -50,7 +53,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AppLayout :connected="isConnected">
+  <!-- Full-screen routes (e.g. deep link connect) bypass the layout -->
+  <router-view v-if="isFullscreen" v-slot="{ Component }">
+    <transition name="fade" mode="out-in">
+      <component :is="Component" />
+    </transition>
+  </router-view>
+
+  <AppLayout v-else :connected="isConnected">
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <component :is="Component" />

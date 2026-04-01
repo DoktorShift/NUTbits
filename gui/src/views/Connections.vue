@@ -9,6 +9,9 @@ import Badge from '@/components/ui/Badge.vue'
 import Modal from '@/components/ui/Modal.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import StepSelectApp from '@/components/wizard/StepSelectApp.vue'
+import StepFinalize from '@/components/wizard/StepFinalize.vue'
+import { PERMISSIONS, findApp } from '@/data/appCatalog.js'
 
 const connectionsStore = useConnectionsStore()
 const statusStore = useStatusStore()
@@ -23,8 +26,12 @@ const connectionList = computed(() => {
   return []
 })
 
-// Create modal
+// Create modal — phased: 'select' (app grid) → 'finalize' (QR + instructions)
 const showCreateModal = ref(false)
+const createPhase = ref('select')    // 'select' | 'finalize'
+const selectedWizardApp = ref(null)  // catalog app entry or null
+const showManualForm = ref(false)    // toggle for legacy form collapse
+
 const createForm = ref({
   label: '',
   permissions: ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice'],
@@ -37,8 +44,7 @@ const createForm = ref({
 })
 const creating = ref(false)
 
-// Success modal (shows NWC string)
-const showSuccessModal = ref(false)
+// Created connection (used by finalize phase)
 const createdConnection = ref(null)
 
 // Revoke modal
@@ -142,6 +148,9 @@ function togglePermission(perm) {
 
 function openCreateModal() {
   const defaultMint = mintsStore.activeMint || mintOptions.value[0]?.url || ''
+  createPhase.value = 'select'
+  selectedWizardApp.value = null
+  showManualForm.value = false
   createForm.value = {
     label: '',
     permissions: ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice'],
@@ -153,6 +162,38 @@ function openCreateModal() {
     lud16: '',
   }
   showCreateModal.value = true
+}
+
+/** Called when user picks an app from the catalog grid. */
+function handleWizardAppSelect(selection) {
+  var app = selection.app
+  selectedWizardApp.value = app
+  var defaultMint = mintsStore.activeMint || mintOptions.value[0]?.url || ''
+  if (app) {
+    // Pre-fill form from catalog entry
+    createForm.value.label = app.name
+    createForm.value.permissions = [...app.permissions]
+    createForm.value.max_payment_sats = app.budget?.maxPaymentSats || 0
+    createForm.value.max_daily_sats = app.budget?.maxDailySats || 0
+    createForm.value.mint = defaultMint
+  } else {
+    // Custom — show the manual form
+    createForm.value.label = ''
+    createForm.value.permissions = ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice']
+    createForm.value.max_payment_sats = 0
+    createForm.value.max_daily_sats = 0
+    createForm.value.mint = defaultMint
+  }
+  showManualForm.value = true
+}
+
+/** Quick-create for catalog apps: create immediately with preset config. */
+async function handleQuickCreate() {
+  if (!createForm.value.label.trim()) {
+    addToast('Label is required', 'error')
+    return
+  }
+  await submitCreate()
 }
 
 async function submitCreate() {
@@ -187,9 +228,8 @@ async function submitCreate() {
 
     const result = await connectionsStore.create(payload)
     createdConnection.value = result
-    showCreateModal.value = false
-    showSuccessModal.value = true
-    addToast('Connection created successfully', 'success')
+    createPhase.value = 'finalize'
+    addToast('Connection created', 'success')
   } catch (err) {
     addToast(err.message || 'Failed to create connection', 'error')
   } finally {
@@ -351,9 +391,6 @@ async function renderSuccessQr() {
   }
 }
 
-watch(showSuccessModal, (open) => {
-  if (open) setTimeout(renderSuccessQr, 300)
-}, { flush: 'post' })
 
 onMounted(() => {
   connectionsStore.fetch()
@@ -421,7 +458,7 @@ onMounted(() => {
     <EmptyState
       v-else-if="connectionList.length === 0"
       title="No connections yet"
-      description="Create your first NWC connection to link apps like Alby, LNbits, or Amethyst."
+      description="Create your first NWC connection to link apps like BuhoGO, Alby Go, LNbits, or Amethyst."
     >
       <button
         class="bg-amber-500 hover:bg-amber-600 text-nutbits-950 font-medium rounded-lg px-4 py-2.5 transition-all"
@@ -626,189 +663,134 @@ onMounted(() => {
     </div>
     </template>
 
-    <!-- Create Connection Modal -->
-    <Modal :show="showCreateModal" title="New Connection" @close="showCreateModal = false">
-      <form class="space-y-5" @submit.prevent="submitCreate">
-        <!-- Label -->
-        <div>
-          <label class="block text-nutbits-400 text-sm mb-1.5">Label *</label>
-          <input
-            v-model="createForm.label"
-            type="text"
-            placeholder="e.g. My Alby Wallet"
-            class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600"
-          />
-        </div>
+    <!-- ═══ NEW CONNECTION MODAL ═══ -->
+    <Modal :show="showCreateModal" :title="createPhase === 'finalize' ? 'Connection Created' : 'New Connection'" max-width="42rem" @close="showCreateModal = false">
 
-        <!-- Permissions -->
-        <div>
-          <label class="block text-nutbits-400 text-sm mb-2">Permissions</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label
-              v-for="perm in allPermissions"
-              :key="perm.value"
-              class="flex items-center gap-2 text-sm text-nutbits-100 cursor-pointer hover:text-nutbits-50 transition-colors"
-            >
+      <!-- ── Phase: SELECT (app grid + manual form) ── -->
+      <template v-if="createPhase === 'select'">
+        <!-- App catalog grid -->
+        <StepSelectApp @select="handleWizardAppSelect" />
+
+        <!-- Manual / Advanced form (collapsible) -->
+        <div class="mt-4 border-t border-nutbits-700 pt-4">
+          <button
+            class="flex items-center justify-between w-full text-left"
+            @click="showManualForm = !showManualForm; if (!selectedWizardApp) selectedWizardApp = null"
+          >
+            <span class="text-nutbits-400 text-xs font-semibold uppercase tracking-wide">
+              {{ selectedWizardApp ? 'Configure connection' : 'Manual setup' }}
+            </span>
+            <svg
+              class="w-4 h-4 text-nutbits-500 transition-transform"
+              :class="{ 'rotate-180': showManualForm }"
+              viewBox="0 0 20 20" fill="currentColor"
+            ><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+          </button>
+
+          <form v-if="showManualForm" class="space-y-4 mt-4" @submit.prevent="submitCreate">
+            <!-- Label -->
+            <div>
+              <label class="block text-nutbits-400 text-sm mb-1.5">Label *</label>
               <input
-                type="checkbox"
-                :checked="createForm.permissions.includes(perm.value)"
-                class="rounded border-nutbits-600 bg-nutbits-800 text-amber-500 focus:ring-amber-500/50"
-                @change="togglePermission(perm.value)"
+                v-model="createForm.label"
+                type="text"
+                placeholder="e.g. BuhoGO, My Wallet, Shop POS"
+                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600"
               />
-              {{ perm.label }}
-            </label>
-          </div>
-        </div>
-
-        <!-- Mint -->
-        <div>
-          <label class="block text-nutbits-400 text-sm mb-1.5">Mint</label>
-          <select
-            v-model="createForm.mint"
-            class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none text-sm"
-          >
-            <option
-              v-for="mint in mintOptions"
-              :key="mint.url"
-              :value="mint.url"
-            >
-              {{ mint.active ? `Using now: ${mint.label}` : mint.label }}
-            </option>
-          </select>
-          <p class="text-xs text-nutbits-500 mt-1">
-            Pick one of your configured mints for this connection.
-          </p>
-        </div>
-
-        <!-- Lightning Address -->
-        <div>
-          <label class="block text-nutbits-400 text-sm mb-1.5">Lightning Address <span class="text-nutbits-600">(optional)</span></label>
-          <input
-            v-model="createForm.lud16"
-            type="text"
-            placeholder="e.g. you@getalby.com"
-            class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600"
-          />
-          <p class="text-xs text-nutbits-500 mt-1">
-            Attach a Lightning Address to this connection. Apps can use it for receiving.
-          </p>
-        </div>
-
-        <!-- Limits row -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-nutbits-400 text-sm mb-1.5">Max daily sats <span class="text-nutbits-600">(0 = unlimited)</span></label>
-            <input
-              v-model.number="createForm.max_daily_sats"
-              type="number"
-              min="0"
-              class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none"
-            />
-          </div>
-          <div>
-            <label class="block text-nutbits-400 text-sm mb-1.5">Max payment sats <span class="text-nutbits-600">(0 = unlimited)</span></label>
-            <input
-              v-model.number="createForm.max_payment_sats"
-              type="number"
-              min="0"
-              class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none"
-            />
-          </div>
-        </div>
-
-        <!-- Fee overrides row -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-nutbits-400 text-sm mb-1.5">Service fee PPM override</label>
-            <input
-              v-model.number="createForm.service_fee_ppm"
-              type="number"
-              min="0"
-              placeholder="Use global default"
-              class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600"
-            />
-          </div>
-          <div>
-            <label class="block text-nutbits-400 text-sm mb-1.5">Service fee base override</label>
-            <input
-              v-model.number="createForm.service_fee_base"
-              type="number"
-              min="0"
-              placeholder="Use global default"
-              class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600"
-            />
-          </div>
-        </div>
-
-        <!-- Submit -->
-        <div class="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all border border-nutbits-700"
-            @click="showCreateModal = false"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            class="bg-amber-500 hover:bg-amber-600 text-nutbits-950 font-medium rounded-lg px-4 py-2.5 transition-all disabled:opacity-50"
-            :disabled="creating"
-          >
-            {{ creating ? 'Creating...' : 'Create Connection' }}
-          </button>
-        </div>
-      </form>
-    </Modal>
-
-    <!-- Connection Created Success Modal -->
-    <Modal :show="showSuccessModal" title="Connection Created" @close="showSuccessModal = false">
-      <div class="space-y-4">
-        <p class="text-nutbits-400 text-sm">
-          Your NWC connection string is shown below. Copy it and paste it into your wallet app.
-          This string will not be shown again.
-        </p>
-
-        <div v-if="createdConnection" class="space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-nutbits-400 text-sm">Label</span>
-            <span class="text-nutbits-100 font-medium">{{ createdConnection.label }}</span>
-          </div>
-          <div v-if="createdConnection.lud16" class="flex items-center justify-between">
-            <span class="text-nutbits-400 text-sm">Lightning Address</span>
-            <span class="text-amber-400 font-medium">{{ createdConnection.lud16 }}</span>
-          </div>
-
-          <!-- NWC String -->
-          <div class="relative">
-            <div class="bg-nutbits-800 border border-nutbits-700 rounded-lg p-4 font-mono text-xs text-nutbits-100 break-all select-all leading-relaxed">
-              {{ createdConnection.nwc_string }}
             </div>
-            <button
-              class="absolute top-2 right-2 bg-nutbits-700 hover:bg-nutbits-600 text-nutbits-100 rounded-md px-2.5 py-1 text-xs transition-all"
-              @click="copyToClipboard(createdConnection.nwc_string)"
-            >
-              Copy
-            </button>
-          </div>
 
-          <!-- QR Code -->
-          <div class="flex justify-center">
-            <div class="bg-nutbits-800 border border-nutbits-700 rounded-xl p-5 shadow-[0_0_30px_rgba(245,158,11,0.06)]">
-              <canvas id="success-qr-canvas" class="rounded-lg" />
-              <p class="text-center text-[10px] text-nutbits-500 mt-3 tracking-wide uppercase">Scan with your wallet app</p>
+            <!-- Permissions -->
+            <div>
+              <label class="block text-nutbits-400 text-sm mb-2">Permissions</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label
+                  v-for="perm in allPermissions"
+                  :key="perm.value"
+                  class="flex items-center gap-2 text-sm text-nutbits-100 cursor-pointer hover:text-nutbits-50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="createForm.permissions.includes(perm.value)"
+                    class="rounded border-nutbits-600 bg-nutbits-800 text-amber-500 focus:ring-amber-500/50"
+                    @change="togglePermission(perm.value)"
+                  />
+                  {{ perm.label }}
+                </label>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div class="flex justify-end pt-2">
-          <button
-            class="bg-amber-500 hover:bg-amber-600 text-nutbits-950 font-medium rounded-lg px-4 py-2.5 transition-all"
-            @click="showSuccessModal = false"
-          >
-            Done
-          </button>
+            <!-- Mint -->
+            <div>
+              <label class="block text-nutbits-400 text-sm mb-1.5">Mint</label>
+              <select
+                v-model="createForm.mint"
+                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none text-sm"
+              >
+                <option v-for="mint in mintOptions" :key="mint.url" :value="mint.url">
+                  {{ mint.active ? `Using now: ${mint.label}` : mint.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Limits row -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-nutbits-400 text-sm mb-1.5">Max daily sats <span class="text-nutbits-600">(0 = unlimited)</span></label>
+                <input v-model.number="createForm.max_daily_sats" type="number" min="0"
+                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none" />
+              </div>
+              <div>
+                <label class="block text-nutbits-400 text-sm mb-1.5">Max payment sats <span class="text-nutbits-600">(0 = unlimited)</span></label>
+                <input v-model.number="createForm.max_payment_sats" type="number" min="0"
+                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none" />
+              </div>
+            </div>
+
+            <!-- Lightning Address -->
+            <div>
+              <label class="block text-nutbits-400 text-sm mb-1.5">Lightning Address <span class="text-nutbits-600">(optional)</span></label>
+              <input v-model="createForm.lud16" type="text" placeholder="e.g. you@getalby.com"
+                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600" />
+            </div>
+
+            <!-- Fee overrides row -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-nutbits-400 text-sm mb-1.5">Service fee PPM override</label>
+                <input v-model.number="createForm.service_fee_ppm" type="number" min="0" placeholder="Use global default"
+                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600" />
+              </div>
+              <div>
+                <label class="block text-nutbits-400 text-sm mb-1.5">Service fee base override</label>
+                <input v-model.number="createForm.service_fee_base" type="number" min="0" placeholder="Use global default"
+                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600" />
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button"
+                class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all border border-nutbits-700"
+                @click="showCreateModal = false"
+              >Cancel</button>
+              <button type="submit"
+                class="bg-amber-500 hover:bg-amber-600 text-nutbits-950 font-medium rounded-lg px-4 py-2.5 transition-all disabled:opacity-50"
+                :disabled="creating"
+              >{{ creating ? 'Creating...' : 'Create Connection' }}</button>
+            </div>
+          </form>
         </div>
-      </div>
+      </template>
+
+      <!-- ── Phase: FINALIZE (QR + copy + per-app instructions) ── -->
+      <template v-if="createPhase === 'finalize' && createdConnection">
+        <StepFinalize
+          :nwc-string="createdConnection.nwc_string"
+          :app="selectedWizardApp"
+          :connection="createdConnection"
+          @done="showCreateModal = false"
+        />
+      </template>
     </Modal>
 
     <!-- Revoke Confirmation Modal -->

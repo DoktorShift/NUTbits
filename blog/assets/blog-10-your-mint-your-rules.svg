@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <style>
+    text { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  </style>
+  <defs>
+    <linearGradient id="bg10" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#1a1918"/>
+      <stop offset="100%" stop-color="#0f0e0d"/>
+    </linearGradient>
+    <linearGradient id="bar10" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <filter id="glow10">
+      <feGaussianBlur stdDeviation="24" result="b"/>
+      <feFlood flood-color="#f59e0b" flood-opacity="0.12"/>
+      <feComposite in2="b" operator="in" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" rx="12" fill="url(#bg10)"/>
+
+  <!-- Top accent bar -->
+  <rect width="1200" height="4" fill="url(#bar10)"/>
+
+  <!-- Large pixel nut icon, right side, subtle -->
+  <g opacity="0.08" transform="translate(780, 80) scale(0.9)">
+    <rect x="226" y="72" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="258" y="72" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="194" y="104" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="226" y="104" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="258" y="104" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="290" y="104" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="162" y="136" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="194" y="136" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="226" y="136" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="258" y="136" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="290" y="136" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="322" y="136" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="130" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="162" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="194" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="226" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="258" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="290" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="322" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="354" y="168" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="114" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="146" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="178" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="210" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="242" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="274" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="306" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="338" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="370" y="200" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="114" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="146" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="178" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="210" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="242" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="274" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="306" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="338" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="370" y="232" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="130" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="162" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="194" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="226" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="258" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="290" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="322" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="354" y="296" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="146" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="178" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="210" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="242" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="274" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="306" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="338" y="328" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="178" y="360" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="210" y="360" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="242" y="360" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="274" y="360" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="306" y="360" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="210" y="392" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="242" y="392" width="28" height="28" rx="2" fill="#f59e0b"/>
+    <rect x="274" y="392" width="28" height="28" rx="2" fill="#f59e0b"/>
+  </g>
+
+  <!-- Title -->
+  <text x="80" y="200" font-size="52" fill="#f5f0eb" font-weight="bold">Your Mint.</text>
+  <text x="80" y="268" font-size="52" fill="#f59e0b" font-weight="bold">Your Rules.</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="340" font-size="18" fill="#a99f96">You already own the infrastructure.</text>
+  <text x="80" y="368" font-size="18" fill="#a99f96">NUTbits turns it into a platform.</text>
+
+  <!-- Three key phrases -->
+  <g filter="url(#glow10)">
+    <circle cx="100" cy="440" r="5" fill="#f59e0b"/>
+    <text x="120" y="445" font-size="15" fill="#c8beb4">One mint. Unlimited connections.</text>
+
+    <circle cx="100" cy="476" r="5" fill="#f59e0b"/>
+    <text x="120" y="481" font-size="15" fill="#c8beb4">You set the fees. You set the limits.</text>
+
+    <circle cx="100" cy="512" r="5" fill="#f59e0b"/>
+    <text x="120" y="517" font-size="15" fill="#c8beb4">No node required. No permission needed.</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="1140" y="600" text-anchor="end" font-size="13" fill="#3a3735" font-weight="bold">NUTbits</text>
+</svg>
