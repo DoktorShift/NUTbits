@@ -35,8 +35,6 @@ The entire flow happens in one redirect.
 The user stays in your app — no manual
 switching to NUTbits needed.
 
-The user then funds the connection
-through NUTbits (GUI, TUI, or API).
 Your app can only spend what was
 funded into its dedicated balance.
 ```
