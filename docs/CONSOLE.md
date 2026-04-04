@@ -2,6 +2,8 @@
   <img src="../assets/headers/doc-console.svg" alt="Using the Console" width="100%">
 </p>
 
+**[Interfaces](#three-ways-to-interact) · [First Time](#your-first-time) · [Workflow](#typical-workflow) · [TUI Actions](#actions-inside-the-tui) · [Scripting](#scripting) · [Docker](#docker) · [GUI](#gui)**
+
 ## Three Ways to Interact
 
 NUTbits gives you three ways to use it. Same data, different style:
@@ -186,7 +188,7 @@ Run these from the repository root, not from inside the `scripts/` directory.
 | Page | What you can do |
 |------|----------------|
 | **Dashboard** | Live overview of balance, connections, relay status, uptime, mint health, and recent transactions split by NWC and Mint channels. Most elements are clickable and link to their detail pages. |
-| **Connections** | Create, view, and revoke NWC connections. Switch between card view (detailed) and list view (compact table). Show NWC string with QR code. Edit Lightning Addresses. Filter by mint. Export connection data. |
+| **Connections** | Create, view, fund, withdraw, and revoke NWC connections. Dedicated connections show their own balance with a Fund button. Switch between card view (detailed) and list view (compact table). Show NWC string with QR code. Edit Lightning Addresses. Filter by mint. Export connection data. |
 | **History** | Transaction history with interactive volume chart (7D/30D). Filter by type (in/out), connection, and limit. Click any row for full details. Export as CSV or JSON. |
 | **Pay** | Pay a Lightning invoice or resolve a Lightning Address / LNURL from the browser. |
 | **Receive** | Create a Lightning invoice with a scannable QR code. |

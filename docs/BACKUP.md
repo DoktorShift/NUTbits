@@ -2,6 +2,8 @@
 
 # Backup & Recovery
 
+**[What to Back Up](#what-to-back-up) · [Quick Backup](#quick-backup) · [Automated](#automated-backups) · [Recovery](#recovery) · [Seed Recovery](#seed-recovery-nut-09--nut-13) · [Failure Scenarios](#failure-scenarios) · [Rules](#important-rules)**
+
 Your NUTbits state contains **ecash proofs (real money)** and **NWC private keys**. Losing this data means losing funds and wallet access.
 
 ## What to Back Up

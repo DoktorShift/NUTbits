@@ -5,14 +5,14 @@
  * User picks a known app (pre-configured permissions) or "Custom" for manual setup.
  */
 import { ref, computed } from 'vue'
-import { apps, sortedCategories, appsByCategory } from '@/data/appCatalog.js'
+import { wizardApps, sortedCategories, appsByCategory, appIconUrl } from '@/data/appCatalog.js'
 
 var emit = defineEmits(['select'])
 
 var activeCategory = ref('')
 
 var filteredApps = computed(() => {
-  if (!activeCategory.value) return apps
+  if (!activeCategory.value) return wizardApps
   return appsByCategory(activeCategory.value)
 })
 
@@ -56,7 +56,13 @@ function selectCustom() {
         @click="selectApp(app)"
       >
         <div class="app-icon-box">
-          <span class="app-icon-letter">{{ app.name.charAt(0) }}</span>
+          <img
+            :src="appIconUrl(app.id)"
+            :alt="app.name"
+            class="app-icon-img"
+            @error="$event.target.style.display='none'; $event.target.nextElementSibling.style.display='flex'"
+          />
+          <span class="app-icon-letter" style="display:none">{{ app.name.charAt(0) }}</span>
         </div>
         <div class="app-meta">
           <span class="app-name">{{ app.name }}</span>
@@ -68,9 +74,7 @@ function selectCustom() {
     <!-- Custom connection option -->
     <button class="custom-card" @click="selectCustom">
       <div class="custom-icon">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-          <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-        </svg>
+        <img src="/app-icons/custom.png" alt="NWC" class="custom-icon-img" />
       </div>
       <div class="app-meta">
         <span class="app-name">Custom Connection</span>
@@ -149,10 +153,21 @@ function selectCustom() {
   flex-shrink: 0;
 }
 
+.app-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .app-icon-letter {
   font-size: 0.9rem;
   font-weight: 700;
   color: #8a8078;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .app-meta {
@@ -183,27 +198,36 @@ function selectCustom() {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   width: 100%;
-  background: #1a1918;
-  border: 1px dashed #2a2827;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(245, 158, 11, 0.02));
+  border: 1.5px solid rgba(245, 158, 11, 0.3);
   border-radius: 0.5rem;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.custom-card:hover { border-color: #3a3735; }
+.custom-card:hover {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.04));
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.08);
+}
 
 .custom-icon {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #252321;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #625a52;
+}
+
+.custom-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
 }
 </style>

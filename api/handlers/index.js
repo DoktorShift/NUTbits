@@ -5,6 +5,39 @@ import { sumProofs } from '@cashu/cashu-ts';
 import { validateLightningAddress, fetchPayRequest, requestLnurlInvoice } from 'nostr-core';
 import bolt11Lib from 'bolt11';
 import fs from 'node:fs';
+import dns from 'node:dns/promises';
+
+// ── SSRF protection — reject private/internal IPs ──────────────────────────
+
+async function assertPublicHost(hostname) {
+    var addrs;
+    try { addrs = await dns.resolve4(hostname); } catch (e) {
+        throw apiError(422, `cannot resolve hostname: ${hostname}`);
+    }
+    for (var ip of addrs) {
+        if (isPrivateIp(ip)) {
+            throw apiError(422, `hostname resolves to private IP (${hostname})`);
+        }
+    }
+}
+
+function isPrivateIp(ip) {
+    var parts = ip.split('.').map(Number);
+    if (parts.length !== 4) return true; // not IPv4 — block by default
+    // 10.0.0.0/8
+    if (parts[0] === 10) return true;
+    // 172.16.0.0/12
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    // 192.168.0.0/16
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    // 127.0.0.0/8 (loopback)
+    if (parts[0] === 127) return true;
+    // 169.254.0.0/16 (link-local)
+    if (parts[0] === 169 && parts[1] === 254) return true;
+    // 0.0.0.0/8
+    if (parts[0] === 0) return true;
+    return false;
+}
 
 // Valid hex pubkey pattern
 var HEX_PUBKEY = /^[0-9a-f]{64}$/;
@@ -24,6 +57,8 @@ async function validateAndResolveLud16(lud16) {
     }
     // Resolve via LNURL-pay (LUD-16) to verify the address actually works
     var [name, domain] = normalized.split('@');
+    // SSRF check — reject private/internal IPs before making outbound request
+    await assertPublicHost(domain);
     var lnurlPayUrl = `https://${domain}/.well-known/lnurlp/${name}`;
     try {
         await fetchPayRequest(lnurlPayUrl);
@@ -77,6 +112,77 @@ function buildNwcString(info, relays) {
     var nwc = `nostr+walletconnect://${info.app_pubkey}?${relayParams}&secret=${info.user_secret}`;
     if (info.lud16) nwc += `&lud16=${encodeURIComponent(info.lud16)}`;
     return nwc;
+}
+
+// ── Per-connection balance lock (prevents race conditions on fund/withdraw) ──
+
+var balanceLocks = new Map();
+
+function withBalanceLock(pubkey, fn) {
+    var prev = balanceLocks.get(pubkey) || Promise.resolve();
+    var release;
+    var next = new Promise(r => { release = r; });
+    balanceLocks.set(pubkey, next);
+    return prev.then(() => fn()).finally(release);
+}
+
+// ── Deeplink connection creator (used by API server for /connect) ────────
+
+var deeplinkLock = Promise.resolve();
+
+export async function createDeeplinkConnection(ctx, { appName, permissions, maxPaymentSats, maxDailySats }) {
+    var { nutbits, store, mintManager, config } = ctx;
+
+    var perms = (permissions || ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice'])
+        .map(p => PERM_MAP[p] || p);
+
+    var mintUrl = mintManager.activeMintUrl;
+
+    // Serialize to prevent key-diff races
+    var prev = deeplinkLock;
+    var release;
+    deeplinkLock = new Promise(r => { release = r; });
+    await prev;
+
+    try {
+        var keysBefore = new Set(Object.keys(nutbits.state.nostr_state.nwc_info));
+        var nwcString = await nutbits.createNWCconnection(mintUrl, perms, config.relays, undefined, true);
+
+        var newPk = null;
+        for (var key of Object.keys(nutbits.state.nostr_state.nwc_info)) {
+            if (!keysBefore.has(key)) { newPk = key; break; }
+        }
+        if (!newPk) throw new Error('failed to create connection');
+
+        var conn = nutbits.state.nostr_state.nwc_info[newPk];
+        conn.label = `${appName} (deep link)`;
+        conn.created_at = Math.floor(Date.now() / 1000);
+        conn.max_daily_sats = Math.max(0, Number(maxDailySats) || 0);
+        conn.max_payment_sats = Math.max(0, Number(maxPaymentSats) || 0);
+        // Deeplink connections are ALWAYS dedicated — no opt-out
+        conn.dedicated = true;
+        conn.dedicated_balance_msat = 0;
+
+        await store.updateConnection(newPk, {
+            label: conn.label,
+            created_at: conn.created_at,
+            max_daily_sats: conn.max_daily_sats,
+            max_payment_sats: conn.max_payment_sats,
+            dedicated: true,
+            dedicated_balance_msat: 0,
+        });
+
+        return {
+            nwc_string: nwcString,
+            app_pubkey: newPk,
+            label: conn.label,
+            permissions: perms,
+            dedicated: true,
+            mint: mintUrl,
+        };
+    } finally {
+        release();
+    }
 }
 
 export function registerHandlers(router, ctx) {
@@ -158,7 +264,6 @@ export function registerHandlers(router, ctx) {
                 id: idx++,
                 app_pubkey: pk,
                 label: info.label || `connection-${idx - 1}`,
-                nwc_string: buildNwcString(info, config.relays),
                 permissions: info.permissions || [],
                 balance_msat: info.balance || 0,
                 tx_count: txCount,
@@ -168,6 +273,8 @@ export function registerHandlers(router, ctx) {
                 max_payment_sats: info.max_payment_sats || 0,
                 mint: info.mymint,
                 lud16: info.lud16 || null,
+                dedicated: !!info.dedicated,
+                dedicated_balance_msat: info.dedicated ? (info.dedicated_balance_msat || 0) : null,
             });
         }
         return { connections: list };
@@ -205,6 +312,8 @@ export function registerHandlers(router, ctx) {
                 service_fee_ppm: info.service_fee_ppm ?? null,
                 service_fee_base: info.service_fee_base ?? null,
                 lud16: info.lud16 || null,
+                dedicated: !!info.dedicated,
+                dedicated_balance_msat: info.dedicated ? (info.dedicated_balance_msat || 0) : null,
             });
             idx++;
         }
@@ -257,6 +366,15 @@ export function registerHandlers(router, ctx) {
             conn.created_at = Math.floor(Date.now() / 1000);
             conn.max_daily_sats = Math.max(0, Number(body.max_daily_sats) || 0);
             conn.max_payment_sats = Math.max(0, Number(body.max_payment_sats) || 0);
+            // All connections are dedicated by default (own isolated balance).
+            // Shared balance (dedicated: false) is only for the operator's own
+            // trusted apps — never for external deeplink connections.
+            if (body.dedicated === false) {
+                conn.dedicated = false;
+            } else {
+                conn.dedicated = true;
+                conn.dedicated_balance_msat = 0;
+            }
             // Per-connection fee override (null = use global default)
             if (body.service_fee_ppm !== undefined) conn.service_fee_ppm = Math.max(0, Math.floor(Number(body.service_fee_ppm) || 0));
             if (body.service_fee_base !== undefined) conn.service_fee_base = Math.max(0, Math.floor(Number(body.service_fee_base) || 0));
@@ -266,6 +384,8 @@ export function registerHandlers(router, ctx) {
                 created_at: conn.created_at,
                 max_daily_sats: conn.max_daily_sats,
                 max_payment_sats: conn.max_payment_sats,
+                dedicated: conn.dedicated || false,
+                dedicated_balance_msat: conn.dedicated_balance_msat ?? null,
                 service_fee_ppm: conn.service_fee_ppm,
                 service_fee_base: conn.service_fee_base,
                 lud16: conn.lud16 || null,
@@ -286,6 +406,8 @@ export function registerHandlers(router, ctx) {
                 label: conn.label,
                 permissions: perms,
                 lud16: lud16 || null,
+                dedicated: !!conn.dedicated,
+                dedicated_balance_msat: conn.dedicated ? 0 : null,
             };
         } finally {
             release();
@@ -308,12 +430,25 @@ export function registerHandlers(router, ctx) {
         }
         delete nutbits.state.nostr_state.pools[pubkey];
 
+        // Release dedicated balance back to main wallet on revoke
+        var releasedSats = 0;
+        if (conn.dedicated && conn.dedicated_balance_msat > 0) {
+            releasedSats = Math.floor(conn.dedicated_balance_msat / 1000);
+            conn.dedicated_balance_msat = 0;
+            conn.balance = 0;
+        }
+
         // Mark as revoked (keep history)
         conn.revoked = true;
         conn.revoked_at = Math.floor(Date.now() / 1000);
-        await store.updateConnection(pubkey, { revoked: true, revoked_at: conn.revoked_at });
+        await store.updateConnection(pubkey, {
+            revoked: true,
+            revoked_at: conn.revoked_at,
+            dedicated_balance_msat: conn.dedicated_balance_msat,
+            balance: conn.balance,
+        });
 
-        return { revoked: true, pubkey };
+        return { revoked: true, pubkey, released_sats: releasedSats };
     });
 
     // ── PATCH /api/v1/connections/:pubkey ──────────────────────────────
@@ -351,6 +486,87 @@ export function registerHandlers(router, ctx) {
 
         await store.updateConnection(pubkey, updates);
         return { updated: true, pubkey, ...updates };
+    });
+
+    // ── POST /api/v1/connections/:pubkey/fund ───────────────────────
+    // Transfer sats from main wallet into a dedicated connection's balance
+
+    router.post('/api/v1/connections/:pubkey/fund', async ({ params, body }) => {
+        var pubkey = params.pubkey;
+        if (!HEX_PUBKEY.test(pubkey)) throw apiError(400, 'invalid pubkey format');
+
+        var conn = nutbits.state.nostr_state.nwc_info[pubkey];
+        if (!conn) throw apiError(404, 'connection not found');
+        if (conn.revoked) throw apiError(400, 'cannot fund a revoked connection');
+        if (!conn.dedicated) throw apiError(400, 'only dedicated connections can be funded');
+
+        var amountSats = Math.floor(Number(body.amount_sats) || 0);
+        if (amountSats <= 0) throw apiError(400, 'amount_sats must be positive');
+        if (amountSats > 2_100_000_000_000_000) throw apiError(400, 'amount out of range');
+
+        return withBalanceLock(pubkey, async () => {
+            // Check main wallet has enough unallocated balance
+            var walletBalance = await nutbits.getBalance();
+            var allConns = await store.getAllConnections();
+            var totalAllocated = 0;
+            for (var [pk, info] of Object.entries(allConns)) {
+                if (info.dedicated && !info.revoked) totalAllocated += (info.dedicated_balance_msat || 0);
+            }
+            var unallocatedSats = walletBalance - Math.floor(totalAllocated / 1000);
+            if (amountSats > unallocatedSats) throw apiError(400, `insufficient unallocated balance (${Math.max(0, unallocatedSats)} sats available)`);
+
+            conn.dedicated_balance_msat = (conn.dedicated_balance_msat || 0) + (amountSats * 1000);
+            conn.balance = conn.dedicated_balance_msat;
+            await store.updateConnection(pubkey, {
+                dedicated_balance_msat: conn.dedicated_balance_msat,
+                balance: conn.dedicated_balance_msat,
+            });
+
+            return {
+                pubkey,
+                funded_sats: amountSats,
+                dedicated_balance_msat: conn.dedicated_balance_msat,
+                dedicated_balance_sats: Math.floor(conn.dedicated_balance_msat / 1000),
+            };
+        });
+    });
+
+    // ── POST /api/v1/connections/:pubkey/withdraw ───────────────────
+    // Pull sats from a dedicated connection's balance back to main wallet
+
+    router.post('/api/v1/connections/:pubkey/withdraw', async ({ params, body }) => {
+        var pubkey = params.pubkey;
+        if (!HEX_PUBKEY.test(pubkey)) throw apiError(400, 'invalid pubkey format');
+
+        var conn = nutbits.state.nostr_state.nwc_info[pubkey];
+        if (!conn) throw apiError(404, 'connection not found');
+        if (!conn.dedicated) throw apiError(400, 'only dedicated connections can be withdrawn from');
+
+        return withBalanceLock(pubkey, async () => {
+            var currentMsat = conn.dedicated_balance_msat || 0;
+            var amountSats = Math.floor(Number(body.amount_sats) || 0);
+
+            // 0 or omitted = withdraw all
+            if (amountSats <= 0) amountSats = Math.floor(currentMsat / 1000);
+            if (amountSats <= 0) throw apiError(400, 'nothing to withdraw');
+
+            var amountMsat = amountSats * 1000;
+            if (amountMsat > currentMsat) throw apiError(400, `only ${Math.floor(currentMsat / 1000)} sats available`);
+
+            conn.dedicated_balance_msat = currentMsat - amountMsat;
+            conn.balance = conn.dedicated_balance_msat;
+            await store.updateConnection(pubkey, {
+                dedicated_balance_msat: conn.dedicated_balance_msat,
+                balance: conn.dedicated_balance_msat,
+            });
+
+            return {
+                pubkey,
+                withdrawn_sats: amountSats,
+                dedicated_balance_msat: conn.dedicated_balance_msat,
+                dedicated_balance_sats: Math.floor(conn.dedicated_balance_msat / 1000),
+            };
+        });
     });
 
     // ── GET /api/v1/history ──────────────────────────────────────────
@@ -853,6 +1069,7 @@ export function registerHandlers(router, ctx) {
         if (!validateLightningAddress(address)) throw apiError(400, 'invalid Lightning Address format');
 
         var [name, domain] = address.split('@');
+        await assertPublicHost(domain);
         var lnurlPayUrl = `https://${domain}/.well-known/lnurlp/${name}`;
         var payRequest;
         try {
@@ -889,6 +1106,7 @@ export function registerHandlers(router, ctx) {
             if (!lnAmount || lnAmount <= 0) throw apiError(400, 'amount_sats is required when paying a Lightning Address');
 
             var [lnUser, lnDomain] = invoiceToPay.toLowerCase().split('@');
+            await assertPublicHost(lnDomain);
             var lnurlPayUrl = `https://${lnDomain}/.well-known/lnurlp/${lnUser}`;
             var payRequest;
             try {
@@ -1034,6 +1252,8 @@ export function registerHandlers(router, ctx) {
 
     router.post('/api/v1/receive/check', async ({ body }) => {
         if (!body?.quote_id) throw apiError(400, 'quote_id is required');
+        if (typeof body.quote_id !== 'string' || body.quote_id.length > 256) throw apiError(400, 'invalid quote_id');
+        if (body.mint && (typeof body.mint !== 'string' || !/^https:\/\/.+/.test(body.mint))) throw apiError(400, 'mint must be a valid https:// URL');
         var minted = await nutbits.checkAndMintTokens({ quote: body.quote_id, request: body.invoice, _mintUrl: body.mint });
         var balance = await nutbits.getBalance();
 
@@ -1081,6 +1301,7 @@ export function registerHandlers(router, ctx) {
 
     router.post('/api/v1/restore', async ({ body }) => {
         if (restoreInProgress) throw apiError(409, 'restore already in progress');
+        if (body?.mint && (typeof body.mint !== 'string' || !/^https:\/\/.+/.test(body.mint))) throw apiError(400, 'mint must be a valid https:// URL');
         restoreInProgress = true;
 
         try {
@@ -1099,18 +1320,19 @@ export function registerHandlers(router, ctx) {
 
     // ── GET /api/v1/logs ─────────────────────────────────────────────
 
-    // Log buffer - captures recent logs with sensitive data redacted
-    if (!ctx._logBuffer) {
-        ctx._logBuffer = [];
-        var maxLogs = 500;
+    // Log buffer — per-level ring buffers to prevent one noisy level from evicting others
+    if (!ctx._logBuffers) {
+        var MAX_PER_LEVEL = 150;
+        ctx._logBuffers = { error: [], warn: [], info: [], debug: [] };
         var origLog = { ...log };
         for (var lvl of ['error', 'warn', 'info', 'debug']) {
             var origFn = origLog[lvl];
             if (origFn) {
                 log[lvl] = ((level, fn) => (msg, data) => {
                     fn(msg, data);
-                    ctx._logBuffer.push({ level, msg, data: redactLogData(data), ts: Date.now() });
-                    if (ctx._logBuffer.length > maxLogs) ctx._logBuffer.shift();
+                    var buf = ctx._logBuffers[level];
+                    buf.push({ level, msg, data: redactLogData(data), ts: Date.now() });
+                    if (buf.length > MAX_PER_LEVEL) buf.shift();
                 })(lvl, origFn);
             }
         }
@@ -1121,8 +1343,13 @@ export function registerHandlers(router, ctx) {
         var limit = Math.min(Number(query.limit) || 50, 200);
         var levels = { error: 0, warn: 1, info: 2, debug: 3 };
         var minLevel = levels[level] ?? 2;
-        var filtered = ctx._logBuffer.filter(l => (levels[l.level] ?? 2) <= minLevel);
-        return { logs: filtered.slice(-limit) };
+        // Merge per-level buffers, filter by requested level, sort by timestamp
+        var all = [];
+        for (var [lvl, buf] of Object.entries(ctx._logBuffers)) {
+            if ((levels[lvl] ?? 2) <= minLevel) all.push(...buf);
+        }
+        all.sort((a, b) => a.ts - b.ts);
+        return { logs: all.slice(-limit) };
     });
 }
 
@@ -1132,12 +1359,13 @@ export function registerHandlers(router, ctx) {
 // Updates or adds a key=value in the .env file
 
 function persistToEnv(key, value) {
-    // Sanitize: prevent newline injection into .env
+    // Sanitize: prevent newline injection and shell expansion if .env is sourced
     value = String(value).replace(/[\r\n]/g, '');
+    var quoted = '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`') + '"';
     var envPath = '.env';
     try {
         if (!fs.existsSync(envPath)) {
-            fs.writeFileSync(envPath, `${key}=${value}\n`);
+            fs.writeFileSync(envPath, `${key}=${quoted}\n`, { mode: 0o600 });
             return;
         }
         var content = fs.readFileSync(envPath, 'utf8');
@@ -1147,9 +1375,8 @@ function persistToEnv(key, value) {
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
             // Match both active and commented-out versions
-            if (line === `${key}=${value}`) { found = true; break; }
             if (line.startsWith(`${key}=`) || line.startsWith(`# ${key}=`)) {
-                lines[i] = `${key}=${value}`;
+                lines[i] = `${key}=${quoted}`;
                 found = true;
                 break;
             }
@@ -1157,10 +1384,10 @@ function persistToEnv(key, value) {
 
         if (!found) {
             // Append to end
-            lines.push(`${key}=${value}`);
+            lines.push(`${key}=${quoted}`);
         }
 
-        fs.writeFileSync(envPath, lines.join('\n'));
+        fs.writeFileSync(envPath, lines.join('\n'), { mode: 0o600 });
     } catch (e) {
         // Non-fatal - in-memory change still applied
     }
@@ -1168,6 +1395,8 @@ function persistToEnv(key, value) {
 
 function csvEscape(val) {
     var s = String(val);
+    // Prevent formula injection — prefix dangerous first characters
+    if (s.length > 0 && '=+-@'.includes(s[0])) s = "'" + s;
     if (s.includes(',') || s.includes('"') || s.includes('\n')) {
         return '"' + s.replace(/"/g, '""') + '"';
     }

@@ -404,7 +404,7 @@ function today() {
 }
 
 function writeExport(path, content) {
-    fs.writeFileSync(path, content, 'utf8');
+    fs.writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
 }
 
 function printFileSummary(path, count, label, format) {

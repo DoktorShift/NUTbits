@@ -127,4 +127,4 @@ Build the URL, open it, let the user approve. They get a wallet. You get a conne
 
 **One tap. Full NWC. Powered by ecash.**
 
-[GitHub](https://github.com/DoktorShift/nutbits) · [Deep Link Docs](docs/DEEP-LINKS.md)
+[GitHub](https://github.com/DoktorShift/nutbits) · [Deep Link Docs](docs/NWC-DEEPLINK-INTEGRATION.md)

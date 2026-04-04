@@ -221,9 +221,16 @@ export async function connectionsPanel(client) {
             .filter((v, i, a) => a.indexOf(v) === i)
             .filter(Boolean);
 
-        lines.push(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${conn.label || '—'}${c.reset}`);
+        var label = conn.label || '—';
+        var tag = conn.dedicated ? ` ${c.dim}[dedicated]${c.reset}` : '';
+        lines.push(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${label}${c.reset}${tag}`);
         lines.push(`     ${perms.join(`${c.dim} | ${c.reset}`)}`);
-        lines.push(`     ${fmtSats(Math.floor((conn.balance_msat || 0) / 1000))}  ${c.dim}${conn.tx_count || 0} transactions${c.reset}`);
+        if (conn.dedicated) {
+            var dedSats = Math.floor((conn.dedicated_balance_msat || 0) / 1000);
+            lines.push(`     ${fmtSats(dedSats)}${c.dim} dedicated${c.reset}  ${c.dim}${conn.tx_count || 0} transactions${c.reset}`);
+        } else {
+            lines.push(`     ${fmtSats(Math.floor((conn.balance_msat || 0) / 1000))}  ${c.dim}${conn.tx_count || 0} transactions${c.reset}`);
+        }
         if (conn.lud16) lines.push(`     ${c.cyan}${conn.lud16}${c.reset}`);
         if (conn.max_daily_sats) lines.push(`     ${c.dim}daily limit: ${conn.max_daily_sats.toLocaleString()} sats${c.reset}`);
         lines.push('');

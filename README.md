@@ -12,7 +12,7 @@ Inspired by [supertestnet/bankify](https://github.com/supertestnet/bankify). Bui
 
 ## Quick Start
 
-See **[INSTALL.md](docs/INSTALL.md)** for full setup instructions (bare metal, Docker, LNbits integration).
+See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a VPS? See **[DEPLOY.md](docs/DEPLOY.md)**.
 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
@@ -29,7 +29,9 @@ NUTbits has three main parts:
 
 The service usually runs in one terminal or in the background. The console and GUI connect to the same local API, so you can manage the same NUTbits instance from terminal or browser.
 
-The default NWC string printed on startup works, but you'll want to use the console to create dedicated connections with scoped permissions and spending limits - one for LNbits, another for a POS, each with its own rules. See [Management Console](#management-console) below.
+All connections are **dedicated by default** — each gets its own isolated balance starting at 0 sats. You fund them explicitly. This means every app only has access to what you put in, never your full wallet. If you need full wallet access for your own trusted apps, you can opt into shared balance during connection setup.
+
+External apps can connect via **deep link** — one tap, no copy-paste. See [Deeplink Integration](#deeplink-integration) below.
 
 ## Running Modes
 
@@ -204,7 +206,8 @@ nutbits                    # interactive TUI dashboard
 nutbits balance            # check balance across mints
 nutbits connections        # list NWC connections
 nutbits connect            # create new connection (guided wizard)
-nutbits connect --lud16 user@example.com   # attach a Lightning Address
+nutbits fund               # fund a dedicated connection
+nutbits withdraw           # withdraw from a dedicated connection
 nutbits revoke <label>     # revoke a connection
 nutbits pay <invoice>      # pay a Lightning invoice
 nutbits receive <amount>   # create an invoice
@@ -247,8 +250,25 @@ NUTbits ships with a browser-based GUI in `gui/`. It talks to the same local man
 | **Settings** | All configuration in one place: wallet, network, limits, fees, API, advanced |
 | **Logs** | Live log viewer with level filtering, search, and auto-refresh |
 
+## Deeplink Integration
+
+External apps can connect to NUTbits in one tap via deep link — no QR codes, no copy-paste. The app opens a URL, a dedicated connection is created automatically, and the NWC string goes back via callback. The user stays in their app the entire time.
+
+Every deeplink connection is **dedicated** — own balance starting at 0 sats, funded by the user. External apps can never access the full wallet.
+
+The deeplink endpoint (`/connect`) is served by the API server directly — **no GUI needed**. It works in headless mode with a self-contained HTML5 connection page.
+
+```
+https://<nutbits-host>/connect?appname=MyApp&callback=myapp://nwc-connected
+```
+
+App developers: see **[NWC-DEEPLINK-INTEGRATION.md](docs/NWC-DEEPLINK-INTEGRATION.md)** for the full protocol spec.
+
+Want to add your app to the NUTbits deeplink registry? See **[DEEPLINK-APPS.md](docs/DEEPLINK-APPS.md)**.
+
 ## Security
 
+- Dedicated connections by default (isolated balance, external apps never touch the main wallet)
 - Encrypted state persistence (AES-256-GCM + scrypt, N=65536)
 - Event deduplication across relays (prevents double-payments)
 - Per-payment and daily spend limits (global + per-connection)
@@ -301,12 +321,15 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 |----------|-------------|
 | [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Plain-language guide; what NUTbits does and why |
 | [CONSOLE.md](docs/CONSOLE.md) | How to use the TUI, CLI, and GUI day-to-day |
-| [CLI.md](docs/CLI.md) | Full command reference - flags, scripting, connections |
-| [INSTALL.md](docs/INSTALL.md) | Setup guide - bare metal, Docker, LNbits |
+| [CLI.md](docs/CLI.md) | Full command reference — flags, scripting, connections |
+| [INSTALL.md](docs/INSTALL.md) | Local setup — bare metal, Docker, LNbits |
+| [DEPLOY.md](docs/DEPLOY.md) | VPS deployment with HTTPS (Caddy / nginx) |
 | [SERVICE.md](docs/SERVICE.md) | 24/7 backend service setup with launchd and systemd |
-| [DATABASE.md](docs/DATABASE.md) | Storage backends - file, SQLite, MySQL |
+| [DATABASE.md](docs/DATABASE.md) | Storage backends — file, SQLite, MySQL |
 | [BACKUP.md](docs/BACKUP.md) | Backup, recovery, and encryption details |
 | [STATE.md](docs/STATE.md) | Deep dive into the encrypted state file |
+| [NWC-DEEPLINK-INTEGRATION.md](docs/NWC-DEEPLINK-INTEGRATION.md) | Deeplink protocol spec for app developers |
+| [DEEPLINK-APPS.md](docs/DEEPLINK-APPS.md) | Add your app to the NUTbits deeplink registry |
 | [AGENTS.md](docs/AGENTS.md) | Agent/developer reference for building on NUTbits |
 
 ## Trust Model

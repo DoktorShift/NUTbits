@@ -21,6 +21,8 @@ export var MENU_ITEMS = [
     { id: 'pay',           label: 'Pay',              icon: '<', section: 'actions', color: c.red },
     { id: 'receive',       label: 'Receive',          icon: '>', section: 'actions', color: c.green },
     { id: 'connect',       label: 'New Connection',   icon: '+', section: 'actions', color: c.blue },
+    { id: 'fund',          label: 'Fund',             icon: '+', section: 'actions', color: c.green },
+    { id: 'withdraw',      label: 'Withdraw',         icon: '-', section: 'actions', color: c.yellow },
     { id: 'revoke',        label: 'Revoke',           icon: 'x', section: 'actions', color: c.red },
     { id: 'export',        label: 'Export',            icon: 'E', section: 'actions', color: c.yellow },
     { id: 'sec_network',   section_label: 'NETWORK' },

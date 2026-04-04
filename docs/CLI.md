@@ -2,6 +2,8 @@
   <img src="../assets/headers/doc-cli.svg" alt="NUTbits Management Console" width="100%">
 </p>
 
+**[Setup](#setup) · [Commands](#commands) · [Connections](#connections---the-powerful-part) · [Payments](#payments) · [Config](#configuration) · [Export](#export) · [Backup](#backup--recovery) · [Fees](#service-fees) · [Scripting](#scripting-with---json)**
+
 ## What Is This?
 
 This is the full command reference for the NUTbits management console. For a guide on **how to use it day-to-day** (workflows, TUI vs CLI, tips), see **[CONSOLE.md](CONSOLE.md)**.
@@ -123,6 +125,8 @@ The CLI connects automatically. When NUTbits starts, it creates a local socket a
 | `nutbits pay` | Pay a Lightning invoice |
 | `nutbits receive` | Create an invoice and wait for payment |
 | `nutbits connect` | Create a new NWC connection |
+| `nutbits fund` | Fund a dedicated connection's balance |
+| `nutbits withdraw` | Withdraw from a dedicated connection |
 | `nutbits revoke` | Disconnect an NWC connection |
 | `nutbits config` | View or change settings |
 | `nutbits export` | Export transaction history (CSV/JSON) |
@@ -132,7 +136,9 @@ The CLI connects automatically. When NUTbits starts, it creates a local socket a
 
 ## Connections - The Powerful Part
 
-One NUTbits instance, many NWC connections. Each with its own permissions and spending limits.
+One NUTbits instance, many NWC connections. Each with its own permissions, spending limits, and **dedicated balance**.
+
+All connections are **dedicated by default** — each gets its own isolated balance starting at 0 sats. You fund them explicitly with `nutbits fund`. The connected app can only spend what you put in. For your own trusted apps, you can opt into shared balance (full wallet access) during setup.
 
 <p align="center">
   <img src="../assets/Inline_Explaining/inline_cli-connections.svg" alt="Multiple connections with scoped permissions" width="100%">
@@ -140,22 +146,31 @@ One NUTbits instance, many NWC connections. Each with its own permissions and sp
 
 ### Create a connection
 
-Just run `nutbits connect` - the guided menu walks you through it:
+Just run `nutbits connect` — the guided wizard walks you through it:
 
 1. Give it a name
 2. Choose permissions (pay, receive, balance, history, info)
-3. Set a daily spending limit (optional)
-4. Set a per-payment limit (optional)
-5. Pick a mint (if you have multiple)
-6. Confirm - get your NWC string
+3. Choose balance type (dedicated or shared)
+4. Set spending limits (optional)
+5. Lightning Address (optional)
+6. Pick a mint (if you have multiple)
+7. Confirm — get your NWC string
 
 For scripting:
 
 ```bash
 nutbits connect --label "lnbits-main" --permissions pay,receive,balance
 nutbits connect --label "pos" --permissions pay,balance --max-daily 5000 --max-payment 1000
-nutbits connect --label "donations" --permissions receive,balance
-nutbits connect --label "public-api" --permissions pay,receive,balance --fee-ppm 15000
+nutbits connect --label "my-wallet" --permissions pay,receive,balance --shared  # full wallet access
+```
+
+### Fund and withdraw
+
+```bash
+nutbits fund                     # interactive - pick connection and amount
+nutbits fund 3 5000              # fund connection #3 with 5000 sats
+nutbits withdraw                 # interactive
+nutbits withdraw 3               # withdraw all from connection #3
 ```
 
 ### Revoke a connection

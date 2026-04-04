@@ -27,22 +27,31 @@ License: AGPL-3.0. Author: DoktorShift.
 - Proof restoration failures write encrypted recovery files instead of logging secrets.
 - NUTBITS_SEED should be backed up immediately after first run. Without the seed, proof recovery (NUT-09, NUT-13) is impossible.
 - NUTBITS_MINT_URL is only used when NUTBITS_MINT_URLS is empty. Once multi-mint is set, the single-mint field is ignored entirely.
+- All NWC connections are dedicated by default — own isolated balance starting at 0 sats. The user funds them explicitly. Shared balance (full wallet access) requires explicit opt-in and is only for the operator's own trusted apps.
+- Deeplink connections are ALWAYS dedicated. External apps cannot request shared access. The `dedicated` flag is hardcoded server-side.
+- The `/connect` endpoint is served by the API server (not the GUI). It works in headless mode without the GUI running. Apps open `GET /connect?appname=X&callback=Y` and the page handles connection creation via `POST /connect`.
+- Fund and withdraw endpoints (`POST /api/v1/connections/:pubkey/fund`, `POST /api/v1/connections/:pubkey/withdraw`) move sats between the main wallet and dedicated connection balances. On revoke, remaining dedicated balance automatically returns to the main wallet.
 
 ## Core Documentation
 
 - [README.md](README.md): Project overview, full configuration reference, supported NUTs/NIPs, NWC methods, trust model
 - [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
-- [INSTALL.md](docs/INSTALL.md): Setup guide for bare metal, Docker, and LNbits integration
+- [INSTALL.md](docs/INSTALL.md): Local setup guide for bare metal, Docker, and LNbits integration
+- [DEPLOY.md](docs/DEPLOY.md): VPS production deployment with HTTPS reverse proxy (Caddy / nginx)
 - [SERVICE.md](docs/SERVICE.md): 24/7 backend service setup with launchd and systemd
 - [CLI.md](docs/CLI.md): Full CLI and TUI command reference, connection management, service fees
 - [CONSOLE.md](docs/CONSOLE.md): How to use the TUI, CLI, and GUI together, with full GUI page reference
+- [NWC-DEEPLINK-INTEGRATION.md](docs/NWC-DEEPLINK-INTEGRATION.md): Deeplink protocol spec for app developers
+- [DEEPLINK-APPS.md](docs/DEEPLINK-APPS.md): How to add your app to the deeplink registry (contributor guide)
 - [AGENTS.md](docs/AGENTS.md): Agent-facing repo guidance, structure, style, and boundaries
 
 ## Architecture
 
 - [nutbits.js](nutbits.js): Core bridge logic - mint management, NWC protocol, payment processing
-- [api/server.js](api/server.js): Local management API server (Unix socket + optional HTTP)
-- [api/handlers/index.js](api/handlers/index.js): 25 REST API endpoints (connections, payments, config, LNURL, logs, backup/restore)
+- [api/server.js](api/server.js): Local management API server (Unix socket + optional HTTP) + deeplink `/connect` endpoint
+- [api/handlers/index.js](api/handlers/index.js): REST API endpoints (connections, payments, config, LNURL, logs, backup/restore, fund/withdraw)
+- [api/deeplink-apps.js](api/deeplink-apps.js): Deeplink app registry — known apps with curated permissions, budgets, callback schemes
+- [api/deeplink-page.js](api/deeplink-page.js): Self-contained HTML5 deeplink connection page (served by API, no GUI needed)
 - [store/index.js](store/index.js): Storage factory with audit logging wrapper
 - [bin/nutbits.js](bin/nutbits.js): CLI entry point and command dispatcher
 - [gui/](gui): Browser GUI (Vue 3 + Tailwind CSS) using the same local management API as CLI/TUI
@@ -66,7 +75,7 @@ License: AGPL-3.0. Author: DoktorShift.
 
 - `npm start`: backend only, in your terminal
 - `nutbits`: interactive TUI dashboard
-- `nutbits <command>`: one-shot CLI command (balance, connections, connect, pay, receive, history, fees, mints, relays, logs, watch, config, export, backup, restore)
+- `nutbits <command>`: one-shot CLI command (balance, connections, connect, fund, withdraw, pay, receive, history, fees, mints, relays, logs, watch, config, export, backup, restore)
 - `npm run gui`: serve the web GUI
 - `npm run nutbits`: backend + GUI in the background
 - `npm run nutbits:interactive`: GUI in background, backend in your terminal

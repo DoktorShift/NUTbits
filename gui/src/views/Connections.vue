@@ -10,8 +10,8 @@ import Modal from '@/components/ui/Modal.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import StepSelectApp from '@/components/wizard/StepSelectApp.vue'
+import StepConfigure from '@/components/wizard/StepConfigure.vue'
 import StepFinalize from '@/components/wizard/StepFinalize.vue'
-import { PERMISSIONS, findApp } from '@/data/appCatalog.js'
 
 const connectionsStore = useConnectionsStore()
 const statusStore = useStatusStore()
@@ -26,22 +26,11 @@ const connectionList = computed(() => {
   return []
 })
 
-// Create modal — phased: 'select' (app grid) → 'finalize' (QR + instructions)
+// Create modal — phased: 'select' (app grid) → 'configure' (form) → 'finalize' (QR + instructions)
 const showCreateModal = ref(false)
-const createPhase = ref('select')    // 'select' | 'finalize'
+const createPhase = ref('select')    // 'select' | 'configure' | 'finalize'
 const selectedWizardApp = ref(null)  // catalog app entry or null
-const showManualForm = ref(false)    // toggle for legacy form collapse
 
-const createForm = ref({
-  label: '',
-  permissions: ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice'],
-  mint: '',
-  max_daily_sats: 0,
-  max_payment_sats: 0,
-  service_fee_ppm: '',
-  service_fee_base: '',
-  lud16: '',
-})
 const creating = ref(false)
 
 // Created connection (used by finalize phase)
@@ -57,6 +46,13 @@ const showEditLud16Modal = ref(false)
 const editLud16Target = ref(null)
 const editLud16Value = ref('')
 const editingLud16 = ref(false)
+
+// Fund/withdraw modal
+const showFundModal = ref(false)
+const fundTarget = ref(null)
+const fundAmount = ref('')
+const funding = ref(false)
+const fundMode = ref('fund') // 'fund' or 'withdraw'
 
 // Export modal
 const showExportModal = ref(false)
@@ -88,22 +84,10 @@ const filteredConnectionList = computed(() => {
 const showNwcModal = ref(false)
 const nwcModalConn = ref(null)
 
-const allPermissions = [
-  { value: 'pay_invoice', label: 'Pay Invoice' },
-  { value: 'make_invoice', label: 'Make Invoice' },
-  { value: 'get_balance', label: 'Get Balance' },
-  { value: 'list_transactions', label: 'List Transactions' },
-  { value: 'get_info', label: 'Get Info' },
-  { value: 'lookup_invoice', label: 'Lookup Invoice' },
-]
-
-const mintOptions = computed(() => {
-  const list = Array.isArray(mintsStore.mints) ? mintsStore.mints : []
-  return list.map((mint) => ({
-    url: mint.url,
-    label: mint.name && mint.name !== 'unknown' ? `${mint.name} (${mint.url})` : mint.url,
-    active: !!mint.active || mintsStore.activeMint === mint.url,
-  }))
+const wizardModalTitle = computed(() => {
+  if (createPhase.value === 'finalize') return 'Connection Created'
+  if (createPhase.value === 'configure') return selectedWizardApp.value ? `Connect ${selectedWizardApp.value.name}` : 'Custom Connection'
+  return 'New Connection'
 })
 
 function truncatePubkey(pk) {
@@ -137,96 +121,36 @@ function formatDate(ts) {
   })
 }
 
-function togglePermission(perm) {
-  const idx = createForm.value.permissions.indexOf(perm)
-  if (idx === -1) {
-    createForm.value.permissions.push(perm)
-  } else {
-    createForm.value.permissions.splice(idx, 1)
-  }
-}
-
 function openCreateModal() {
-  const defaultMint = mintsStore.activeMint || mintOptions.value[0]?.url || ''
   createPhase.value = 'select'
   selectedWizardApp.value = null
-  showManualForm.value = false
-  createForm.value = {
-    label: '',
-    permissions: ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice'],
-    mint: defaultMint,
-    max_daily_sats: 0,
-    max_payment_sats: 0,
-    service_fee_ppm: '',
-    service_fee_base: '',
-    lud16: '',
-  }
+  createdConnection.value = null
   showCreateModal.value = true
 }
 
 /** Called when user picks an app from the catalog grid. */
 function handleWizardAppSelect(selection) {
-  var app = selection.app
-  selectedWizardApp.value = app
-  var defaultMint = mintsStore.activeMint || mintOptions.value[0]?.url || ''
-  if (app) {
-    // Pre-fill form from catalog entry
-    createForm.value.label = app.name
-    createForm.value.permissions = [...app.permissions]
-    createForm.value.max_payment_sats = app.budget?.maxPaymentSats || 0
-    createForm.value.max_daily_sats = app.budget?.maxDailySats || 0
-    createForm.value.mint = defaultMint
-  } else {
-    // Custom — show the manual form
-    createForm.value.label = ''
-    createForm.value.permissions = ['pay_invoice', 'make_invoice', 'get_balance', 'list_transactions', 'get_info', 'lookup_invoice']
-    createForm.value.max_payment_sats = 0
-    createForm.value.max_daily_sats = 0
-    createForm.value.mint = defaultMint
-  }
-  showManualForm.value = true
+  selectedWizardApp.value = selection.app || null
+  createPhase.value = 'configure'
 }
 
-/** Quick-create for catalog apps: create immediately with preset config. */
-async function handleQuickCreate() {
-  if (!createForm.value.label.trim()) {
-    addToast('Label is required', 'error')
-    return
-  }
-  await submitCreate()
-}
-
-async function submitCreate() {
-  if (!createForm.value.label.trim()) {
-    addToast('Label is required', 'error')
-    return
-  }
+/** Called when StepConfigure emits 'create' with the final payload. */
+async function handleConfigureCreate(payload) {
   creating.value = true
   try {
-    const payload = {
-      label: createForm.value.label.trim(),
-      permissions: createForm.value.permissions,
+    var body = {
+      label: payload.label,
+      permissions: payload.permissions,
     }
-    if (createForm.value.mint.trim()) {
-      payload.mint = createForm.value.mint.trim()
-    }
-    if (createForm.value.max_daily_sats > 0) {
-      payload.max_daily_sats = Number(createForm.value.max_daily_sats)
-    }
-    if (createForm.value.max_payment_sats > 0) {
-      payload.max_payment_sats = Number(createForm.value.max_payment_sats)
-    }
-    if (createForm.value.service_fee_ppm !== '' && createForm.value.service_fee_ppm !== null) {
-      payload.service_fee_ppm = Number(createForm.value.service_fee_ppm)
-    }
-    if (createForm.value.service_fee_base !== '' && createForm.value.service_fee_base !== null) {
-      payload.service_fee_base = Number(createForm.value.service_fee_base)
-    }
-    if (createForm.value.lud16.trim()) {
-      payload.lud16 = createForm.value.lud16.trim()
-    }
+    if (payload.mint) body.mint = payload.mint
+    if (payload.max_daily_sats > 0) body.max_daily_sats = payload.max_daily_sats
+    if (payload.max_payment_sats > 0) body.max_payment_sats = payload.max_payment_sats
+    if (payload.dedicated === false) body.dedicated = false
+    if (payload.lud16) body.lud16 = payload.lud16
+    if (payload.service_fee_ppm !== undefined) body.service_fee_ppm = payload.service_fee_ppm
+    if (payload.service_fee_base !== undefined) body.service_fee_base = payload.service_fee_base
 
-    const result = await connectionsStore.create(payload)
+    var result = await connectionsStore.create(body)
     createdConnection.value = result
     createPhase.value = 'finalize'
     addToast('Connection created', 'success')
@@ -256,6 +180,48 @@ async function submitEditLud16() {
     addToast(err.message || 'Failed to update Lightning Address', 'error')
   } finally {
     editingLud16.value = false
+  }
+}
+
+function openFundModal(conn) {
+  fundTarget.value = conn
+  fundAmount.value = ''
+  fundMode.value = 'fund'
+  showFundModal.value = true
+}
+
+async function submitFund() {
+  if (!fundTarget.value || !fundAmount.value) return
+  funding.value = true
+  try {
+    var amount = Number(fundAmount.value)
+    if (amount <= 0) throw new Error('Amount must be positive')
+    if (fundMode.value === 'fund') {
+      await connectionsStore.fund(fundTarget.value.app_pubkey, amount)
+      addToast(`Funded ${amount.toLocaleString()} sats`, 'success')
+    } else {
+      await connectionsStore.withdraw(fundTarget.value.app_pubkey, amount)
+      addToast(`Withdrawn ${amount.toLocaleString()} sats`, 'success')
+    }
+    showFundModal.value = false
+  } catch (err) {
+    addToast(err.message || 'Operation failed', 'error')
+  } finally {
+    funding.value = false
+  }
+}
+
+async function withdrawAll() {
+  if (!fundTarget.value) return
+  funding.value = true
+  try {
+    await connectionsStore.withdraw(fundTarget.value.app_pubkey, 0)
+    addToast('All funds withdrawn', 'success')
+    showFundModal.value = false
+  } catch (err) {
+    addToast(err.message || 'Withdraw failed', 'error')
+  } finally {
+    funding.value = false
   }
 }
 
@@ -478,10 +444,20 @@ onMounted(() => {
         <!-- Header row -->
         <div class="flex items-start justify-between">
           <div>
-            <h3 class="text-nutbits-100 font-semibold text-lg">{{ conn.label }}</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="text-nutbits-100 font-semibold text-lg">{{ conn.label }}</h3>
+              <span v-if="conn.dedicated" class="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">dedicated</span>
+              <span v-else class="text-[10px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">shared</span>
+            </div>
             <p class="text-nutbits-400 text-xs font-mono mt-0.5">{{ truncatePubkey(conn.app_pubkey) }}</p>
           </div>
           <div class="flex items-center gap-2">
+            <button v-if="conn.dedicated"
+              class="text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors px-3 py-1 rounded-lg hover:bg-emerald-500/10"
+              @click="openFundModal(conn)"
+            >
+              Fund
+            </button>
             <button
               class="text-amber-400 hover:text-amber-300 text-sm font-medium transition-colors px-3 py-1 rounded-lg hover:bg-amber-500/10"
               @click="openNwcModal(conn)"
@@ -511,7 +487,11 @@ onMounted(() => {
         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
             <span class="text-nutbits-400">Balance</span>
-            <p class="text-nutbits-100 font-medium">{{ Math.floor((conn.balance_msat || 0) / 1000).toLocaleString('en-US') }} sats</p>
+            <p v-if="conn.dedicated" class="text-nutbits-100 font-medium">
+              {{ Math.floor((conn.dedicated_balance_msat || 0) / 1000).toLocaleString('en-US') }}
+              <span class="text-nutbits-500 text-xs ml-0.5">sats dedicated</span>
+            </p>
+            <p v-else class="text-nutbits-100 font-medium">{{ Math.floor((conn.balance_msat || 0) / 1000).toLocaleString('en-US') }} sats</p>
           </div>
           <div>
             <span class="text-nutbits-400">Transactions</span>
@@ -597,11 +577,14 @@ onMounted(() => {
                 class="border-t border-nutbits-800/60 hover:bg-nutbits-800/30 transition-colors"
               >
                 <td class="px-4 py-3">
-                  <p class="text-nutbits-100 font-medium">{{ conn.label }}</p>
+                  <div class="flex items-center gap-1.5">
+                    <p class="text-nutbits-100 font-medium">{{ conn.label }}</p>
+                    <span v-if="conn.dedicated" class="text-[9px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1 py-0 rounded-full">ded</span>
+                  </div>
                   <p class="text-nutbits-500 text-[10px] font-mono">{{ truncatePubkey(conn.app_pubkey) }}</p>
                 </td>
                 <td class="px-4 py-3 text-right text-nutbits-100 font-medium tabular-nums whitespace-nowrap">
-                  {{ Math.floor((conn.balance_msat || 0) / 1000).toLocaleString('en-US') }}
+                  {{ Math.floor(((conn.dedicated ? conn.dedicated_balance_msat : conn.balance_msat) || 0) / 1000).toLocaleString('en-US') }}
                   <span class="text-nutbits-500 text-xs ml-0.5">sats</span>
                 </td>
                 <td class="px-4 py-3 text-right">
@@ -642,6 +625,12 @@ onMounted(() => {
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
+                  <button v-if="conn.dedicated"
+                    class="text-emerald-400 hover:text-emerald-300 text-xs font-medium transition-colors px-2 py-1 rounded hover:bg-emerald-500/10"
+                    @click="openFundModal(conn)"
+                  >
+                    Fund
+                  </button>
                   <button
                     class="text-amber-400 hover:text-amber-300 text-xs font-medium transition-colors px-2 py-1 rounded hover:bg-amber-500/10"
                     @click="openNwcModal(conn)"
@@ -664,125 +653,37 @@ onMounted(() => {
     </template>
 
     <!-- ═══ NEW CONNECTION MODAL ═══ -->
-    <Modal :show="showCreateModal" :title="createPhase === 'finalize' ? 'Connection Created' : 'New Connection'" max-width="42rem" @close="showCreateModal = false">
+    <Modal :show="showCreateModal" :title="wizardModalTitle" max-width="42rem" @close="showCreateModal = false">
 
-      <!-- ── Phase: SELECT (app grid + manual form) ── -->
-      <template v-if="createPhase === 'select'">
-        <!-- App catalog grid -->
-        <StepSelectApp @select="handleWizardAppSelect" />
-
-        <!-- Manual / Advanced form (collapsible) -->
-        <div class="mt-4 border-t border-nutbits-700 pt-4">
-          <button
-            class="flex items-center justify-between w-full text-left"
-            @click="showManualForm = !showManualForm; if (!selectedWizardApp) selectedWizardApp = null"
-          >
-            <span class="text-nutbits-400 text-xs font-semibold uppercase tracking-wide">
-              {{ selectedWizardApp ? 'Configure connection' : 'Manual setup' }}
-            </span>
-            <svg
-              class="w-4 h-4 text-nutbits-500 transition-transform"
-              :class="{ 'rotate-180': showManualForm }"
-              viewBox="0 0 20 20" fill="currentColor"
-            ><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
-          </button>
-
-          <form v-if="showManualForm" class="space-y-4 mt-4" @submit.prevent="submitCreate">
-            <!-- Label -->
-            <div>
-              <label class="block text-nutbits-400 text-sm mb-1.5">Label *</label>
-              <input
-                v-model="createForm.label"
-                type="text"
-                placeholder="e.g. BuhoGO, My Wallet, Shop POS"
-                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600"
-              />
-            </div>
-
-            <!-- Permissions -->
-            <div>
-              <label class="block text-nutbits-400 text-sm mb-2">Permissions</label>
-              <div class="grid grid-cols-2 gap-2">
-                <label
-                  v-for="perm in allPermissions"
-                  :key="perm.value"
-                  class="flex items-center gap-2 text-sm text-nutbits-100 cursor-pointer hover:text-nutbits-50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="createForm.permissions.includes(perm.value)"
-                    class="rounded border-nutbits-600 bg-nutbits-800 text-amber-500 focus:ring-amber-500/50"
-                    @change="togglePermission(perm.value)"
-                  />
-                  {{ perm.label }}
-                </label>
-              </div>
-            </div>
-
-            <!-- Mint -->
-            <div>
-              <label class="block text-nutbits-400 text-sm mb-1.5">Mint</label>
-              <select
-                v-model="createForm.mint"
-                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none text-sm"
-              >
-                <option v-for="mint in mintOptions" :key="mint.url" :value="mint.url">
-                  {{ mint.active ? `Using now: ${mint.label}` : mint.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Limits row -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-nutbits-400 text-sm mb-1.5">Max daily sats <span class="text-nutbits-600">(0 = unlimited)</span></label>
-                <input v-model.number="createForm.max_daily_sats" type="number" min="0"
-                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none" />
-              </div>
-              <div>
-                <label class="block text-nutbits-400 text-sm mb-1.5">Max payment sats <span class="text-nutbits-600">(0 = unlimited)</span></label>
-                <input v-model.number="createForm.max_payment_sats" type="number" min="0"
-                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none" />
-              </div>
-            </div>
-
-            <!-- Lightning Address -->
-            <div>
-              <label class="block text-nutbits-400 text-sm mb-1.5">Lightning Address <span class="text-nutbits-600">(optional)</span></label>
-              <input v-model="createForm.lud16" type="text" placeholder="e.g. you@getalby.com"
-                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600" />
-            </div>
-
-            <!-- Fee overrides row -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-nutbits-400 text-sm mb-1.5">Service fee PPM override</label>
-                <input v-model.number="createForm.service_fee_ppm" type="number" min="0" placeholder="Use global default"
-                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600" />
-              </div>
-              <div>
-                <label class="block text-nutbits-400 text-sm mb-1.5">Service fee base override</label>
-                <input v-model.number="createForm.service_fee_base" type="number" min="0" placeholder="Use global default"
-                  class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none placeholder:text-nutbits-600" />
-              </div>
-            </div>
-
-            <!-- Submit -->
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button"
-                class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all border border-nutbits-700"
-                @click="showCreateModal = false"
-              >Cancel</button>
-              <button type="submit"
-                class="bg-amber-500 hover:bg-amber-600 text-nutbits-950 font-medium rounded-lg px-4 py-2.5 transition-all disabled:opacity-50"
-                :disabled="creating"
-              >{{ creating ? 'Creating...' : 'Create Connection' }}</button>
-            </div>
-          </form>
+      <!-- Step indicator -->
+      <div v-if="createPhase !== 'finalize'" class="wizard-steps">
+        <div class="wizard-step" :class="{ active: createPhase === 'select', done: createPhase === 'configure' }">
+          <span class="wizard-dot">1</span>
+          <span class="wizard-step-label">Select App</span>
         </div>
+        <div class="wizard-line" :class="{ filled: createPhase === 'configure' }"></div>
+        <div class="wizard-step" :class="{ active: createPhase === 'configure' }">
+          <span class="wizard-dot">2</span>
+          <span class="wizard-step-label">Configure</span>
+        </div>
+      </div>
+
+      <!-- ── Step 1: SELECT (app grid) ── -->
+      <template v-if="createPhase === 'select'">
+        <StepSelectApp @select="handleWizardAppSelect" />
       </template>
 
-      <!-- ── Phase: FINALIZE (QR + copy + per-app instructions) ── -->
+      <!-- ── Step 2: CONFIGURE (form, prefilled or empty) ── -->
+      <template v-if="createPhase === 'configure'">
+        <StepConfigure
+          :app="selectedWizardApp"
+          :loading="creating"
+          @create="handleConfigureCreate"
+          @back="createPhase = 'select'"
+        />
+      </template>
+
+      <!-- ── Step 3: FINALIZE (QR + copy + per-app instructions) ── -->
       <template v-if="createPhase === 'finalize' && createdConnection">
         <StepFinalize
           :nwc-string="createdConnection.nwc_string"
@@ -791,6 +692,68 @@ onMounted(() => {
           @done="showCreateModal = false"
         />
       </template>
+    </Modal>
+
+    <!-- Fund / Withdraw Modal -->
+    <Modal :show="showFundModal" :title="fundMode === 'fund' ? 'Fund Connection' : 'Withdraw'" @close="showFundModal = false">
+      <div v-if="fundTarget" class="space-y-4">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-nutbits-400">Connection</span>
+          <span class="text-nutbits-100 font-medium">{{ fundTarget.label }}</span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-nutbits-400">Dedicated balance</span>
+          <span class="text-nutbits-100 font-medium tabular-nums">{{ Math.floor((fundTarget.dedicated_balance_msat || 0) / 1000).toLocaleString('en-US') }} sats</span>
+        </div>
+
+        <!-- Mode toggle -->
+        <div class="flex rounded-lg border border-nutbits-700 overflow-hidden">
+          <button
+            class="flex-1 py-2 text-sm font-medium transition-all"
+            :class="fundMode === 'fund' ? 'bg-emerald-500/15 text-emerald-400 border-r border-nutbits-700' : 'bg-nutbits-800 text-nutbits-400 border-r border-nutbits-700 hover:text-nutbits-200'"
+            @click="fundMode = 'fund'"
+          >Fund</button>
+          <button
+            class="flex-1 py-2 text-sm font-medium transition-all"
+            :class="fundMode === 'withdraw' ? 'bg-amber-500/15 text-amber-400' : 'bg-nutbits-800 text-nutbits-400 hover:text-nutbits-200'"
+            @click="fundMode = 'withdraw'"
+          >Withdraw</button>
+        </div>
+
+        <div>
+          <label class="block text-nutbits-400 text-sm mb-1.5">Amount (sats)</label>
+          <input
+            v-model.number="fundAmount"
+            type="number"
+            min="1"
+            :placeholder="fundMode === 'fund' ? 'Amount to add' : 'Amount to withdraw'"
+            class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none"
+          />
+        </div>
+
+        <div class="flex justify-between items-center pt-2">
+          <button v-if="fundMode === 'withdraw' && (fundTarget.dedicated_balance_msat || 0) > 0"
+            class="text-nutbits-400 hover:text-nutbits-200 text-xs transition-colors"
+            @click="withdrawAll"
+            :disabled="funding"
+          >
+            Withdraw all
+          </button>
+          <span v-else></span>
+          <div class="flex gap-3">
+            <button
+              class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all border border-nutbits-700"
+              @click="showFundModal = false"
+            >Cancel</button>
+            <button
+              class="font-medium rounded-lg px-4 py-2.5 transition-all disabled:opacity-50"
+              :class="fundMode === 'fund' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-600 text-nutbits-950'"
+              :disabled="funding || !fundAmount || fundAmount <= 0"
+              @click="submitFund"
+            >{{ funding ? 'Processing...' : (fundMode === 'fund' ? 'Fund' : 'Withdraw') }}</button>
+          </div>
+        </div>
+      </div>
     </Modal>
 
     <!-- Revoke Confirmation Modal -->
@@ -972,3 +935,69 @@ onMounted(() => {
     </Modal>
   </div>
 </template>
+
+<style scoped>
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(42, 40, 39, 0.6);
+}
+
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.wizard-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1.5px solid #3a3735;
+  color: #625a52;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.wizard-step.active .wizard-dot {
+  border-color: #f59e0b;
+  color: #0f0e0d;
+  background: #f59e0b;
+}
+
+.wizard-step.done .wizard-dot {
+  border-color: #34d399;
+  color: #0f0e0d;
+  background: #34d399;
+}
+
+.wizard-step-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #625a52;
+  transition: color 0.2s ease;
+}
+
+.wizard-step.active .wizard-step-label { color: #e8e0d8; }
+.wizard-step.done .wizard-step-label { color: #34d399; }
+
+.wizard-line {
+  width: 3rem;
+  height: 2px;
+  background: #2a2827;
+  margin: 0 0.75rem;
+  border-radius: 1px;
+  transition: background 0.2s ease;
+}
+
+.wizard-line.filled { background: #34d399; }
+</style>

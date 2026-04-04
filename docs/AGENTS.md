@@ -1,5 +1,7 @@
 # AGENTS.md
 
+**[Overview](#project-overview) · [Setup](#setup-commands) · [Structure](#project-structure) · [Style](#code-style) · [Domain](#domain-knowledge) · [API](#api-endpoints) · [Boundaries](#boundaries) · [Security](#security-hardening-recent)**
+
 ## Project overview
 
 NUTbits is a Cashu ecash to NWC (Nostr Wallet Connect) bridge. It connects to a Cashu mint, manages ecash proofs, and exposes a full NIP-47 wallet service over Nostr relays. Any NWC-compatible app (LNbits, Alby, Amethyst, etc.) can use it to send and receive Lightning payments through the mint.
@@ -26,12 +28,14 @@ nutbits                  # Launch interactive TUI (in another terminal)
 nutbits.js               # Core bridge: mint management, NWC protocol, payment flows (~1500 lines)
 bin/nutbits.js           # CLI entry point, command dispatch, argument parsing
 api/
-  server.js              # HTTP/Unix socket server, request handler, auth (GET/POST/PATCH/DELETE)
+  server.js              # HTTP/Unix socket server, request handler, auth, deeplink /connect endpoint
   router.js              # URL routing with param matching
   middleware/auth.js      # Bearer token auth
-  handlers/index.js      # All REST API endpoints
+  handlers/index.js      # All REST API endpoints + createDeeplinkConnection()
+  deeplink-apps.js       # Deeplink app registry (known apps, permissions, budgets, callback schemes)
+  deeplink-page.js       # Self-contained HTML5 connection page (served by API, no GUI needed)
 cli/
-  commands/              # One file per CLI command (status, pay, receive, connect, etc.)
+  commands/              # One file per CLI command (status, pay, receive, connect, fund, withdraw, etc.)
   tui/                   # Terminal UI (app.js, layout.js, menu.js, panels.js)
   colors.js              # ANSI color helpers
   render.js              # Output formatting (tables, key-value, headings)
@@ -92,6 +96,16 @@ Agents working on this codebase need to understand these concepts:
 - Incoming `make_invoice` → create mint quote → return Lightning invoice → on payment, mint ecash.
 - Service fees are deducted from the sender's ecash on outgoing payments only.
 
+**Dedicated connections:**
+- All NWC connections are dedicated by default — own isolated balance starting at 0 sats.
+- Shared balance (full wallet access) requires explicit opt-in (`dedicated: false` in API).
+- Deeplink connections are ALWAYS dedicated — external apps cannot request shared access.
+- `get_balance` returns the dedicated balance, not the global wallet.
+- `pay_invoice` checks both the dedicated balance and the global proof pool.
+- Non-dedicated connections see global balance minus all dedicated allocations.
+- The user funds dedicated connections via `POST /api/v1/connections/:pubkey/fund`.
+- On revoke, remaining dedicated balance returns to the main wallet automatically.
+
 ## API endpoints
 
 | Method | Path | Purpose |
@@ -103,6 +117,10 @@ Agents working on this codebase need to understand these concepts:
 | POST | `/api/v1/connections` | Create NWC connection (accepts lud16, resolves via LNURL) |
 | PATCH | `/api/v1/connections/:pubkey` | Update connection metadata (lud16 set/clear) |
 | DELETE | `/api/v1/connections/:pubkey` | Revoke a connection |
+| POST | `/api/v1/connections/:pubkey/fund` | Fund a dedicated connection's balance |
+| POST | `/api/v1/connections/:pubkey/withdraw` | Withdraw from a dedicated connection |
+| GET | `/connect` | Deeplink entry — serves HTML connection page (public, no auth) |
+| POST | `/connect` | Deeplink create — returns NWC string as JSON (called by the page) |
 | POST | `/api/v1/pay` | Pay a Lightning invoice OR Lightning Address (auto-detects) |
 | POST | `/api/v1/receive` | Create a Lightning invoice (accepts mint selection) |
 | POST | `/api/v1/receive/check` | Check if invoice was paid |

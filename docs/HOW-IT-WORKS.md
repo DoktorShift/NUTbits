@@ -2,6 +2,8 @@
   <img src="../assets/headers/doc-how-it-works.svg" alt="How NUTbits Works" width="100%">
 </p>
 
+**[What is it?](#what-is-nutbits) · [The Problem](#the-problem-it-solves) · [The Flow](#the-flow) · [Sending](#what-happens-when-you-send-a-payment) · [Receiving](#what-happens-when-you-receive-a-payment) · [Trust](#the-trade-off-trust) · [Who is it for?](#who-is-this-for)**
+
 ## What is NUTbits?
 
 NUTbits is a **translator** that sits between a [Cashu](https://cashu.space) ecash mint and [LNbits](https://lnbits.com) (or any app that speaks [Nostr Wallet Connect](https://github.com/nostr-protocol/nips/blob/master/47.md)).
@@ -112,7 +114,9 @@ nutbits connections  # see your NWC connections
 nutbits connect      # create a new connection
 ```
 
-The management console lets you create multiple NWC connections with different permissions - one for LNbits with full access, another for a POS terminal with just pay and a daily spending cap. See **[CLI.md](CLI.md)** for the full guide.
+The management console lets you create multiple NWC connections with different permissions — one for LNbits, another for a POS terminal with just pay and a daily cap. Each connection gets its own **dedicated balance** by default, so apps can only spend what you fund into them. See **[CLI.md](CLI.md)** for the full guide.
+
+External apps can also connect via **deep link** — one tap and the NWC string goes back automatically. See **[NWC-DEEPLINK-INTEGRATION.md](NWC-DEEPLINK-INTEGRATION.md)** for details.
 
 ## Related Reading
 

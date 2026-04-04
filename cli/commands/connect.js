@@ -56,7 +56,7 @@ export async function run(client, args) {
         var mintCheck = await client.get('/api/v1/mints');
         multiMint = mintCheck.mints?.length > 1;
     } catch (e) { /* single mint */ }
-    var totalSteps = multiMint ? 5 : 4;
+    var totalSteps = multiMint ? 6 : 5;
 
     // Step 1. Label
     print(`  ${c.purple}Step 1 of ${totalSteps}${c.reset}  ${c.dim}— Give it a name${c.reset}`);
@@ -82,8 +82,31 @@ export async function run(client, args) {
     if (permissions.length === 0) { print(`  ${c.red}At least one permission is required.${c.reset}`); return; }
     print('');
 
-    // Step 3. Spending limits
-    print(`  ${c.purple}Step 3 of ${totalSteps}${c.reset}  ${c.dim}— Set spending limits${c.reset}`);
+    // Step 3. Balance type
+    print(`  ${c.purple}Step 3 of ${totalSteps}${c.reset}  ${c.dim}— Balance type${c.reset}`);
+    var balanceChoice = await select({
+        message: 'Balance isolation',
+        description: 'Dedicated = own balance, starts at 0, you fund it. Shared = full wallet access.',
+        options: [
+            { label: `${c.green}Dedicated${c.reset}  ${c.dim}— own balance, starts at 0 sats (recommended)${c.reset}`, value: true },
+            { label: `${c.yellow}Shared${c.reset}     ${c.dim}— full wallet access (only for apps you fully trust)${c.reset}`, value: false },
+        ],
+    });
+    if (balanceChoice === null) { print(`  ${c.dim}Cancelled.${c.reset}\n`); return; }
+    var dedicated = balanceChoice.value;
+    if (!dedicated) {
+        print(`  ${c.yellow}${c.bold}Warning:${c.reset} ${c.muted}This connection can spend your entire wallet balance.${c.reset}`);
+        print(`  ${c.muted}Only use shared for apps you fully control.${c.reset}`);
+        var confirmShared = await confirm({
+            message: 'Continue with shared balance?',
+            initial: false,
+        });
+        if (!confirmShared) { print(`  ${c.dim}Switched to dedicated.${c.reset}`); dedicated = true; }
+    }
+    print('');
+
+    // Step 4. Spending limits
+    print(`  ${c.purple}Step 4 of ${totalSteps}${c.reset}  ${c.dim}— Set spending limits${c.reset}`);
     var dailyChoice = await select({
         message: 'Daily spending limit',
         description: 'Max total sats this connection can spend per day.',
@@ -119,8 +142,8 @@ export async function run(client, args) {
     }
     print('');
 
-    // Step 4. Lightning Address (optional)
-    print(`  ${c.purple}Step 4 of ${totalSteps}${c.reset}  ${c.dim}— Lightning Address (optional)${c.reset}`);
+    // Step 5. Lightning Address (optional)
+    print(`  ${c.purple}Step 5 of ${totalSteps}${c.reset}  ${c.dim}— Lightning Address (optional)${c.reset}`);
     var lud16 = await input({
         message: 'Lightning Address:',
         placeholder: 'e.g. you@getalby.com (press Enter to skip)',
@@ -135,12 +158,12 @@ export async function run(client, args) {
     lud16 = lud16?.trim() || null;
     print('');
 
-    // Step 5. Mint selection (multi-mint only)
+    // Step 6. Mint selection (multi-mint only)
     var mint = null;
     try {
         var mints = mintCheck || await client.get('/api/v1/mints');
         if (mints.mints?.length > 1) {
-            print(`  ${c.purple}Step 5 of ${totalSteps}${c.reset}  ${c.dim}— Choose mint${c.reset}`);
+            print(`  ${c.purple}Step 6 of ${totalSteps}${c.reset}  ${c.dim}— Choose mint${c.reset}`);
             var mintChoice = await select({
                 message: 'Which mint should this connection use?',
                 options: mints.mints.map(m => ({
@@ -160,6 +183,7 @@ export async function run(client, args) {
     print(`  ${c.white}${c.bold}Review your new connection:${c.reset}`);
     print('');
     print(kv('Name', `${c.white}${c.bold}${label}${c.reset}`));
+    print(kv('Balance', dedicated ? `${c.green}dedicated${c.reset} ${c.dim}(starts at 0, you fund it)${c.reset}` : `${c.yellow}shared${c.reset} ${c.dim}(full wallet access)${c.reset}`));
     print(kv('Permissions', `${c.muted}${permissions.join(', ')}${c.reset}`));
     print(kv('Daily limit', maxDaily ? `${c.yellow}${maxDaily.toLocaleString()} sats${c.reset}` : `${c.dim}no limit${c.reset}`));
     print(kv('Per payment', maxPayment ? `${c.yellow}${maxPayment.toLocaleString()} sats${c.reset}` : `${c.dim}no limit${c.reset}`));
@@ -180,7 +204,9 @@ export async function run(client, args) {
         permissions,
         max_daily_sats: maxDaily,
         max_payment_sats: maxPayment,
+        dedicated,
     };
+    if (!dedicated) body.dedicated = false;
     if (lud16) body.lud16 = lud16;
     if (mint) body.mint = mint;
 
@@ -240,6 +266,8 @@ async function createScripted(client, args) {
         max_daily_sats: Number(args['max-daily']) || 0,
         max_payment_sats: Number(args['max-payment']) || 0,
     };
+    // Default to dedicated unless --shared is explicitly passed
+    if (args.shared) body.dedicated = false;
     if (args.mint) body.mint = args.mint;
     if (args.lud16) body.lud16 = args.lud16;
     if (args['fee-ppm'] !== undefined) body.service_fee_ppm = Number(args['fee-ppm']);

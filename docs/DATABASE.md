@@ -2,6 +2,8 @@
 
 # Storage Backends
 
+**[Overview](#at-a-glance) · [File](#file-backend-default) · [SQLite](#sqlite-backend-recommended) · [MySQL](#mysql-backend) · [Migration](#migration) · [Encryption](#encryption-details) · [Which One?](#which-backend-should-i-use)**
+
 NUTbits supports three storage backends. Choose based on your use case.
 
 ## At a Glance

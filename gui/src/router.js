@@ -62,12 +62,6 @@ const router = createRouter({
       name: 'Logs',
       component: () => import('./views/Logs.vue'),
     },
-    {
-      path: '/connect',
-      name: 'DeepLinkConnect',
-      component: () => import('./views/DeepLinkConnect.vue'),
-      meta: { fullscreen: true },
-    },
   ],
 })
 

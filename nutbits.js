@@ -511,8 +511,9 @@ var nutbits = {
                     log.info('tokens minted', { amount: sumProofs(proofs), proofs: proofs.length, mint: quoteMintUrl });
                     // Update NWC balance + send payment_received notification
                     if (app_pubkey && nutbits.state.nostr_state.nwc_info[app_pubkey]) {
+                        var connState = nutbits.state.nostr_state.nwc_info[app_pubkey];
                         var pmthash = getInvoicePmthash(quote.request);
-                        var txEntry = nutbits.state.nostr_state.nwc_info[app_pubkey].tx_history[pmthash];
+                        var txEntry = connState.tx_history[pmthash];
                         if (txEntry) {
                             txEntry.settled_at = Math.floor(Date.now() / 1000);
                             txEntry.paid = true;
@@ -522,9 +523,21 @@ var nutbits = {
                                 log.debug('payment_received notification failed', { error: e.message })
                             );
                         }
-                        var bal = await nutbits.getBalanceMsat();
-                        nutbits.state.nostr_state.nwc_info[app_pubkey].balance = bal;
-                        await store.updateConnection(app_pubkey, { balance: bal });
+
+                        // Dedicated connections credit incoming payments to their own balance
+                        if (connState.dedicated) {
+                            var receivedMsat = txEntry ? txEntry.amount : (sumProofs(proofs) * 1000);
+                            connState.dedicated_balance_msat = (connState.dedicated_balance_msat || 0) + receivedMsat;
+                            connState.balance = connState.dedicated_balance_msat;
+                            await store.updateConnection(app_pubkey, {
+                                dedicated_balance_msat: connState.dedicated_balance_msat,
+                                balance: connState.dedicated_balance_msat,
+                            });
+                        } else {
+                            var bal = await nutbits.getBalanceMsat();
+                            connState.balance = bal;
+                            await store.updateConnection(app_pubkey, { balance: bal });
+                        }
                     }
                     return true;
                 }
@@ -846,7 +859,19 @@ var nutbits = {
 
                 // ── get_balance ────────────────────────────────────────
                 if (command.method === 'get_balance') {
-                    var bal = await nutbits.getBalanceMsat();
+                    var bal;
+                    if (state.dedicated) {
+                        // Dedicated connections have their own isolated balance
+                        bal = state.dedicated_balance_msat || 0;
+                    } else {
+                        // Non-dedicated connections see global balance minus dedicated allocations
+                        var globalBal = await nutbits.getBalanceMsat();
+                        var allocatedMsat = 0;
+                        for (var [, connInfo] of Object.entries(nutbits.state.nostr_state.nwc_info)) {
+                            if (connInfo.dedicated && !connInfo.revoked) allocatedMsat += (connInfo.dedicated_balance_msat || 0);
+                        }
+                        bal = Math.max(0, globalBal - allocatedMsat);
+                    }
                     nutbits.state.nostr_state.nwc_info[evtAppPubkey].balance = bal;
                     return await sendNWCResponse(state,
                         nwcResult(command.method, { balance: bal }),
@@ -1024,14 +1049,46 @@ var nutbits = {
                     var totalNeededWithFee = invoice_amt + serviceFee;
 
                     // Fee reserve check (includes service fee)
-                    var maxSpendable = Math.floor((1 - config.feeReservePct) * (await nutbits.getBalanceMsat()));
-                    if (maxSpendable - (totalNeededWithFee * 1000) < 0) {
-                        var err_msg = `insufficient balance (${await nutbits.getBalance()} sats available, ${totalNeededWithFee} sats needed${serviceFee ? ` incl. ${serviceFee} service fee` : ''})`;
-                        state.tx_history[pmthash].err_msg = err_msg;
-                        await store.updateTx(evtAppPubkey, pmthash, { err_msg });
-                        return await sendNWCResponse(state,
-                            nwcError(command.method, 'INSUFFICIENT_BALANCE', err_msg),
-                            event.pubkey, event.id, evtAppPubkey);
+                    if (state.dedicated) {
+                        // Dedicated connections spend from their own isolated balance
+                        var dedicatedBal = state.dedicated_balance_msat || 0;
+                        var maxSpendable = Math.floor((1 - config.feeReservePct) * dedicatedBal);
+                        if (maxSpendable - (totalNeededWithFee * 1000) < 0) {
+                            var err_msg = `insufficient balance (${Math.floor(dedicatedBal / 1000)} sats available, ${totalNeededWithFee} sats needed${serviceFee ? ` incl. ${serviceFee} service fee` : ''})`;
+                            state.tx_history[pmthash].err_msg = err_msg;
+                            await store.updateTx(evtAppPubkey, pmthash, { err_msg });
+                            return await sendNWCResponse(state,
+                                nwcError(command.method, 'INSUFFICIENT_BALANCE', err_msg),
+                                event.pubkey, event.id, evtAppPubkey);
+                        }
+                        // Safety: also verify global proof pool can cover it
+                        var globalBal = await nutbits.getBalanceMsat();
+                        if (Math.floor((1 - config.feeReservePct) * globalBal) - (totalNeededWithFee * 1000) < 0) {
+                            var err_msg = 'wallet proofs temporarily insufficient — try again shortly';
+                            state.tx_history[pmthash].err_msg = err_msg;
+                            await store.updateTx(evtAppPubkey, pmthash, { err_msg });
+                            return await sendNWCResponse(state,
+                                nwcError(command.method, 'INSUFFICIENT_BALANCE', err_msg),
+                                event.pubkey, event.id, evtAppPubkey);
+                        }
+                    } else {
+                        // Non-dedicated connections: spend from global balance minus dedicated allocations
+                        var globalBalMsat = await nutbits.getBalanceMsat();
+                        var totalAllocatedMsat = 0;
+                        for (var [, connInfo] of Object.entries(nutbits.state.nostr_state.nwc_info)) {
+                            if (connInfo.dedicated && !connInfo.revoked) totalAllocatedMsat += (connInfo.dedicated_balance_msat || 0);
+                        }
+                        var availableMsat = globalBalMsat - totalAllocatedMsat;
+                        var maxSpendable = Math.floor((1 - config.feeReservePct) * availableMsat);
+                        if (maxSpendable - (totalNeededWithFee * 1000) < 0) {
+                            var availableSats = Math.max(0, Math.floor(availableMsat / 1000));
+                            var err_msg = `insufficient balance (${availableSats} sats available, ${totalNeededWithFee} sats needed${serviceFee ? ` incl. ${serviceFee} service fee` : ''})`;
+                            state.tx_history[pmthash].err_msg = err_msg;
+                            await store.updateTx(evtAppPubkey, pmthash, { err_msg });
+                            return await sendNWCResponse(state,
+                                nwcError(command.method, 'INSUFFICIENT_BALANCE', err_msg),
+                                event.pubkey, event.id, evtAppPubkey);
+                        }
                     }
 
                     // Pay via cashu-ts
@@ -1055,8 +1112,22 @@ var nutbits = {
                     state.tx_history[pmthash].paid = true;
                     state.tx_history[pmthash].fees_paid = routingFees;
                     state.tx_history[pmthash].service_fee = serviceFeeMsat;
-                    var bal = await nutbits.getBalanceMsat();
-                    state.balance = bal;
+
+                    // Update balance — dedicated connections deduct from their own pool
+                    if (state.dedicated) {
+                        var totalSpentMsat = (invoice_amt * 1000) + routingFees + serviceFeeMsat;
+                        state.dedicated_balance_msat = Math.max(0, (state.dedicated_balance_msat || 0) - totalSpentMsat);
+                        state.balance = state.dedicated_balance_msat;
+                        await store.updateConnection(evtAppPubkey, {
+                            dedicated_balance_msat: state.dedicated_balance_msat,
+                            balance: state.dedicated_balance_msat,
+                        });
+                    } else {
+                        var bal = await nutbits.getBalanceMsat();
+                        state.balance = bal;
+                        await store.updateConnection(evtAppPubkey, { balance: bal });
+                    }
+
                     await store.updateTx(evtAppPubkey, pmthash, {
                         preimage: result.preimage,
                         settled_at: state.tx_history[pmthash].settled_at,
@@ -1064,7 +1135,6 @@ var nutbits = {
                         fees_paid: routingFees,
                         service_fee: serviceFeeMsat,
                     });
-                    await store.updateConnection(evtAppPubkey, { balance: bal });
                     await trackSpend(invoice_amt);
 
                     if (serviceFee > 0) {

@@ -92,6 +92,38 @@ export const useConnectionsStore = defineStore('connections', {
     },
 
     /**
+     * Fund a dedicated connection.
+     * @param {string} pubkey
+     * @param {number} amountSats
+     */
+    async fund(pubkey, amountSats) {
+      try {
+        var result = await api.post(`/api/v1/connections/${pubkey}/fund`, { amount_sats: amountSats })
+        await this.fetch()
+        return result
+      } catch (err) {
+        this.error = err.message
+        throw err
+      }
+    },
+
+    /**
+     * Withdraw from a dedicated connection.
+     * @param {string} pubkey
+     * @param {number} amountSats - 0 to withdraw all
+     */
+    async withdraw(pubkey, amountSats = 0) {
+      try {
+        var result = await api.post(`/api/v1/connections/${pubkey}/withdraw`, { amount_sats: amountSats })
+        await this.fetch()
+        return result
+      } catch (err) {
+        this.error = err.message
+        throw err
+      }
+    },
+
+    /**
      * Export all connections.
      * @param {boolean} includeRevoked
      * @returns {Promise<any>}
