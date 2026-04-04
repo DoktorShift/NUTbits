@@ -9,8 +9,8 @@
   <meta property="og:description" content="Bridge any Cashu mint to Lightning via NWC. Power LNbits, POS systems, and any NWC-compatible app with ecash.">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0a0a0a">
-  <link rel="icon" type="image/png" sizes="32x32" href="../assets/logo/png/pixel-nut-v2b-32.png">
-  <link rel="icon" type="image/png" sizes="64x64" href="../assets/logo/png/pixel-nut-v2b-64.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-64.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -434,12 +434,12 @@
                 <!-- Left node -->
                 <circle cx="60" cy="65" r="24" fill="#1a1918" stroke="#2a2827" stroke-width="1.5"/>
                 <circle cx="60" cy="65" r="24" fill="none" stroke="#2a2827" stroke-width="1" id="dl-rl"/>
-                <image id="dl-logo1" href="../gui/public/app-icons/lnbits.svg" x="40" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <image id="dl-logo1" href="img/lnbits.svg" x="40" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
                 <text id="dl-label1" x="60" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">LNbits</text>
                 <!-- Right node: NUTbits (always) -->
                 <circle cx="280" cy="65" r="24" fill="#0f0e0d" stroke="#2a2827" stroke-width="1.5"/>
                 <circle cx="280" cy="65" r="24" fill="none" stroke="#2a2827" stroke-width="1" id="dl-rr"/>
-                <image href="../assets/logo/pixel-nut-v2b.svg" x="260" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <image href="img/nutbits-logo.svg" x="260" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
                 <text x="280" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">NUTbits</text>
                 <!-- Center spinner -->
                 <g transform="translate(170,65)" id="dl-spin">
@@ -459,12 +459,12 @@
                 <!-- Left node (dynamic) -->
                 <circle cx="60" cy="65" r="24" fill="#1a1918" stroke="#2a2827" stroke-width="1.5"/>
                 <circle cx="60" cy="65" r="24" fill="none" stroke="#34d399" stroke-width="2"/>
-                <image id="dl-logo2" href="../gui/public/app-icons/lnbits.svg" x="40" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <image id="dl-logo2" href="img/lnbits.svg" x="40" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
                 <text id="dl-label2" x="60" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">LNbits</text>
                 <!-- NUTbits (always) -->
                 <circle cx="280" cy="65" r="24" fill="#0f0e0d" stroke="#2a2827" stroke-width="1.5"/>
                 <circle cx="280" cy="65" r="24" fill="none" stroke="#34d399" stroke-width="2"/>
-                <image href="../assets/logo/pixel-nut-v2b.svg" x="260" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <image href="img/nutbits-logo.svg" x="260" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
                 <text x="280" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">NUTbits</text>
                 <path d="M 164 48 L 168 52 L 176 43" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               </svg>
@@ -484,7 +484,7 @@
 
             <!-- ═══ SCREEN 3: Logo breather ═══ -->
             <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0" id="dl-s3" style="transform:translateY(8px)">
-              <img src="../assets/logo/pixel-nut-v2b.svg" alt="NUTbits" class="w-20 h-20 mb-4 rounded-2xl">
+              <img src="img/nutbits-logo.svg" alt="NUTbits" class="w-20 h-20 mb-4 rounded-2xl">
               <p class="text-[#8a8078] text-sm italic">your nuts, your rules</p>
             </div>
 
@@ -516,10 +516,10 @@
     // Apps: LNbits → Buho Jump → Primal, then loops
     (function() {
       var apps = [
-        { name: 'LNbits',     icon: '../gui/public/app-icons/lnbits.svg',          perms: '6 granted', url: 'nutbits.example.com/connect?appname=LNbits&callback=...' },
-        { name: 'Buho Jump',  icon: '../gui/public/app-icons/buho-extension.png',  perms: '6 granted', url: 'nutbits.example.com/connect?appname=BuhoJump&callback=...' },
-        { name: 'Primal',     icon: '../gui/public/app-icons/primal.png',           perms: '4 granted', url: 'nutbits.example.com/connect?appname=Primal&callback=...' },
-        { name: 'Any NWC App', icon: '../gui/public/app-icons/nwc-logo.svg',       perms: '2 granted', url: 'nutbits.example.com/connect?appname=MyApp&callback=...' },
+        { name: 'LNbits',     icon: 'img/lnbits.svg',          perms: '6 granted', url: 'nutbits.example.com/connect?appname=LNbits&callback=...' },
+        { name: 'Buho Jump',  icon: 'img/buho-extension.png',  perms: '6 granted', url: 'nutbits.example.com/connect?appname=BuhoJump&callback=...' },
+        { name: 'Primal',     icon: 'img/primal.png',           perms: '4 granted', url: 'nutbits.example.com/connect?appname=Primal&callback=...' },
+        { name: 'Any NWC App', icon: 'img/nwc-logo.svg',       perms: '2 granted', url: 'nutbits.example.com/connect?appname=MyApp&callback=...' },
       ];
       var appIdx = 0;
 
