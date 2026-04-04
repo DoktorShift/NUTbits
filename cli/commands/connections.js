@@ -26,9 +26,10 @@ export async function run(client, args) {
 
         var conn = data.connections[0];
         var status = conn.revoked ? `${c.red}revoked${c.reset}` : `${c.green}active${c.reset}`;
+        var typeTag = conn.dedicated ? `${c.green}[dedicated]${c.reset}` : `${c.yellow}[shared]${c.reset}`;
 
         print('');
-        print(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${conn.label}${c.reset}  ${status}`);
+        print(`  ${c.purple}${c.bold}#${conn.id}${c.reset}  ${c.white}${c.bold}${conn.label}${c.reset}  ${status}  ${typeTag}`);
         print('');
 
         var permLabel = p => {
@@ -41,6 +42,10 @@ export async function run(client, args) {
         };
         var perms = (conn.permissions || []).map(permLabel).filter((v, i, a) => a.indexOf(v) === i).filter(Boolean);
         print(kv('  Permissions', perms.join(`${c.dim} | ${c.reset}`)));
+        if (conn.dedicated) {
+            var dedBal = Math.floor((conn.dedicated_balance_msat || 0) / 1000);
+            print(kv('  Balance', `${c.yellow}${c.bold}${dedBal.toLocaleString()}${c.reset} ${c.muted}sats dedicated${c.reset}`));
+        }
         if (conn.mint) print(kv('  Mint', `${c.dim}${conn.mint.replace(/^https?:\/\//, '')}${c.reset}`));
         if (conn.max_daily_sats) print(kv('  Daily limit', `${c.muted}${conn.max_daily_sats.toLocaleString()} sats${c.reset}`));
         if (conn.max_payment_sats) print(kv('  Per payment', `${c.muted}${conn.max_payment_sats.toLocaleString()} sats${c.reset}`));
@@ -98,7 +103,7 @@ export async function run(client, args) {
         return;
     }
 
-    var headers = ['ID', 'Label', 'Permissions', 'Balance', 'Tx', 'Created'];
+    var headers = ['ID', 'Label', 'Type', 'Balance', 'Tx', 'Created'];
     var rows = d.connections.map(conn => {
         var permShort = (conn.permissions || []).map(p => {
             if (p === 'pay_invoice') return 'pay';
@@ -111,12 +116,16 @@ export async function run(client, args) {
         }).filter((v, i, a) => a.indexOf(v) === i).join(' ');
 
         var created = conn.created_at ? new Date(conn.created_at * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+        var typeLabel = conn.dedicated ? `${c.green}dedicated${c.reset}` : `${c.yellow}shared${c.reset}`;
+        var balance = conn.dedicated
+            ? sats(Math.floor((conn.dedicated_balance_msat || 0) / 1000))
+            : sats(Math.floor((conn.balance_msat || 0) / 1000));
 
         return [
             `${c.purple}#${conn.id}${c.reset}`,
             `${c.white}${conn.label}${c.reset}`,
-            `${c.muted}${permShort}${c.reset}`,
-            sats(Math.floor((conn.balance_msat || 0) / 1000)),
+            typeLabel,
+            balance,
             `${c.muted}${conn.tx_count}${c.reset}`,
             `${c.dim}${created}${c.reset}`,
         ];
@@ -125,6 +134,6 @@ export async function run(client, args) {
     print(heading('NWC Connections'));
     print(table(headers, rows, { alignRight: [3, 4] }));
     print('');
-    print(`  ${c.dim}${d.connections.length} active.${c.reset}  ${c.dim}Show details: ${c.white}nutbits connections <id>${c.dim} · Manage: ${c.white}nutbits connect${c.dim} (new) · ${c.white}nutbits revoke${c.dim} (remove)${c.reset}`);
+    print(`  ${c.dim}${d.connections.length} active.${c.reset}  ${c.dim}Show details: ${c.white}nutbits connections <id>${c.dim} · Manage: ${c.white}nutbits connect${c.dim} (new) · ${c.white}nutbits revoke${c.dim} (remove) · ${c.white}nutbits fund${c.dim} (add sats)${c.reset}`);
     print('');
 }

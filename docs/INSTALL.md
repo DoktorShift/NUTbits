@@ -1,6 +1,12 @@
 <img src="../assets/headers/doc-install.svg" alt="Installation Guide" width="100%">
 
-# Installation
+# Installation (Local)
+
+> This guide is for **local development and personal use** — running NUTbits on your own machine.
+>
+> Deploying to a **VPS with HTTPS and a public domain**? See **[DEPLOY.md](DEPLOY.md)** instead.
+
+**[Requirements](#requirements) · [Bare Metal](#bare-metal) · [Docker](#docker) · [LNbits](#connect-to-lnbits) · [Funding](#funding-your-wallet) · [Upgrading](#upgrading)**
 
 ## Requirements
 

@@ -18,6 +18,8 @@ var commands = {
     connections: () => import('../cli/commands/connections.js'),
     connect:     () => import('../cli/commands/connect.js'),
     revoke:      () => import('../cli/commands/revoke.js'),
+    fund:        () => import('../cli/commands/fund.js'),
+    withdraw:    () => import('../cli/commands/withdraw.js'),
     mints:       () => import('../cli/commands/mints.js'),
     nuts:        () => import('../cli/commands/nuts.js'),
     relays:      () => import('../cli/commands/relays.js'),
@@ -68,6 +70,9 @@ var { values: flags, positionals } = parseArgs({
         'no-wait':    { type: 'boolean', default: false },
         level:        { type: 'string' },
         follow:       { type: 'boolean', default: true },
+        shared:       { type: 'boolean', default: false },
+        all:          { type: 'boolean', default: false },
+        lud16:        { type: 'string' },
     },
 });
 
@@ -154,6 +159,8 @@ function printHelp() {
     ${c.green}connections${c.reset}       list NWC connections
     ${c.green}connections${c.reset} <id>  show connection details + NWC string + QR
     ${c.green}connect${c.reset}           create a new NWC connection
+    ${c.green}fund${c.reset}              fund a dedicated connection
+    ${c.green}withdraw${c.reset}          withdraw from a dedicated connection
     ${c.green}revoke${c.reset} <id>       revoke a connection
 
     ${c.green}mints${c.reset}             mint info + health

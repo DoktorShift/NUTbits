@@ -27,6 +27,10 @@ License: AGPL-3.0. Author: DoktorShift.
 - Proof restoration failures write encrypted recovery files instead of logging secrets.
 - NUTBITS_SEED should be backed up immediately after first run. Without the seed, proof recovery (NUT-09, NUT-13) is impossible.
 - NUTBITS_MINT_URL is only used when NUTBITS_MINT_URLS is empty. Once multi-mint is set, the single-mint field is ignored entirely.
+- All NWC connections are dedicated by default — own isolated balance starting at 0 sats. The user funds them explicitly. Shared balance (full wallet access) requires explicit opt-in and is only for the operator's own trusted apps.
+- Deeplink connections are ALWAYS dedicated. External apps cannot request shared access. The `dedicated` flag is hardcoded server-side.
+- The `/connect` endpoint is served by the API server (not the GUI). It works in headless mode without the GUI running. Apps open `GET /connect?appname=X&callback=Y` and the page handles connection creation via `POST /connect`.
+- Fund and withdraw endpoints (`POST /api/v1/connections/:pubkey/fund`, `POST /api/v1/connections/:pubkey/withdraw`) move sats between the main wallet and dedicated connection balances. On revoke, remaining dedicated balance automatically returns to the main wallet.
 
 ## Core Documentation
 

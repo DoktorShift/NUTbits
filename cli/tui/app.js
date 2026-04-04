@@ -17,6 +17,8 @@ var ACTION_COMMANDS = {
     connect:     () => import('../commands/connect.js'),
     export:      () => import('../commands/export.js'),
     revoke:      () => import('../commands/revoke.js'),
+    fund:        () => import('../commands/fund.js'),
+    withdraw:    () => import('../commands/withdraw.js'),
     backup:      () => import('../commands/backup.js'),
     restore:     () => import('../commands/restore.js'),
     config:      { loader: () => import('../commands/config.js'), args: { _positional: ['set'] } },
@@ -143,29 +145,58 @@ function formatUptime(ms) {
 }
 
 // ── Escape Sequence Handler ──────────────────────────────────────────────
+// Properly splits batched input into individual key events.
+// Handles: regular chars, CSI sequences (\x1b[...X), bare ESC, Alt+key.
 
 function createKeyReader(handler) {
     var escBuffer = '';
     var escTimer = null;
 
+    var processBuffer = () => {
+        while (escBuffer.length > 0) {
+            if (escBuffer[0] === '\x1b') {
+                if (escBuffer.length === 1) {
+                    // Bare ESC so far — wait for more or emit standalone ESC
+                    escTimer = setTimeout(() => {
+                        handler('\x1b');
+                        escBuffer = '';
+                    }, 50);
+                    return;
+                }
+                if (escBuffer[1] === '[') {
+                    // CSI sequence: \x1b[ <params> <terminator 0x40-0x7E>
+                    var end = -1;
+                    for (var i = 2; i < escBuffer.length; i++) {
+                        var ch = escBuffer.charCodeAt(i);
+                        if (ch >= 0x40 && ch <= 0x7E) { end = i; break; }
+                    }
+                    if (end === -1) {
+                        // Incomplete CSI — wait for terminator
+                        escTimer = setTimeout(() => {
+                            escBuffer = '';
+                        }, 50);
+                        return;
+                    }
+                    var seq = escBuffer.slice(0, end + 1);
+                    escBuffer = escBuffer.slice(end + 1);
+                    handler(seq);
+                } else {
+                    // Alt+key (ESC + char)
+                    handler(escBuffer.slice(0, 2));
+                    escBuffer = escBuffer.slice(2);
+                }
+            } else {
+                // Regular single character
+                handler(escBuffer[0]);
+                escBuffer = escBuffer.slice(1);
+            }
+        }
+    };
+
     return (data) => {
         if (escTimer) { clearTimeout(escTimer); escTimer = null; }
         escBuffer += data;
-
-        if (escBuffer.length >= 3 && escBuffer.startsWith('\x1b[')) {
-            handler(escBuffer);
-            escBuffer = '';
-            return;
-        }
-        if (escBuffer === '\x1b') {
-            escTimer = setTimeout(() => {
-                handler('\x1b');
-                escBuffer = '';
-            }, 50);
-            return;
-        }
-        handler(escBuffer);
-        escBuffer = '';
+        processBuffer();
     };
 }
 
@@ -181,13 +212,18 @@ var footerForContext = (focus, isAction, showHelp, cols) => {
     var compact = cols < 90; // use short labels on narrow terminals
     var parts = [];
     if (focus === 'menu') {
+        var tag = `${c.dim}[${c.reset}${c.purple}${c.bold}◀ menu${c.reset}${c.dim}]${c.reset}`;
+        parts.push(tag);
         parts.push(hintKey('↑↓', compact ? 'nav' : 'navigate'));
         parts.push(hintKey('↵', isAction ? 'run' : (compact ? 'sel' : 'refresh')));
-        parts.push(hintKey('Tab', compact ? '→' : 'content'));
+        parts.push(hintKey('Tab', compact ? '→' : '→ content'));
     } else {
+        var tag2 = `${c.dim}[${c.reset}${c.purple}${c.bold}content ▶${c.reset}${c.dim}]${c.reset}`;
+        parts.push(tag2);
         parts.push(hintKey('↑↓', compact ? 'scr' : 'scroll'));
         if (!compact) parts.push(hintKey('PgUp/Dn', 'page'));
-        parts.push(hintKey('Tab', compact ? '←' : 'menu'));
+        if (!compact) parts.push(hintKey('g/G', 'top/btm'));
+        parts.push(hintKey('Tab', compact ? '←' : '← menu'));
         if (isAction) parts.push(hintKey('↵', 'run'));
     }
     if (!compact) parts.push(hintKey('r', 'refresh'));
@@ -276,19 +312,25 @@ export async function startTUI(client) {
                     ` ${hr}`,
                     ` ${row(`${c.white}${c.bold}Keyboard Shortcuts${c.reset}`)}`,
                     ` ${blank}`,
-                    ` ${row(`${c.purple}${c.bold}Navigation${c.reset}`)}`,
-                    ` ${row(`  ${c.white}Tab${c.reset}${c.dim}          switch focus${c.reset}`)}`,
-                    ` ${row(`  ${c.white}↑↓${c.reset} ${c.dim}or${c.reset} ${c.white}j/k${c.reset}${c.dim}    move / scroll${c.reset}`)}`,
-                    ` ${row(`  ${c.white}PgUp/PgDn${c.reset}${c.dim}    page up / down${c.reset}`)}`,
-                    ` ${row(`  ${c.white}g / G${c.reset}${c.dim}        top / bottom${c.reset}`)}`,
+                    ` ${row(`${c.purple}${c.bold}Focus${c.reset}`)}`,
+                    ` ${row(`  ${c.white}Tab${c.reset}${c.dim}          switch left ↔ right panel${c.reset}`)}`,
+                    ` ${blank}`,
+                    ` ${row(`${c.purple}${c.bold}Left Panel${c.reset}${c.dim}  (menu)${c.reset}`)}`,
+                    ` ${row(`  ${c.white}↑↓${c.reset} ${c.dim}or${c.reset} ${c.white}j/k${c.reset}${c.dim}    navigate items${c.reset}`)}`,
                     ` ${row(`  ${c.white}Enter${c.reset}${c.dim}        select / run action${c.reset}`)}`,
+                    ` ${blank}`,
+                    ` ${row(`${c.purple}${c.bold}Right Panel${c.reset}${c.dim} (content)${c.reset}`)}`,
+                    ` ${row(`  ${c.white}↑↓${c.reset} ${c.dim}or${c.reset} ${c.white}j/k${c.reset}${c.dim}    scroll content${c.reset}`)}`,
+                    ` ${row(`  ${c.white}PgUp/PgDn${c.reset}${c.dim}    page up / down${c.reset}`)}`,
+                    ` ${row(`  ${c.white}g / G${c.reset}${c.dim}        jump to top / bottom${c.reset}`)}`,
                     ` ${blank}`,
                     ` ${row(`${c.purple}${c.bold}General${c.reset}`)}`,
                     ` ${row(`  ${c.white}r${c.reset}${c.dim}            refresh panel${c.reset}`)}`,
-                    ` ${row(`  ${c.white}?${c.reset}${c.dim}            close this help${c.reset}`)}`,
+                    ` ${row(`  ${c.white}PgUp/PgDn${c.reset}${c.dim}    scroll content (any focus)${c.reset}`)}`,
+                    ` ${row(`  ${c.white}?${c.reset}${c.dim}            toggle this help${c.reset}`)}`,
                     ` ${row(`  ${c.white}q${c.reset} ${c.dim}or${c.reset} ${c.white}Esc${c.reset}${c.dim}     quit${c.reset}`)}`,
                     ` ${blank}`,
-                    ` ${row(`${c.dim}Tab switches focus between panels${c.reset}`)}`,
+                    ` ${row(`${c.dim}Focused panel has ${c.purple}purple${c.reset}${c.dim} borders${c.reset}`)}`,
                     ` ${btm}`,
                 ];
             }

@@ -106,12 +106,7 @@ watch(() => route.path, () => {
     <div class="px-4 py-5 border-b border-nutbits-700/50">
       <div class="flex items-center justify-between">
         <router-link to="/dashboard" class="flex items-center gap-3 group">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/25 to-amber-600/10 border border-amber-500/25 flex items-center justify-center shadow-[0_0_16px_rgba(245,158,11,0.12)] group-hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-shadow">
-            <svg viewBox="0 0 24 24" class="w-5 h-5 text-amber-500" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M13 7l-4 6h3l-1 5 4-6h-3l1-5z" fill="currentColor"/>
-            </svg>
-          </div>
+          <img src="/nutbits-logo.svg" alt="NUTbits" class="w-9 h-9 rounded-xl shadow-[0_0_16px_rgba(245,158,11,0.12)] group-hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-shadow" />
           <div class="leading-tight">
             <span class="text-[15px] font-bold tracking-tight text-gradient-amber block">NUTbits</span>
             <span class="text-nutbits-500 text-[9px] tracking-[0.15em] uppercase leading-none">Console</span>

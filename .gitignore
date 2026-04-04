@@ -36,10 +36,16 @@ blog/_drafts/
 # Local runtime output
 .run/
 logs/
+*.pid
+
+# Socket and token files
+*.sock
+*.sock.token
 
 # OS files
 .DS_Store
 Thumbs.db
+._*
 
 # Editor
 *.swp
@@ -47,3 +53,5 @@ Thumbs.db
 *~
 .vscode/
 .idea/
+*.sublime-*
+
