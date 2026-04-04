@@ -48,7 +48,7 @@ Deeplink connections are **sub-wallets**, not full wallet access.
 | Property | Value |
 |----------|-------|
 | Starting balance | 0 sats |
-| Balance source | User funds it via NUTbits |
+| Balance source | User funds it |
 | Spending scope | Only the dedicated balance |
 | `get_balance` returns | The dedicated balance, not the wallet total |
 | `pay_invoice` checks | The dedicated balance, not the wallet total |
