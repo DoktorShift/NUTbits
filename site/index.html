@@ -643,14 +643,27 @@
 
 
   <!-- ══════════════════ FOOTER ══════════════════ -->
-  <footer class="py-12 px-6 border-t border-surface-800">
+
+  <!-- Desktop footer -->
+  <footer class="hidden sm:block py-12 px-6 border-t border-surface-800">
     <div class="max-w-5xl mx-auto">
       <div class="grid sm:grid-cols-3 gap-8 mb-8">
         <div>
-          <div class="flex items-center gap-2 font-extrabold text-white mb-2">
+          <div class="flex items-center gap-2 font-extrabold text-white mb-3">
             <span class="text-lg">&#x1f330;</span> NUTbits
           </div>
-          <p class="text-[11px] text-surface-600 leading-relaxed">Cashu ecash to Lightning via NWC.<br>Open source. AGPL-3.0.</p>
+          <p class="text-[11px] text-surface-600 leading-relaxed mb-4">Cashu ecash to Lightning via NWC.<br>Open source. AGPL-3.0.</p>
+          <h4 class="text-[10px] font-semibold text-surface-500 uppercase tracking-widest mb-3">Built by</h4>
+          <div class="space-y-2.5">
+            <a href="https://github.com/DoktorShift" class="flex items-center gap-2.5 group">
+              <img src="https://avatars.githubusercontent.com/u/106493492?v=4" alt="DoktorShift" class="w-7 h-7 rounded-full ring-1 ring-surface-700 group-hover:ring-amber-500/50 transition-all" />
+              <span class="text-xs text-surface-400 group-hover:text-white transition-colors">DoktorShift</span>
+            </a>
+            <a href="https://github.com/Pratik227" class="flex items-center gap-2.5 group">
+              <img src="https://avatars.githubusercontent.com/u/34883558?v=4" alt="Pratik227" class="w-7 h-7 rounded-full ring-1 ring-surface-700 group-hover:ring-amber-500/50 transition-all" />
+              <span class="text-xs text-surface-400 group-hover:text-white transition-colors">Pratik227</span>
+            </a>
+          </div>
         </div>
         <div>
           <h4 class="text-[10px] font-semibold text-surface-500 uppercase tracking-widest mb-3">Resources</h4>
@@ -672,16 +685,70 @@
           </ul>
         </div>
       </div>
-
-      <div class="pt-6 border-t border-surface-800/60 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="pt-6 border-t border-surface-800/60 flex justify-between items-center">
         <p class="text-[10px] text-surface-600">
-          Built by <a href="https://github.com/DoktorShift" class="hover:text-white transition-colors">DoktorShift</a> & <a href="https://github.com/Pratik227" class="hover:text-white transition-colors">Pratik227</a>.
-          Inspired by <a href="https://github.com/supertestnet/bankify" class="hover:text-white transition-colors">Bankify</a>.
+          Inspired by <a href="https://github.com/supertestnet/bankify" class="hover:text-white transition-colors">supertestnet/bankify</a>.
         </p>
         <a href="https://github.com/DoktorShift/nutbits" class="text-surface-600 hover:text-white transition-colors">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         </a>
       </div>
+    </div>
+  </footer>
+
+  <!-- Mobile footer -->
+  <footer class="sm:hidden border-t border-surface-800">
+
+    <!-- Contributors card -->
+    <div class="px-6 py-8 text-center">
+      <p class="text-[10px] font-semibold text-surface-500 uppercase tracking-widest mb-4">Built by</p>
+      <div class="flex justify-center gap-6 mb-6">
+        <a href="https://github.com/DoktorShift" class="flex flex-col items-center gap-2 group">
+          <img src="https://avatars.githubusercontent.com/u/106493492?v=4" alt="DoktorShift" class="w-14 h-14 rounded-full ring-2 ring-surface-700 group-active:ring-amber-500/60 transition-all" />
+          <span class="text-xs font-medium text-surface-300">DoktorShift</span>
+        </a>
+        <a href="https://github.com/Pratik227" class="flex flex-col items-center gap-2 group">
+          <img src="https://avatars.githubusercontent.com/u/34883558?v=4" alt="Pratik227" class="w-14 h-14 rounded-full ring-2 ring-surface-700 group-active:ring-amber-500/60 transition-all" />
+          <span class="text-xs font-medium text-surface-300">Pratik227</span>
+        </a>
+      </div>
+      <div class="flex items-center justify-center gap-2 mb-1">
+        <span class="text-lg">&#x1f330;</span>
+        <span class="font-extrabold text-white">NUTbits</span>
+      </div>
+      <p class="text-[10px] text-surface-600">Cashu ecash to Lightning via NWC</p>
+    </div>
+
+    <!-- Links grid -->
+    <div class="grid grid-cols-2 border-t border-surface-800">
+      <div class="px-6 py-5 border-r border-surface-800">
+        <h4 class="text-[9px] font-semibold text-surface-500 uppercase tracking-widest mb-3">Resources</h4>
+        <ul class="space-y-2.5 text-[13px]">
+          <li><a href="https://github.com/DoktorShift/nutbits" class="text-surface-400 active:text-white transition-colors">GitHub</a></li>
+          <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/INSTALL.md" class="text-surface-400 active:text-white transition-colors">Install</a></li>
+          <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/DEPLOY.md" class="text-surface-400 active:text-white transition-colors">Deploy</a></li>
+          <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/DEEPLINK-APPS.md" class="text-surface-400 active:text-white transition-colors">Add Your App</a></li>
+        </ul>
+      </div>
+      <div class="px-6 py-5">
+        <h4 class="text-[9px] font-semibold text-surface-500 uppercase tracking-widest mb-3">Ecosystem</h4>
+        <ul class="space-y-2.5 text-[13px]">
+          <li><a href="https://cashu.space" class="text-surface-400 active:text-cashu-400 transition-colors">Cashu</a></li>
+          <li><a href="https://lnbits.com" class="text-surface-400 active:text-white transition-colors">LNbits</a></li>
+          <li><a href="https://github.com/nostr-protocol/nips/blob/master/47.md" class="text-surface-400 active:text-purple-400 transition-colors">NIP-47</a></li>
+          <li><a href="https://bitcoinmints.com" class="text-surface-400 active:text-white transition-colors">Find Mints</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="px-6 py-4 border-t border-surface-800/60 flex justify-between items-center">
+      <p class="text-[10px] text-surface-600">
+        Inspired by <a href="https://github.com/supertestnet/bankify" class="active:text-white transition-colors">bankify</a>
+      </p>
+      <a href="https://github.com/DoktorShift/nutbits" class="text-surface-600 active:text-white p-2 -mr-2 transition-colors">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
     </div>
   </footer>
 
