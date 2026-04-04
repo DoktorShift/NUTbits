@@ -9,7 +9,8 @@
   <meta property="og:description" content="Bridge any Cashu mint to Lightning via NWC. Power LNbits, POS systems, and any NWC-compatible app with ecash.">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0a0a0a">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f330;</text></svg>">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/logo/png/pixel-nut-v2b-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="../assets/logo/png/pixel-nut-v2b-64.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -67,6 +68,7 @@
       </a>
       <div class="flex items-center gap-6 text-sm">
         <a href="#how" class="text-surface-500 hover:text-white transition-colors hidden sm:inline">How it works</a>
+        <a href="#connect" class="text-surface-500 hover:text-white transition-colors hidden sm:inline">Connect</a>
         <a href="#features" class="text-surface-500 hover:text-white transition-colors hidden sm:inline">Features</a>
         <a href="#protocols" class="text-surface-500 hover:text-white transition-colors hidden sm:inline">Protocols</a>
         <a href="https://github.com/DoktorShift/nutbits" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-surface-400 hover:text-white hover:bg-surface-800 transition-all">
@@ -204,7 +206,8 @@
             powers the entire instance - 60+ extensions, every wallet, every payment.
           </p>
           <ul class="space-y-2.5 text-sm">
-            <li class="flex items-center gap-2.5 text-surface-300"><span class="text-cashu-400 text-xs">&#10003;</span> Scoped connections with per-wallet permissions</li>
+            <li class="flex items-center gap-2.5 text-surface-300"><span class="text-cashu-400 text-xs">&#10003;</span> Dedicated balance per connection — apps never touch your main wallet</li>
+            <li class="flex items-center gap-2.5 text-surface-300"><span class="text-cashu-400 text-xs">&#10003;</span> One-tap deeplink connections — no QR, no paste</li>
             <li class="flex items-center gap-2.5 text-surface-300"><span class="text-cashu-400 text-xs">&#10003;</span> Daily spending limits and per-payment caps</li>
             <li class="flex items-center gap-2.5 text-surface-300"><span class="text-cashu-400 text-xs">&#10003;</span> Optional service fees on outgoing payments</li>
             <li class="flex items-center gap-2.5 text-surface-300"><span class="text-cashu-400 text-xs">&#10003;</span> Multi-mint failover for high availability</li>
@@ -222,21 +225,22 @@
           </div>
           <div class="p-4 font-mono text-[11px] leading-[1.8] text-surface-500">
             <div><span class="text-surface-600">$</span> <span class="text-surface-300">nutbits connect</span></div>
-            <div class="mt-2 text-surface-700"># Step 1</div>
+            <div class="mt-2 text-surface-700"># Step 1 — Name</div>
             <div>Connection name: <span class="text-white">lnbits-main</span></div>
-            <div class="text-surface-700"># Step 2</div>
+            <div class="text-surface-700"># Step 2 — Permissions</div>
             <div>Permissions: <span class="text-white">pay, receive, balance, history, info</span></div>
-            <div class="text-surface-700"># Step 3</div>
-            <div>Daily limit: <span class="text-white">50,000 sats</span></div>
-            <div class="text-surface-700"># Step 4</div>
-            <div>Lightning Address: <span class="text-white">shop@lnbits.com</span></div>
-            <div class="mt-3 text-cashu-400">&#10003; Connection created</div>
-            <div class="text-amber-400/80 mt-0.5 break-all text-[10px]">nostr+walletconnect://e7a2...f3b1?relay=wss://...&lud16=shop%40lnbits.com</div>
+            <div class="text-surface-700"># Step 3 — Balance type</div>
+            <div>Balance: <span class="text-cashu-400">&#x25CF; dedicated</span> <span class="text-surface-700">(own balance, starts at 0)</span></div>
+            <div class="mt-3 text-cashu-400">&#10003; Connection created — dedicated balance: 0 sats</div>
+            <div class="mt-3"><span class="text-surface-600">$</span> <span class="text-surface-300">nutbits fund 1 10000</span></div>
+            <div class="text-cashu-400">&#10003; Funded 10,000 sats → balance: 10,000 sats</div>
           </div>
         </div>
       </div>
     </div>
   </section>
+
+
 
 
   <!-- ══════════════════ FEATURES ══════════════════ -->
@@ -246,6 +250,14 @@
       <h2 class="text-2xl sm:text-3xl font-bold text-white mb-10">Built for the ecash power user</h2>
 
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-surface-700/50 rounded-xl overflow-hidden">
+        <div class="p-5 bg-surface-950 feature-cell group">
+          <h3 class="font-bold text-sm text-white mb-1.5 group-hover:text-amber-400 transition-colors">Dedicated Connections</h3>
+          <p class="text-xs text-surface-500 leading-relaxed">Every connection gets its own balance. Fund it explicitly. Apps never touch your main wallet.</p>
+        </div>
+        <div class="p-5 bg-surface-950 feature-cell group">
+          <h3 class="font-bold text-sm text-white mb-1.5 group-hover:text-amber-400 transition-colors">One-Tap Deeplinks</h3>
+          <p class="text-xs text-surface-500 leading-relaxed">Apps connect via URL. No GUI needed. Works headless. Bridge animation built into the API.</p>
+        </div>
         <div class="p-5 bg-surface-950 feature-cell group">
           <h3 class="font-bold text-sm text-white mb-1.5 group-hover:text-amber-400 transition-colors">Runs 24/7</h3>
           <p class="text-xs text-surface-500 leading-relaxed">Daemon with TUI, CLI, GUI, and REST API. Manage everything live while NWC traffic flows.</p>
@@ -390,6 +402,226 @@
   </section>
 
 
+  <!-- ══════════════════ DID YOU KNOW ══════════════════ -->
+  <section id="connect" class="py-20 px-6">
+    <div class="max-w-5xl mx-auto">
+      <p class="font-mono text-xs text-amber-500 mb-2 tracking-widest uppercase">Did you know?</p>
+      <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">Apps connect to NUTbits in one tap</h2>
+      <p class="text-surface-400 text-sm leading-relaxed max-w-lg mb-12">
+        No QR codes. No copy-paste. The app opens a URL, NUTbits handles the rest.
+        Every connection is dedicated — own balance, starting at zero.
+      </p>
+
+      <div class="max-w-md mx-auto">
+        <div class="border border-surface-800 rounded-2xl overflow-hidden bg-[#0f0e0d] shadow-2xl shadow-black/50" id="dl-sim">
+
+          <!-- Browser chrome -->
+          <div class="flex items-center gap-1.5 px-4 py-2.5 border-b border-surface-800 bg-surface-900/50">
+            <span class="w-2 h-2 rounded-full bg-red-500/40"></span>
+            <span class="w-2 h-2 rounded-full bg-yellow-500/40"></span>
+            <span class="w-2 h-2 rounded-full bg-cashu-500/40"></span>
+            <span class="ml-3 flex-1 text-[9px] font-mono text-surface-600 bg-surface-900 rounded px-3 py-1 truncate" id="dl-url">nutbits.example.com/connect?appname=LNbits&amp;callback=...</span>
+          </div>
+
+          <div class="relative" style="min-height: 440px">
+
+            <!-- ═══ SCREEN 1: Connecting ═══ -->
+            <div class="absolute inset-0 p-6 flex flex-col items-center justify-center" id="dl-s1">
+              <svg viewBox="0 0 340 130" fill="none" class="w-full max-w-[320px] mb-6">
+                <path d="M 60 65 C 130 65,210 65,280 65" stroke="#2a2827" stroke-width="2" stroke-linecap="round"/>
+                <path d="M 60 65 C 130 65,210 65,280 65" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"
+                  stroke-dasharray="220" stroke-dashoffset="220" id="dl-path"/>
+                <!-- Left node -->
+                <circle cx="60" cy="65" r="24" fill="#1a1918" stroke="#2a2827" stroke-width="1.5"/>
+                <circle cx="60" cy="65" r="24" fill="none" stroke="#2a2827" stroke-width="1" id="dl-rl"/>
+                <image id="dl-logo1" href="../gui/public/app-icons/lnbits.svg" x="40" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <text id="dl-label1" x="60" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">LNbits</text>
+                <!-- Right node: NUTbits (always) -->
+                <circle cx="280" cy="65" r="24" fill="#0f0e0d" stroke="#2a2827" stroke-width="1.5"/>
+                <circle cx="280" cy="65" r="24" fill="none" stroke="#2a2827" stroke-width="1" id="dl-rr"/>
+                <image href="../assets/logo/pixel-nut-v2b.svg" x="260" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <text x="280" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">NUTbits</text>
+                <!-- Center spinner -->
+                <g transform="translate(170,65)" id="dl-spin">
+                  <circle r="9" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="14 42" stroke-linecap="round"/>
+                </g>
+                <path d="M 164 48 L 168 52 L 176 43" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"
+                  stroke-dasharray="24" stroke-dashoffset="24" id="dl-chk" opacity="0"/>
+              </svg>
+              <p class="font-semibold text-sm" id="dl-t1" style="color:#f59e0b">Connecting</p>
+              <p class="text-[#8a8078] text-xs mt-1" id="dl-sub1">Establishing dedicated NWC channel with <strong class="text-[#c8beb4]">LNbits</strong>...</p>
+            </div>
+
+            <!-- ═══ SCREEN 2: Connected ═══ -->
+            <div class="absolute inset-0 p-6 flex flex-col items-center opacity-0" id="dl-s2" style="transform:translateY(8px)">
+              <svg viewBox="0 0 340 130" fill="none" class="w-full max-w-[320px] mb-5">
+                <path d="M 60 65 C 130 65,210 65,280 65" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Left node (dynamic) -->
+                <circle cx="60" cy="65" r="24" fill="#1a1918" stroke="#2a2827" stroke-width="1.5"/>
+                <circle cx="60" cy="65" r="24" fill="none" stroke="#34d399" stroke-width="2"/>
+                <image id="dl-logo2" href="../gui/public/app-icons/lnbits.svg" x="40" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <text id="dl-label2" x="60" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">LNbits</text>
+                <!-- NUTbits (always) -->
+                <circle cx="280" cy="65" r="24" fill="#0f0e0d" stroke="#2a2827" stroke-width="1.5"/>
+                <circle cx="280" cy="65" r="24" fill="none" stroke="#34d399" stroke-width="2"/>
+                <image href="../assets/logo/pixel-nut-v2b.svg" x="260" y="45" width="40" height="40" clip-path="circle(20px at 20px 20px)"/>
+                <text x="280" y="100" text-anchor="middle" fill="#525252" font-size="9" font-family="system-ui">NUTbits</text>
+                <path d="M 164 48 L 168 52 L 176 43" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+
+              <p class="text-[#34d399] font-semibold text-sm">Connected</p>
+              <span class="text-[10px] font-medium text-[#34d399] bg-[#34d399]/10 border border-[#34d399]/20 px-2 py-0.5 rounded-full mt-1.5 mb-3">Verified app</span>
+              <p class="text-[#8a8078] text-xs mb-4">Dedicated NWC channel established. Fund it to start spending.</p>
+
+              <div class="w-full border border-[#2a2827] rounded-lg overflow-hidden text-[11px]">
+                <div class="flex justify-between px-3 py-2 bg-[#1a1918]"><span class="text-[#625a52]">Label</span><span class="text-[#e8e0d8]" id="dl-meta-label">LNbits (deep link)</span></div>
+                <div class="flex justify-between px-3 py-2 bg-[#1a1918] border-t border-[#252321]"><span class="text-[#625a52]">Pubkey</span><span class="text-[#e8e0d8] font-mono text-[10px]">e7a2c4f1...3b1d</span></div>
+                <div class="flex justify-between px-3 py-2 bg-[#1a1918] border-t border-[#252321]"><span class="text-[#625a52]">Permissions</span><span class="text-[#e8e0d8]" id="dl-meta-perms">6 granted</span></div>
+                <div class="flex justify-between px-3 py-2 bg-[#1a1918] border-t border-[#252321]"><span class="text-[#625a52]">Balance</span><span class="text-[#e8e0d8]">0 sats <span class="text-[#625a52] text-[10px]">(fund via NUTbits)</span></span></div>
+              </div>
+              <p class="text-[#8a8078] text-[10px] mt-4 opacity-0" id="dl-redir">Redirecting to LNbits...</p>
+            </div>
+
+            <!-- ═══ SCREEN 3: Logo breather ═══ -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0" id="dl-s3" style="transform:translateY(8px)">
+              <img src="../assets/logo/pixel-nut-v2b.svg" alt="NUTbits" class="w-20 h-20 mb-4 rounded-2xl">
+              <p class="text-[#8a8078] text-sm italic">your nuts, your rules</p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="mt-8 text-center space-y-3">
+          <p class="text-surface-400 text-xs leading-relaxed max-w-sm mx-auto">
+            <span class="text-amber-400 font-semibold">Dedicated by default.</span>
+            Every connection gets its own isolated balance. Apps can only spend what you fund in.
+          </p>
+          <a href="https://github.com/DoktorShift/nutbits/blob/main/docs/DEEPLINK-APPS.md" class="inline-flex items-center gap-2 text-xs text-surface-500 hover:text-amber-400 transition-colors group">
+            Add your app to the deeplink registry
+            <svg class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    @keyframes dl-spin-anim { to { transform: rotate(360deg); } }
+    #dl-spin circle { animation: dl-spin-anim 1s linear infinite; transform-origin: center; transform-box: fill-box; }
+  </style>
+
+  <script>
+    // Deeplink simulation — rotates through 3 apps
+    // Each cycle: Screen 1 (connecting) → Screen 2 (confirmed) → Screen 3 (logo breather)
+    // Apps: LNbits → Buho Jump → Primal, then loops
+    (function() {
+      var apps = [
+        { name: 'LNbits',     icon: '../gui/public/app-icons/lnbits.svg',          perms: '6 granted', url: 'nutbits.example.com/connect?appname=LNbits&callback=...' },
+        { name: 'Buho Jump',  icon: '../gui/public/app-icons/buho-extension.png',  perms: '6 granted', url: 'nutbits.example.com/connect?appname=BuhoJump&callback=...' },
+        { name: 'Primal',     icon: '../gui/public/app-icons/primal.png',           perms: '4 granted', url: 'nutbits.example.com/connect?appname=Primal&callback=...' },
+        { name: 'Any NWC App', icon: '../gui/public/app-icons/nwc-logo.svg',       perms: '2 granted', url: 'nutbits.example.com/connect?appname=MyApp&callback=...' },
+      ];
+      var appIdx = 0;
+
+      var s1 = document.getElementById('dl-s1');
+      var s2 = document.getElementById('dl-s2');
+      var s3 = document.getElementById('dl-s3');
+      var path = document.getElementById('dl-path');
+      var spin = document.getElementById('dl-spin');
+      var chk = document.getElementById('dl-chk');
+      var rl = document.getElementById('dl-rl');
+      var rr = document.getElementById('dl-rr');
+      var t1 = document.getElementById('dl-t1');
+      var redir = document.getElementById('dl-redir');
+      // Dynamic elements
+      var logo1 = document.getElementById('dl-logo1');
+      var logo2 = document.getElementById('dl-logo2');
+      var label1 = document.getElementById('dl-label1');
+      var label2 = document.getElementById('dl-label2');
+      var sub1 = document.getElementById('dl-sub1');
+      var metaLabel = document.getElementById('dl-meta-label');
+      var metaPerms = document.getElementById('dl-meta-perms');
+      var urlBar = document.getElementById('dl-url');
+      if (!s1) return;
+
+      var T = 'transition';
+      function show(el, delay) {
+        el.style[T] = 'opacity 0.6s ease ' + (delay||0) + 's, transform 0.6s ease ' + (delay||0) + 's';
+        el.style.opacity = '1'; el.style.transform = 'translateY(0)';
+      }
+      function hide(el, delay) {
+        el.style[T] = 'opacity 0.5s ease ' + (delay||0) + 's, transform 0.5s ease ' + (delay||0) + 's';
+        el.style.opacity = '0'; el.style.transform = 'translateY(-8px)';
+      }
+
+      function setApp(app) {
+        logo1.setAttribute('href', app.icon);
+        logo2.setAttribute('href', app.icon);
+        label1.textContent = app.name;
+        label2.textContent = app.name;
+        sub1.innerHTML = 'Establishing dedicated NWC channel with <strong style="color:#c8beb4">' + app.name + '</strong>...';
+        metaLabel.textContent = app.name + ' (deep link)';
+        metaPerms.textContent = app.perms;
+        redir.textContent = 'Redirecting to ' + app.name + '...';
+        urlBar.textContent = app.url;
+      }
+
+      function reset() {
+        [s1,s2,s3].forEach(function(s) { s.style[T]='none'; s.style.opacity='0'; s.style.transform='translateY(8px)'; });
+        s1.style.opacity='1'; s1.style.transform='translateY(0)';
+        path.style[T]='none'; path.setAttribute('stroke-dashoffset','220'); path.setAttribute('stroke','#f59e0b');
+        spin.style.opacity='1';
+        chk.setAttribute('stroke-dashoffset','24'); chk.style.opacity='0';
+        rl.setAttribute('stroke','#2a2827'); rl.setAttribute('stroke-width','1');
+        rr.setAttribute('stroke','#2a2827'); rr.setAttribute('stroke-width','1');
+        t1.textContent='Connecting'; t1.style.color='#f59e0b';
+        redir.style.opacity='0';
+      }
+
+      function play() {
+        setApp(apps[appIdx]);
+        appIdx = (appIdx + 1) % apps.length;
+        reset();
+
+        // 0.3s: start drawing bridge (slow — 2.8s)
+        setTimeout(function() {
+          path.style[T] = 'stroke-dashoffset 2.8s cubic-bezier(0.25,0.1,0.25,1)';
+          path.setAttribute('stroke-dashoffset','0');
+        }, 300);
+
+        // 3.4s: connected
+        setTimeout(function() {
+          spin.style.opacity='0';
+          chk.style.opacity='1';
+          chk.style[T]='stroke-dashoffset 0.5s ease-out';
+          chk.setAttribute('stroke-dashoffset','0');
+          rl.setAttribute('stroke','#34d399'); rl.setAttribute('stroke-width','2');
+          rr.setAttribute('stroke','#34d399'); rr.setAttribute('stroke-width','2');
+          path.style[T]='stroke 0.5s ease'; path.setAttribute('stroke','#34d399');
+          t1.textContent='Connected'; t1.style.color='#34d399';
+        }, 3400);
+
+        // 4.5s: slide to screen 2
+        setTimeout(function() { hide(s1,0); show(s2,0.15); }, 4500);
+
+        // 7s: show redirect
+        setTimeout(function() { redir.style[T]='opacity 0.4s ease'; redir.style.opacity='1'; }, 7000);
+
+        // 9s: slide to screen 3 (logo breather)
+        setTimeout(function() { hide(s2,0); show(s3,0.15); }, 9000);
+
+        // 14s: restart with next app (5s breather)
+        setTimeout(play, 14000);
+      }
+
+      var obs = new IntersectionObserver(function(e) {
+        if (e[0].isIntersecting) { obs.disconnect(); play(); }
+      }, { threshold: 0.3 });
+      obs.observe(document.getElementById('dl-sim'));
+    })();
+  </script>
+
+
   <!-- ══════════════════ TRUST MODEL ══════════════════ -->
   <section class="py-16 px-6">
     <div class="max-w-3xl mx-auto">
@@ -426,7 +658,8 @@
             <li><a href="https://github.com/DoktorShift/nutbits" class="text-surface-500 hover:text-white transition-colors">GitHub</a></li>
             <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/INSTALL.md" class="text-surface-500 hover:text-white transition-colors">Install Guide</a></li>
             <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/CLI.md" class="text-surface-500 hover:text-white transition-colors">CLI Reference</a></li>
-            <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/HOW-IT-WORKS.md" class="text-surface-500 hover:text-white transition-colors">Architecture</a></li>
+            <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/DEPLOY.md" class="text-surface-500 hover:text-white transition-colors">Deploy Guide</a></li>
+            <li><a href="https://github.com/DoktorShift/nutbits/blob/main/docs/DEEPLINK-APPS.md" class="text-surface-500 hover:text-white transition-colors">Add Your App</a></li>
           </ul>
         </div>
         <div>
