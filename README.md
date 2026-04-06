@@ -12,7 +12,7 @@ Inspired by [supertestnet/bankify](https://github.com/supertestnet/bankify). Bui
 
 ## Quick Start
 
-See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a VPS? See **[DEPLOY.md](docs/DEPLOY.md)**.
+See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a VPS? See **[DEPLOY.md](docs/DEPLOY.md)** or the focused **[DEPLOY-CADDY.md](docs/DEPLOY-CADDY.md)** guide.
 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
@@ -43,14 +43,15 @@ Run these commands from the repository root, where `package.json` lives.
 npm start                        # backend only, in your terminal
 npm run nutbits                  # backend + GUI, in the background
 npm run service:mac              # macOS 24/7 backend service
-npm run service:linux            # Linux 24/7 backend service
+npm run service:linux            # Linux 24/7 backend + GUI services
 ```
 
 That is the simplest mental model:
 
 - use `npm start` when you want the normal terminal experience
 - use `npm run nutbits` when you want the web GUI too
-- use `npm run service:mac` or `npm run service:linux` when you want the backend to keep running 24/7
+- use `npm run service:mac` when you want the backend to keep running 24/7
+- use `npm run service:linux` when you want both backend and GUI kept running under systemd
 
 If you want the backend to run 24/7 under your operating system's service manager, see **[SERVICE.md](docs/SERVICE.md)**.
 

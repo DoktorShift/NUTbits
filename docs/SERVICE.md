@@ -7,9 +7,11 @@ This page covers the simplest 24/7 backend service options for NUTbits:
 - `launchd` on macOS
 - `systemd --user` on Linux
 
-These service installs are for the **backend only**. They keep `nutbits.js` running and restart it if it crashes.
+On Linux, the service installer now creates two user services:
+- `nutbits-backend.service`
+- `nutbits-gui.service`
 
-The GUI is still optional. If you want the browser GUI, run it separately with:
+On macOS, the packaged service install is still backend-only. If you want the browser GUI there, run it separately with:
 
 ```bash
 npm run gui
@@ -69,7 +71,7 @@ What it does:
 
 ## Linux: systemd
 
-Install and start the backend service:
+Install and start the backend and GUI services:
 
 ```bash
 npm run service:linux
@@ -78,8 +80,10 @@ npm run service:linux
 Useful commands:
 
 ```bash
-systemctl --user status nutbits
-journalctl --user -u nutbits -f
+systemctl --user status nutbits-backend
+systemctl --user status nutbits-gui
+journalctl --user -u nutbits-backend -f
+journalctl --user -u nutbits-gui -f
 ```
 
 Remove the service:
@@ -90,9 +94,10 @@ npm run service:linux:remove
 
 What it does:
 
-- writes a user unit to `~/.config/systemd/user/nutbits.service`
-- enables and starts it immediately
-- restarts automatically on failure
+- writes user units to `~/.config/systemd/user/nutbits-backend.service` and `~/.config/systemd/user/nutbits-gui.service`
+- builds the GUI before enabling the services
+- enables and starts both immediately
+- restarts both automatically on failure
 
 To keep user services running after logout on Linux, you may also need:
 
@@ -105,7 +110,7 @@ That is a Linux setting on your machine, not something specific to NUTbits.
 ## Which Option Should You Use?
 
 - Use `launchd` on macOS for the simplest native 24/7 setup.
-- Use `systemd --user` on Linux for the simplest native 24/7 setup.
+- Use `systemd --user` on Linux for the simplest native 24/7 setup with both API and GUI.
 - Use `npm run nutbits` only when you want a simple local background mode, not a real OS-managed service.
 
 ## Day-to-Day

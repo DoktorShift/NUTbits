@@ -75,7 +75,7 @@ Run these from the repository root.
 npm start                         # backend only, in your terminal
 npm run nutbits                  # backend + GUI, in the background
 npm run service:mac              # macOS 24/7 backend service
-npm run service:linux            # Linux 24/7 backend service
+npm run service:linux            # Linux 24/7 backend + GUI services
 ```
 
 Use one of those depending on how you want to run NUTbits.

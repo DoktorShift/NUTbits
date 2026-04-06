@@ -583,11 +583,11 @@ export function registerHandlers(router, ctx) {
         var idx = 1;
         for (var [pk, info] of Object.entries(all)) {
             if (pk === '__api__') {
-                connIdx[pk] = { id: 0, label: 'API' };
+                connIdx[pk] = { id: 0, label: 'API', dedicated: false };
                 continue;
             }
             if (info.revoked) continue;
-            connIdx[pk] = { id: idx, label: info.label || `connection-${idx}` };
+            connIdx[pk] = { id: idx, label: info.label || `connection-${idx}`, dedicated: !!info.dedicated };
             idx++;
         }
 
@@ -596,7 +596,7 @@ export function registerHandlers(router, ctx) {
             if (connectionId && connIdx[pk]?.id !== Number(connectionId) && connIdx[pk]?.label !== connectionId) continue;
             var txs = await store.listTxs(pk, { type, unpaid, limit: limit });
             for (var tx of txs) {
-                allTxs.push({ ...tx, connection_id: connIdx[pk]?.id, connection_label: connIdx[pk]?.label });
+                allTxs.push({ ...tx, connection_id: connIdx[pk]?.id, connection_label: connIdx[pk]?.label, connection_dedicated: connIdx[pk]?.dedicated });
             }
         }
 
@@ -626,7 +626,7 @@ export function registerHandlers(router, ctx) {
                 continue;
             }
             if (info.revoked && !includeRevoked) { idx++; continue; }
-            connIdx[pk] = { id: idx, label: info.label || `connection-${idx}`, revoked: !!info.revoked };
+            connIdx[pk] = { id: idx, label: info.label || `connection-${idx}`, revoked: !!info.revoked, dedicated: !!info.dedicated };
             idx++;
         }
 
@@ -640,6 +640,7 @@ export function registerHandlers(router, ctx) {
                     connection_id: connIdx[pk].id,
                     connection_label: connIdx[pk].label,
                     connection_revoked: connIdx[pk].revoked,
+                    connection_dedicated: connIdx[pk].dedicated,
                 });
             }
         }

@@ -69,7 +69,7 @@ function shortMintUrl(url) {
 onMounted(() => {
   statusPolling.start()
   balancePolling.start()
-  historyStore.fetch({ limit: 20 })
+  historyStore.fetch({ limit: 20, unpaid: 'true' })
 })
 </script>
 
@@ -264,7 +264,12 @@ onMounted(() => {
                 </td>
                 <td class="py-2 px-2 font-medium tabular-nums text-right w-[72px]" :class="tx.type === 'incoming' ? 'text-emerald-400' : 'text-amber-400'">{{ formatSats(tx.amount) }}</td>
                 <td class="py-2 px-2 w-[60px]"><Badge :variant="tx.settled_at ? 'success' : tx.err_msg ? 'error' : 'warning'" :label="tx.settled_at ? 'settled' : tx.err_msg ? 'failed' : 'pending'" /></td>
-                <td class="py-2 pl-2 pr-4 text-nutbits-400 truncate max-w-[100px]">{{ tx.connection_label || '' }}</td>
+                <td class="py-2 pl-2 pr-4 truncate max-w-[120px]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-nutbits-400">{{ tx.connection_label || '' }}</span>
+                    <span v-if="tx.connection_dedicated" class="text-[8px] font-medium text-emerald-400/70 bg-emerald-500/10 px-1 py-0 rounded">ded</span>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>

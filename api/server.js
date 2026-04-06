@@ -282,7 +282,10 @@ export async function startApiServer(ctx) {
         try {
             var result = await match.handler({ params: match.params, query: match.query, body });
             var duration = Date.now() - startTime;
-            ctx.log?.debug?.('API: request', { method: req.method, path: urlPath, status: 200, ms: duration });
+            // Skip logging for high-frequency polling endpoints to avoid feedback loops
+            if (urlPath !== '/api/v1/logs' && urlPath !== '/api/v1/status') {
+                ctx.log?.debug?.('API: request', { method: req.method, path: urlPath, status: 200, ms: duration });
+            }
             res.writeHead(200);
             res.end(JSON.stringify({ ok: true, data: result }));
         } catch (e) {
