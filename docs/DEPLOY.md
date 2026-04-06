@@ -142,3 +142,15 @@ Do not proxy all traffic to port `3338`. In this repo:
 ## Full Guide
 
 For the complete walkthrough, troubleshooting, and update commands, see **[DEPLOY-CADDY.md](DEPLOY-CADDY.md)**.
+
+
+ For ongoing VPS ops, use only:
+
+  systemctl --user start nutbits-backend
+  systemctl --user start nutbits-gui
+  systemctl --user stop nutbits-backend
+  systemctl --user stop nutbits-gui
+  systemctl --user restart nutbits-backend
+  systemctl --user restart nutbits-gui
+  journalctl --user -u nutbits-backend -f
+  journalctl --user -u nutbits-gui -f

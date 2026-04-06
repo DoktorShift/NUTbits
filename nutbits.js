@@ -1269,7 +1269,11 @@ var nutbits = {
             await store.setConnection(app_pubkey, nutbits.state.nostr_state.nwc_info[app_pubkey]);
         }
 
-        await startRelayLoop(app_pubkey);
+        // Start relay connection in the background so slow or unreachable
+        // relays do not block boot, API startup, or systemd readiness.
+        startRelayLoop(app_pubkey).catch(e => {
+            log.error('relay loop bootstrap failed', { error: e.message });
+        });
 
         var connected = false;
         if (waitForRelayReady) {
