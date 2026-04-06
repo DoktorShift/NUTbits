@@ -26,6 +26,7 @@ Set at least:
 NUTBITS_MINT_URL=https://your-mint.example.com
 NUTBITS_STATE_PASSPHRASE=replace-this-with-a-strong-secret
 NUTBITS_API_PORT=3338
+NUTBITS_API_TOKEN=replace-this-with-a-long-random-secret
 NUTBITS_GUI_HOST=127.0.0.1
 NUTBITS_GUI_PORT=8080
 NUTBITS_STATE_BACKEND=sqlite
@@ -58,6 +59,8 @@ Check status:
 systemctl --user status nutbits-backend
 systemctl --user status nutbits-gui
 ```
+
+Use that same `NUTBITS_API_TOKEN` in the browser GUI.
 
 ## Caddy Config
 
@@ -95,7 +98,39 @@ Check the API from the VPS:
 
 ```bash
 curl https://nutbits.example.com/api/v1/status \
-  -H "Authorization: Bearer $(cat ~/.nutbits/nutbits.sock.token)"
+  -H "Authorization: Bearer replace-this-with-a-long-random-secret"
+```
+
+## Reset / Start Over
+
+If you want to wipe the current Linux service setup and start clean:
+
+```bash
+cd ~/projects/NUTbits
+npm run service:linux:remove
+systemctl --user daemon-reload
+```
+
+Then confirm your `.env` contains at least:
+
+```bash
+NUTBITS_MINT_URL=https://your-mint.example.com
+NUTBITS_STATE_PASSPHRASE=replace-this-with-a-strong-secret
+NUTBITS_STATE_BACKEND=sqlite
+NUTBITS_SQLITE_PATH=./nutbits_state.db
+NUTBITS_RELAYS=wss://relay.getalby.com/v1
+NUTBITS_API_ENABLED=true
+NUTBITS_API_PORT=3338
+NUTBITS_API_TOKEN=replace-this-with-a-long-random-secret
+NUTBITS_GUI_HOST=127.0.0.1
+NUTBITS_GUI_PORT=8080
+```
+
+Then reinstall and start:
+
+```bash
+npm run service:linux
+loginctl enable-linger "$USER"
 ```
 
 ## Important Note

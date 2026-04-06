@@ -1579,7 +1579,10 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
         }
         connSp.stop(`${c.green}●${c.reset}`, `${pubkeys.length} restored`);
     } else {
-        nwcString = await nutbits.createNWCconnection(mintManager.activeMintUrl);
+        // Do not block boot on first relay readiness.
+        // A slow or unreachable relay should not prevent the API and GUI
+        // from starting on a VPS or under systemd.
+        nwcString = await nutbits.createNWCconnection(mintManager.activeMintUrl, undefined, config.relays, undefined, false);
         connSp.stop(`${c.green}●${c.reset}`, `1 created (see NWC string below)`);
     }
 

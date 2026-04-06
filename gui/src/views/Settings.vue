@@ -212,8 +212,8 @@ const settingsByTab = {
     {
       envKey: 'NUTBITS_API_TOKEN',
       label: 'API Token',
-      hint: 'Bearer token for API access.',
-      help: 'Bearer token for the local API. The GUI and other tools must send this token to access protected endpoints.',
+      hint: 'Optional. Leave empty to auto-generate on startup.',
+      help: 'Optional bearer token override for the local API. If left empty, NUTbits generates a token automatically on startup and writes it to ~/.nutbits/nutbits.sock.token for local tools to use.',
       type: 'text',
       sensitive: true,
     },
@@ -300,6 +300,17 @@ function startEdit(setting) {
   editingSetting.value = setting
   editValue.value = setting.sensitive ? '' : (envValue(setting.envKey) || '')
   showEditModal.value = true
+}
+
+function editPlaceholder(setting) {
+  if (!setting) return ''
+  if (setting.envKey === 'NUTBITS_API_TOKEN') {
+    return 'Leave empty to auto-generate on startup'
+  }
+  if (setting.sensitive) {
+    return 'Enter new value'
+  }
+  return envValue(setting.envKey) || ''
 }
 
 async function saveEdit() {
@@ -753,7 +764,7 @@ onMounted(async () => {
                 :type="editingSetting.sensitive ? 'password' : (editingSetting.type === 'number' ? 'number' : 'text')"
                 :min="editingSetting.type === 'number' ? 0 : undefined"
                 class="flex-1 bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none text-sm"
-                :placeholder="editingSetting.sensitive ? 'Enter new value' : (envValue(editingSetting.envKey) || '')"
+                :placeholder="editPlaceholder(editingSetting)"
                 autofocus
               />
               <span v-if="editingSetting.suffix" class="text-nutbits-500 text-sm">{{ editingSetting.suffix }}</span>
