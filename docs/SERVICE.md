@@ -2,42 +2,25 @@
 
 # Service Setup
 
-This page covers the simplest 24/7 backend service options for NUTbits:
+By default, NUTbits runs in your terminal — close the window and the bridge stops. A **service** registers NUTbits with your operating system's process manager so it starts on boot, restarts on crashes, and keeps running after you log out. If you plan to run NUTbits 24/7 (especially on a VPS), this is what you want.
 
-- `launchd` on macOS
-- `systemd --user` on Linux
+NUTbits ships one-command installers for both platforms:
 
-On Linux, the service installer now creates two user services:
-- `nutbits-backend.service`
-- `nutbits-gui.service`
+| Platform | Manager | Command | What it creates |
+|----------|---------|---------|-----------------|
+| macOS | `launchd` | `npm run service:mac` | Backend service (GUI runs separately) |
+| Linux | `systemd --user` | `npm run service:linux` | Backend + GUI services |
 
-On macOS, the packaged service install is still backend-only. If you want the browser GUI there, run it separately with:
+If you **don't** need your OS to manage the process — for example, during development or quick testing — use `npm run nutbits` instead (see [INSTALL.md](INSTALL.md)).
 
-```bash
-npm run gui
-```
+## Prerequisites
 
-Or use the local NUTbits scripts when you do not need your operating system to manage the service:
-
-```bash
-npm run nutbits
-npm run nutbits:stop
-```
-
-## Before You Start
-
-Run these commands from the repository root:
+You should have already completed the basic install from [INSTALL.md](INSTALL.md). At minimum:
 
 ```bash
 npm install
 cp .env.example .env
-```
-
-Then edit `.env` and set at least:
-
-```bash
-NUTBITS_MINT_URL=https://your-mint.example.com
-NUTBITS_STATE_PASSPHRASE=your-strong-passphrase
+# Edit .env: set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
 ```
 
 ## macOS: launchd
@@ -48,79 +31,94 @@ Install and start the backend service:
 npm run service:mac
 ```
 
-Useful commands:
+This installs the **backend only**. To also run the web GUI, open a second terminal:
 
 ```bash
-launchctl print gui/$(id -u)/dev.doktorshift.nutbits
-tail -f logs/nutbits.launchd.out.log
-tail -f logs/nutbits.launchd.err.log
+npm run gui
 ```
 
-Remove the service:
+### Manage
+
+```bash
+launchctl print gui/$(id -u)/dev.doktorshift.nutbits   # status
+tail -f logs/nutbits.launchd.out.log                    # stdout log
+tail -f logs/nutbits.launchd.err.log                    # stderr log
+```
+
+### Remove
 
 ```bash
 npm run service:mac:remove
 ```
 
-What it does:
+### What it does
 
-- writes a LaunchAgent plist into `~/Library/LaunchAgents/`
-- runs `node /absolute/path/to/nutbits.js`
-- starts on login
-- restarts automatically if the backend exits
+- Writes a LaunchAgent plist into `~/Library/LaunchAgents/`
+- Runs `node /absolute/path/to/nutbits.js`
+- Starts on login
+- Restarts automatically if the backend exits
 
 ## Linux: systemd
 
-Install and start the backend and GUI services:
+Install and start both backend and GUI services:
 
 ```bash
 npm run service:linux
+loginctl enable-linger "$USER"   # keep services running after logout
 ```
 
-Useful commands:
+> `loginctl enable-linger` is a Linux setting, not NUTbits-specific. Without it, your user services stop when you log out.
+
+### Manage
 
 ```bash
-systemctl --user status nutbits-backend
-systemctl --user status nutbits-gui
-journalctl --user -u nutbits-backend -f
-journalctl --user -u nutbits-gui -f
+systemctl --user status  nutbits-backend nutbits-gui          # status
+systemctl --user restart nutbits-backend nutbits-gui          # restart
+systemctl --user stop    nutbits-backend nutbits-gui          # stop
+journalctl --user -u nutbits-backend -f                      # backend logs
+journalctl --user -u nutbits-gui -f                          # GUI logs
 ```
 
-Remove the service:
+### Auto-start on boot
+
+Already enabled by `npm run service:linux`. To toggle:
+
+```bash
+systemctl --user disable nutbits-backend nutbits-gui              # off
+systemctl --user enable --now nutbits-backend nutbits-gui          # on
+```
+
+### Remove
 
 ```bash
 npm run service:linux:remove
+systemctl --user daemon-reload
 ```
 
-What it does:
+### What it does
 
-- writes user units to `~/.config/systemd/user/nutbits-backend.service` and `~/.config/systemd/user/nutbits-gui.service`
-- builds the GUI before enabling the services
-- enables and starts both immediately
-- restarts both automatically on failure
-
-To keep user services running after logout on Linux, you may also need:
-
-```bash
-loginctl enable-linger "$USER"
-```
-
-That is a Linux setting on your machine, not something specific to NUTbits.
-
-## Which Option Should You Use?
-
-- Use `launchd` on macOS for the simplest native 24/7 setup.
-- Use `systemd --user` on Linux for the simplest native 24/7 setup with both API and GUI.
-- Use `npm run nutbits` only when you want a simple local background mode, not a real OS-managed service.
+- Writes user units to `~/.config/systemd/user/nutbits-backend.service` and `~/.config/systemd/user/nutbits-gui.service`
+- Builds the GUI before enabling the services
+- Enables and starts both immediately
+- Restarts both automatically on failure
 
 ## Day-to-Day
 
-Once the backend service is installed, you can still use:
+Once the service is running, you can still manage NUTbits from the terminal. The CLI and TUI connect to the same local API — the service just keeps the backend alive.
 
 ```bash
-nutbits
-nutbits status
-nutbits balance
+nutbits                # interactive TUI dashboard
+nutbits status         # quick health check
+nutbits balance        # check balance
 ```
 
-The CLI and TUI connect to the same local API as before.
+> Requires `npm link` — see [INSTALL.md](INSTALL.md#management-console). Or use `npm run cli` / `node bin/nutbits.js` instead.
+
+---
+
+## Related
+
+- [INSTALL.md](INSTALL.md) — local setup (bare metal, Docker)
+- [DEPLOY.md](DEPLOY.md) — VPS deployment with HTTPS (Caddy)
+- [CLI.md](CLI.md) — full CLI command reference
+- [CONSOLE.md](CONSOLE.md) — day-to-day workflows and TUI usage

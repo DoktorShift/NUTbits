@@ -181,3 +181,11 @@ node decrypt_state.js "your-passphrase"
 - **Back up after funding** - the state changes on every payment
 - **The `.tmp` file** is a write-in-progress artifact; the main file is always the valid one
 - **File permissions** are set to `0600` (owner-only) automatically
+
+---
+
+## Related
+
+- [STATE.md](STATE.md) — encrypted state file format and manual decryption
+- [DATABASE.md](DATABASE.md) — storage backends (file, SQLite, MySQL)
+- [INSTALL.md](INSTALL.md) — getting NUTbits up and running

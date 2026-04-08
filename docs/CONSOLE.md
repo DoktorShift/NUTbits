@@ -4,6 +4,8 @@
 
 **[Interfaces](#three-ways-to-interact) · [First Time](#your-first-time) · [Workflow](#typical-workflow) · [TUI Actions](#actions-inside-the-tui) · [Scripting](#scripting) · [Docker](#docker) · [GUI](#gui)**
 
+A practical guide to managing NUTbits day-to-day — the TUI dashboard, CLI one-liners, and browser GUI. For the full command reference, see **[CLI.md](CLI.md)**.
+
 ## Three Ways to Interact
 
 NUTbits gives you three ways to use it. Same data, different style:

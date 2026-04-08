@@ -16,6 +16,7 @@ NUTbits is a Cashu ecash to NWC (Nostr Wallet Connect) bridge. It connects to a 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
 npm install
+npm link                 # Register the 'nutbits' CLI command globally
 cp .env.example .env
 # Edit .env: set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
 npm start                # Start the bridge service

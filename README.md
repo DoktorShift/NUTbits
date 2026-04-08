@@ -12,7 +12,7 @@ Inspired by [supertestnet/bankify](https://github.com/supertestnet/bankify). Bui
 
 ## Quick Start
 
-See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a VPS? See **[DEPLOY.md](docs/DEPLOY.md)** or the focused **[DEPLOY-CADDY.md](docs/DEPLOY-CADDY.md)** guide.
+See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a **VPS**? See **[DEPLOY.md](docs/DEPLOY.md)**.
 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
@@ -202,6 +202,14 @@ For a plain-language deep dive, see **[HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)**.
 
 NUTbits includes a CLI and interactive TUI to manage the daemon **while it's running**. Open a second terminal and use `nutbits` to control connections, check balances, pay invoices, and monitor activity, all without restarting the service.
 
+First, register the CLI command (once):
+
+```bash
+npm link
+```
+
+Then:
+
 ```bash
 nutbits                    # interactive TUI dashboard
 nutbits balance            # check balance across mints
@@ -222,6 +230,8 @@ nutbits config             # view runtime configuration
 ```
 
 Create multiple NWC connections with scoped permissions and spending limits; one for LNbits with full access, another for a POS with pay-only and a daily cap. Revoke any connection without affecting the others.
+
+> Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
 
 See **[CLI.md](docs/CLI.md)** for the full command reference and **[CONSOLE.md](docs/CONSOLE.md)** for TUI usage.
 

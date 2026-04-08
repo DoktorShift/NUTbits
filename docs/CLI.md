@@ -394,3 +394,11 @@ The service runs normally. The socket is never created. No token file, no API, n
 --help            Show help
 --version         Show version
 ```
+
+---
+
+## Related
+
+- [CONSOLE.md](CONSOLE.md) — day-to-day workflows, TUI usage, and tips
+- [SERVICE.md](SERVICE.md) — 24/7 backend service setup with launchd and systemd
+- [INSTALL.md](INSTALL.md) — getting NUTbits up and running

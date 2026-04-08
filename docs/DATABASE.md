@@ -135,3 +135,11 @@ Personal use, single user          → file
 LNbits funding source              → sqlite
 Multiple NUTbits instances         → mysql
 ```
+
+---
+
+## Related
+
+- [STATE.md](STATE.md) — encrypted state file format and manual decryption
+- [BACKUP.md](BACKUP.md) — backup, recovery, and seed recovery
+- [INSTALL.md](INSTALL.md) — getting NUTbits up and running

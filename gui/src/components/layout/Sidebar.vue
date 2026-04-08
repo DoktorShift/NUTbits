@@ -1,7 +1,8 @@
 <script setup>
 import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useStatusStore } from '@/stores/status.js'
+import api from '@/api/client.js'
 
 const props = defineProps({
   open: {
@@ -12,6 +13,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 const route = useRoute()
+const router = useRouter()
 const statusStore = useStatusStore()
 const versionLabel = computed(() => {
   var v = statusStore.status?.version
@@ -72,6 +74,11 @@ function iconSvg(name) {
 
 function isActive(path) {
   return route.path === path
+}
+
+function lockScreen() {
+  api.clearStoredAuth()
+  router.replace({ name: 'Login' })
 }
 
 watch(() => route.path, () => {
@@ -158,8 +165,19 @@ watch(() => route.path, () => {
     </nav>
 
     <!-- Footer -->
-    <div class="px-4 py-3 border-t border-nutbits-700/50">
+    <div class="px-4 py-3 border-t border-nutbits-700/50 flex items-center justify-between">
       <span class="text-nutbits-600 text-[10px]">{{ versionLabel }}</span>
+      <button
+        @click="lockScreen"
+        class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-nutbits-500 hover:text-amber-500 hover:bg-nutbits-800/60 transition-all"
+        title="Lock screen (Ctrl+L)"
+        aria-label="Lock screen"
+      >
+        <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </button>
     </div>
   </aside>
 </template>

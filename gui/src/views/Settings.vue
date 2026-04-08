@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge.vue'
 import HelpTip from '@/components/ui/HelpTip.vue'
 import Modal from '@/components/ui/Modal.vue'
 import Spinner from '@/components/ui/Spinner.vue'
+import { presets as bgPresets, getSelectedPresetId, setSelectedPresetId } from '@/config/backgrounds.js'
 
 const configStore = useConfigStore()
 const { addToast } = useToast()
@@ -212,8 +213,8 @@ const settingsByTab = {
     {
       envKey: 'NUTBITS_API_TOKEN',
       label: 'API Token',
-      hint: 'Optional. Leave empty to auto-generate on startup.',
-      help: 'Optional bearer token override for the local API. If left empty, NUTbits generates a token automatically on startup and writes it to ~/.nutbits/nutbits.sock.token for local tools to use.',
+      hint: 'Set explicitly for VPS/browser use. Leave empty for local auto-token.',
+      help: 'Set this explicitly when accessing NUTbits through a browser or reverse proxy (VPS). If left empty, NUTbits auto-generates a local token for same-machine CLI tools.',
       type: 'text',
       sensitive: true,
     },
@@ -462,6 +463,16 @@ async function autoConnectLocal() {
   }
 }
 
+// ── Lock screen background ─────────────────────────────────────────────
+
+const selectedBg = ref(getSelectedPresetId())
+
+function selectBackground(id) {
+  selectedBg.value = id
+  setSelectedPresetId(id)
+  addToast('Lock screen background updated', 'success')
+}
+
 // ── Init ────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -624,6 +635,48 @@ onMounted(async () => {
               </div>
             </template>
           </div>
+        </div>
+      </div>
+
+      <!-- Lock Screen Background -->
+      <div class="bg-nutbits-900 border border-nutbits-700 rounded-xl p-6 space-y-4">
+        <div>
+          <h2 class="text-lg font-semibold text-nutbits-100">Lock Screen</h2>
+          <p class="text-xs text-nutbits-400 mt-1">Choose the animated background for the login screen. Lock with <kbd class="px-1.5 py-0.5 rounded bg-nutbits-800 border border-nutbits-700 text-nutbits-300 text-[10px] font-mono">Ctrl+L</kbd></p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <button
+            v-for="preset in bgPresets"
+            :key="preset.id"
+            class="group relative rounded-xl overflow-hidden transition-all duration-200"
+            :class="selectedBg === preset.id
+              ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-nutbits-900 scale-[1.02]'
+              : 'ring-1 ring-nutbits-700 hover:ring-nutbits-500 hover:scale-[1.01]'"
+            @click="selectBackground(preset.id)"
+          >
+            <!-- Preview gradient -->
+            <div
+              class="aspect-[16/10] w-full"
+              :style="{ background: preset.preview }"
+            />
+
+            <!-- Label -->
+            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-2.5 py-2">
+              <span class="text-[11px] font-medium text-nutbits-100 block leading-tight">{{ preset.name }}</span>
+              <span class="text-[9px] text-nutbits-500 uppercase tracking-wider">{{ preset.type }}</span>
+            </div>
+
+            <!-- Selected check -->
+            <div
+              v-if="selectedBg === preset.id"
+              class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-lg"
+            >
+              <svg viewBox="0 0 24 24" class="w-3 h-3 text-nutbits-950" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12l5 5L20 7" />
+              </svg>
+            </div>
+          </button>
         </div>
       </div>
 

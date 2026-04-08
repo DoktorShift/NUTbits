@@ -2,11 +2,11 @@
 
 # Installation (Local)
 
-> This guide is for **local development and personal use** — running NUTbits on your own machine.
->
-> Deploying to a **VPS with HTTPS and a public domain**? See **[DEPLOY.md](DEPLOY.md)** instead.
+> Deploying to a **VPS with HTTPS**? See **[DEPLOY.md](DEPLOY.md)** instead.
 
 **[Requirements](#requirements) · [Bare Metal](#bare-metal) · [Docker](#docker) · [LNbits](#connect-to-lnbits) · [Funding](#funding-your-wallet) · [Upgrading](#upgrading)**
+
+Get NUTbits running on your local machine — bare metal or Docker. Covers installation, first connection to LNbits, and funding your wallet.
 
 ## Requirements
 
@@ -28,19 +28,11 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` with your settings:
+Edit `.env` — only two values are required:
 
 ```bash
-# Required
 NUTBITS_MINT_URL=https://your-mint.example.com
 NUTBITS_STATE_PASSPHRASE=your-strong-passphrase-here
-
-# Optional: use SQLite for concurrent access (recommended for LNbits)
-# NUTBITS_STATE_BACKEND=sqlite
-
-# Optional: charge a service fee on outgoing payments (disabled by default)
-# NUTBITS_SERVICE_FEE_PPM=10000    # 1% (parts per million)
-# NUTBITS_SERVICE_FEE_BASE=1       # +1 sat per payment
 ```
 
 > Need SQLite or MySQL? Install the driver: `npm install better-sqlite3` or `npm install mysql2`
@@ -50,8 +42,6 @@ NUTBITS_STATE_PASSPHRASE=your-strong-passphrase-here
 ```bash
 npm start
 ```
-
-This keeps NUTbits attached to your terminal and shows the normal startup and log view.
 
 On first run, NUTbits prints your NWC connection string:
 
@@ -63,41 +53,31 @@ nostr+walletconnect://abc123...?relay=wss://nostrue.com&secret=xyz789...
 
 Copy this string. You'll need it to connect LNbits or any NWC client.
 
-### Stack Scripts
+### Running Modes
 
-NUTbits also ships with operational scripts in `scripts/`:
-
-Run these from the repository root.
-
-#### Most common
+Pick one depending on how you want to run it:
 
 ```bash
-npm start                         # backend only, in your terminal
-npm run nutbits                  # backend + GUI, in the background
-npm run service:mac              # macOS 24/7 backend service
-npm run service:linux            # Linux 24/7 backend + GUI services
+npm start                        # backend only, attached to terminal
+npm run nutbits                  # backend + GUI, background
+npm run nutbits:interactive      # GUI background, backend in terminal
+npm run nutbits:stop             # stop background processes
+npm run nutbits:restart          # restart background processes
+npm run nutbits:update           # pull, install, rebuild, restart
 ```
 
-Use one of those depending on how you want to run NUTbits.
+### 24/7 Service
+
+To survive logout, reboot, and crashes, use an OS service manager:
 
 ```bash
-npm run nutbits                  # backend + GUI in the background
-npm run nutbits:interactive      # GUI in background, backend in your terminal
-npm run nutbits:stop             # stop backend + GUI
-npm run nutbits:restart          # restart background NUTbits mode
-npm run nutbits:update           # git pull, install deps, rebuild GUI, restart
+npm run service:mac              # macOS (launchd)
+npm run service:linux            # Linux (systemd)
 ```
 
-Use `nutbits` when you want NUTbits and the GUI running in the background. Use `nutbits:interactive` when you want the GUI too, but still want to watch the backend in your terminal.
+See **[SERVICE.md](SERVICE.md)** for details and management commands.
 
-If you want the backend to survive logout, reboot, and crashes, use an OS service manager instead:
-
-- macOS: `launchd`
-- Linux: `systemd --user`
-
-See **[SERVICE.md](SERVICE.md)** for the simple 24/7 setup.
-
-### Management Console (optional)
+### Management Console
 
 Make the `nutbits` command available:
 
@@ -105,7 +85,7 @@ Make the `nutbits` command available:
 npm link
 ```
 
-Then open a second terminal (while the service is running):
+Then in a second terminal:
 
 ```bash
 nutbits              # interactive TUI dashboard
@@ -113,23 +93,19 @@ nutbits balance      # check balance
 nutbits connections  # list NWC connections
 ```
 
-No extra configuration needed. The CLI finds the running service and authenticates automatically.
-
 > Don't want to `npm link`? Use `npm run cli` or `node bin/nutbits.js` instead.
 
-See **[CLI.md](CLI.md)** for the full setup and command reference.
+See **[CLI.md](CLI.md)** for the full command reference.
 
-### Web GUI (optional)
+### Web GUI
 
-The repository also includes a browser GUI in `gui/`.
+If you used `npm run nutbits` or the service scripts, the GUI is served automatically at:
 
-If you used the scripts above, it is served automatically on:
-
-```bash
+```
 http://127.0.0.1:8080
 ```
 
-By default the GUI talks to the local backend on `http://127.0.0.1:3338` and can bootstrap the API token automatically for local use.
+The GUI talks to the local backend and bootstraps the API token automatically for local use.
 
 ## Docker
 
@@ -149,29 +125,18 @@ docker compose logs -f
 
 The NWC connection string appears in the logs on first run.
 
-### Using the CLI with Docker
-
-The CLI is inside the container. Just exec into it:
+### CLI with Docker
 
 ```bash
 docker compose exec nutbits nutbits              # interactive TUI
 docker compose exec nutbits nutbits balance       # single command
 docker compose exec nutbits nutbits connections    # list connections
-docker compose exec nutbits nutbits connect        # create new connection
 ```
 
-For quick access, add an alias to your shell:
+Quick alias:
 
 ```bash
 alias nutbits="docker compose exec nutbits nutbits"
-```
-
-Then use it like normal:
-
-```bash
-nutbits balance
-nutbits fees
-nutbits history
 ```
 
 ## Connect to LNbits
@@ -213,10 +178,20 @@ npm install
 npm start
 ```
 
-Or, if you use the stack scripts:
+Or with the stack scripts:
 
 ```bash
 npm run nutbits:update
 ```
 
-Your state file is preserved across upgrades. If upgrading to a new storage backend, see [DATABASE.md](DATABASE.md) for migration instructions.
+Your state is preserved across upgrades. For storage backend migration, see [DATABASE.md](DATABASE.md).
+
+---
+
+## Related
+
+- [DEPLOY.md](DEPLOY.md) — VPS deployment with HTTPS (Caddy)
+- [SERVICE.md](SERVICE.md) — 24/7 backend service setup with launchd and systemd
+- [CLI.md](CLI.md) — full CLI command reference
+- [DATABASE.md](DATABASE.md) — storage backends (file, SQLite, MySQL)
+- [BACKUP.md](BACKUP.md) — backup and recovery procedures
