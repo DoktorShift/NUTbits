@@ -1,6 +1,6 @@
 # Deploy NUTbits on a VPS
 
-> Running locally instead? See **[INSTALL.md](INSTALL.md)**.
+> Running locally instead? See **[INSTALL.md](INSTALL.md)**. Want the fast path? See **[LAZYDEPLOY.md](LAZYDEPLOY.md)**.
 
 **[Prepare](#1-prepare-the-vps) · [Install](#2-install-nutbits) · [Configure](#3-configure) · [Services](#4-install-systemd-services) · [Caddy](#5-install-caddy) · [Manage](#manage) · [Update](#update) · [Troubleshooting](#troubleshooting)**
 

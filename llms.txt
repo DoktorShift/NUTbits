@@ -25,7 +25,7 @@ License: AGPL-3.0. Author: DoktorShift.
 - NWC connection strings can include `&lud16=...` as a non-standard NIP-47 extension. Editing a connection's lud16 regenerates the NWC string.
 - State encryption uses scrypt with N=65536. Existing databases auto-migrate from legacy params on first startup.
 - Proof restoration failures write encrypted recovery files instead of logging secrets.
-- NUTBITS_SEED should be backed up immediately after first run. Without the seed, proof recovery (NUT-09, NUT-13) is impossible.
+- NUTBITS_SEED is auto-generated on first run and automatically saved to the `.env` file. Users should back up their `.env` or copy the seed to a password manager. Without the seed, proof recovery (NUT-09, NUT-13) is impossible. The seed is never printed to stdout/logs in clear text.
 - NUTBITS_MINT_URL is only used when NUTBITS_MINT_URLS is empty. Once multi-mint is set, the single-mint field is ignored entirely.
 - All NWC connections are dedicated by default — own isolated balance starting at 0 sats. The user funds them explicitly. Shared balance (full wallet access) requires explicit opt-in and is only for the operator's own trusted apps.
 - Deeplink connections are ALWAYS dedicated. External apps cannot request shared access. The `dedicated` flag is hardcoded server-side.
@@ -37,7 +37,8 @@ License: AGPL-3.0. Author: DoktorShift.
 - [README.md](README.md): Project overview, full configuration reference, supported NUTs/NIPs, NWC methods, trust model
 - [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md): Plain-language explanation of the bridge architecture and payment flows
 - [INSTALL.md](docs/INSTALL.md): Local setup guide for bare metal, Docker, and LNbits integration
-- [DEPLOY.md](docs/DEPLOY.md): VPS production deployment with HTTPS reverse proxy (Caddy / nginx)
+- [DEPLOY.md](docs/DEPLOY.md): VPS production deployment with HTTPS reverse proxy (Caddy)
+- [LAZYDEPLOY.md](docs/LAZYDEPLOY.md): Quick deploy using the interactive setup wizard (`npm run setup`)
 - [SERVICE.md](docs/SERVICE.md): 24/7 backend service setup with launchd and systemd
 - [CLI.md](docs/CLI.md): Full CLI and TUI command reference, connection management, service fees
 - [CONSOLE.md](docs/CONSOLE.md): How to use the TUI, CLI, and GUI together, with full GUI page reference
@@ -66,13 +67,16 @@ License: AGPL-3.0. Author: DoktorShift.
 - [scripts/nutbits-stop.sh](scripts/nutbits-stop.sh): Stop backend + GUI
 - [scripts/nutbits-restart.sh](scripts/nutbits-restart.sh): Restart backend + GUI
 - [scripts/nutbits-update.sh](scripts/nutbits-update.sh): Pull latest code, install deps, rebuild GUI, restart NUTbits
-- [scripts/nutbits-service-mac-install.sh](scripts/nutbits-service-mac-install.sh): Install backend as macOS launchd service
-- [scripts/nutbits-service-mac-remove.sh](scripts/nutbits-service-mac-remove.sh): Remove macOS launchd service
-- [scripts/nutbits-service-linux-install.sh](scripts/nutbits-service-linux-install.sh): Install backend as Linux systemd user service
-- [scripts/nutbits-service-linux-remove.sh](scripts/nutbits-service-linux-remove.sh): Remove Linux systemd user service
+- [scripts/nutbits-setup.js](scripts/nutbits-setup.js): Interactive setup wizard (`npm run setup`)
+- [scripts/nutbits-service-mac-install.sh](scripts/nutbits-service-mac-install.sh): Install backend + GUI as macOS launchd services
+- [scripts/nutbits-service-mac-remove.sh](scripts/nutbits-service-mac-remove.sh): Remove macOS launchd services
+- [scripts/nutbits-service-linux-install.sh](scripts/nutbits-service-linux-install.sh): Install backend + GUI as Linux systemd user services
+- [scripts/nutbits-service-linux-remove.sh](scripts/nutbits-service-linux-remove.sh): Remove Linux systemd user services
+- [scripts/docker-entrypoint.sh](scripts/docker-entrypoint.sh): Docker entrypoint (starts GUI + backend)
 
 ## Interfaces
 
+- `npm run setup`: interactive setup wizard (creates .env, optional Caddyfile)
 - `npm start`: backend only, in your terminal
 - `nutbits`: interactive TUI dashboard
 - `nutbits <command>`: one-shot CLI command (balance, connections, connect, fund, withdraw, pay, receive, history, fees, mints, relays, logs, watch, config, export, backup, restore)
@@ -80,9 +84,12 @@ License: AGPL-3.0. Author: DoktorShift.
 - `npm run nutbits`: backend + GUI in the background
 - `npm run nutbits:interactive`: GUI in background, backend in your terminal
 - `npm run nutbits:stop`: stop backend + GUI
-- `npm run service:mac`: install 24/7 backend service on macOS
-- `npm run service:linux`: install 24/7 backend service on Linux
-- GUI pages: Dashboard, Connections, History, Pay, Receive, Mints, Relays, NUTs, Fees, Settings, Logs
+- `npm run service:mac`: install 24/7 backend + GUI service on macOS
+- `npm run service:linux`: install 24/7 backend + GUI service on Linux
+- GUI pages: Login, Dashboard, Connections, History, Pay, Receive, Mints, Relays, NUTs, Fees, Settings, Logs
+- GUI requires API token to access (login screen). On local use, token is auto-detected. On VPS, user enters `NUTBITS_API_TOKEN` from `.env`.
+- Lock screen: Ctrl+L or padlock icon in sidebar clears the token and returns to login.
+- Lock screen backgrounds: selectable animated backgrounds (whatamesh, @firecms/neat, or static) configurable in Settings.
 - GUI default URL: `http://127.0.0.1:8080`
 - API default URL: `http://127.0.0.1:3338`
 - Run npm scripts from the repository root, not from inside `scripts/`
@@ -93,11 +100,11 @@ License: AGPL-3.0. Author: DoktorShift.
 - The GUI, CLI, and TUI all talk to the same local management API.
 - `npm start` is the simplest interactive operator mode.
 - `npm run nutbits` is the simplest full local GUI mode.
-- OS services are for backend-only 24/7 runtime. The GUI is not part of the launchd/systemd service setup.
+- Both macOS (`npm run service:mac`) and Linux (`npm run service:linux`) install backend + GUI as OS-managed services.
 - Do not tell users to run `npm run ...` from inside `scripts/`; npm scripts are defined in the root `package.json`.
 
 ## Optional
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): Contribution guidelines
-- [docker-compose.yml](docker-compose.yml): Docker deployment configuration
+- [docker-compose.yml](docker-compose.yml): Docker deployment (backend + GUI, ports 3338/8080)
 - [.env.example](.env.example): Full configuration reference with all environment variables

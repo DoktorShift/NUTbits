@@ -16,12 +16,13 @@ NUTbits is a Cashu ecash to NWC (Nostr Wallet Connect) bridge. It connects to a 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
 npm install
+npm run setup            # Interactive wizard — creates .env with validation
 npm link                 # Register the 'nutbits' CLI command globally
-cp .env.example .env
-# Edit .env: set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
 npm start                # Start the bridge service
 nutbits                  # Launch interactive TUI (in another terminal)
 ```
+
+Or manually: `cp .env.example .env`, edit, then `npm start`.
 
 ## Project structure
 
@@ -50,10 +51,16 @@ store/
   crypto-utils.js        # Shared encryption: AES-256-GCM, scrypt key derivation (N=65536)
   connection-utils.js    # Connection key validation helpers
 gui/
-  src/views/             # Vue 3 pages: Dashboard, Mints, Relays, Connections, Pay, Receive, History, Fees, Settings
+  src/views/             # Vue 3 pages: Login, Dashboard, Mints, Relays, Connections, Pay, Receive, History, Fees, Settings, Logs
   src/stores/            # Pinia stores: mints, relays, connections, balance, history, fees, config, status, logs
-  src/components/ui/     # Shared components: Badge, Modal, StatCard, BarChart, Sparkline, HelpTip, Spinner, EmptyState
+  src/components/ui/     # Shared components: Badge, Modal, StatCard, BarChart, Sparkline, HelpTip, Spinner, EmptyState, AnimatedBackground
+  src/config/backgrounds.js  # Lock screen background presets (whatamesh, @firecms/neat, static)
   src/api/client.js      # API client (GET/POST/PATCH/DELETE with auto-detect/bootstrap)
+  src/router.js          # Vue Router with auth guard (redirects to /login if no valid token)
+scripts/
+  nutbits-setup.js       # Interactive setup wizard (npm run setup)
+  nutbits-gui-server.js  # Static file server for the built GUI
+  docker-entrypoint.sh   # Docker entrypoint (starts GUI + backend)
 ```
 
 ## Code style
@@ -141,7 +148,7 @@ Agents working on this codebase need to understand these concepts:
 | GET | `/api/v1/backup` | Download encrypted state backup |
 | POST | `/api/v1/restore` | Restore wallet from seed |
 
-Auth: Bearer token via `Authorization` header. Token auto-generated at startup, written to `~/.nutbits/nutbits.sock.token`.
+Auth: Bearer token via `Authorization` header. For local use, token is auto-generated at startup and written to `~/.nutbits/nutbits.sock.token`. For VPS/browser use, set `NUTBITS_API_TOKEN` explicitly in `.env` and enter it in the GUI login screen.
 
 ## Lightning Address (lud16) support
 

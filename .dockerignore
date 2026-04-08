@@ -1,4 +1,6 @@
 node_modules
+gui/node_modules
+gui/dist
 .env
 .env.*
 nutbits_state.enc
@@ -7,8 +9,10 @@ nutbits_state.enc.migrated
 nutbits.db
 nutbits.db-wal
 nutbits.db-shm
+Caddyfile
 .git
 .claude
 *.md
-.nojekyll
 assets
+blog
+logs

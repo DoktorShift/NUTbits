@@ -134,7 +134,7 @@ NUTbits will:
 - You must have used a seed (`NUTBITS_SEED`) **before** the proofs were created
 - Proofs created with random secrets (no seed) **cannot** be recovered this way
 
-> **This is why NUTbits generates a seed on first run and asks you to save it.** If you skip that step, seed recovery won't work.
+> NUTbits generates a seed on first run and **auto-saves it to your `.env` file**. Back up your `.env` or copy the seed to a password manager.
 
 ## Failure Scenarios
 

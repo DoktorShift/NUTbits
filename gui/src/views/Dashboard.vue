@@ -5,7 +5,9 @@ import { useStatusStore } from '@/stores/status.js'
 import { useBalanceStore } from '@/stores/balance.js'
 import { useHistoryStore } from '@/stores/history.js'
 import { usePolling } from '@/composables/usePolling.js'
+import { NUT_IDS } from '@/config/nuts.js'
 import Badge from '@/components/ui/Badge.vue'
+import NutBadge from '@/components/ui/NutBadge.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 
@@ -25,7 +27,7 @@ const limits = computed(() => s.value.limits || {})
 const relayLabel = computed(() => `${relays.value.connected ?? 0}/${relays.value.total ?? 0}`)
 
 // NUT support compact display
-const nutNumbers = ['00','01','02','03','04','05','06','07','08','09','12','13','15','17','20']
+const nutNumbers = NUT_IDS
 function isNutSupported(num) {
   const nuts = s.value.nuts
   if (!nuts) return false
@@ -135,7 +137,7 @@ onMounted(() => {
           <Badge :variant="statusStore.isHealthy ? 'success' : 'error'" :label="statusStore.isHealthy ? 'Healthy' : 'Unhealthy'" />
         </router-link>
 
-        <div v-if="statusStore.loading && !mint.name" class="flex justify-center py-6"><Spinner /></div>
+        <div v-if="(statusStore.loading || !statusStore.lastSuccessAt) && !mint.name" class="flex justify-center py-6"><Spinner /></div>
 
         <template v-else-if="mint.name || mint.url">
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
@@ -157,14 +159,12 @@ onMounted(() => {
           <div>
             <span class="text-nutbits-500 text-[10px] uppercase tracking-wider block mb-1.5">NUTs</span>
             <div class="flex flex-wrap gap-1">
-              <span
+              <NutBadge
                 v-for="num in nutNumbers"
                 :key="num"
-                class="inline-flex items-center justify-center w-6 h-5 rounded text-[10px] font-mono font-semibold"
-                :class="isNutSupported(num)
-                  ? 'bg-emerald-500/10 text-emerald-400'
-                  : 'bg-nutbits-800 text-nutbits-600'"
-              >{{ num }}</span>
+                :num="num"
+                :supported="isNutSupported(num)"
+              />
             </div>
           </div>
 

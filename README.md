@@ -12,7 +12,7 @@ Inspired by [supertestnet/bankify](https://github.com/supertestnet/bankify). Bui
 
 ## Quick Start
 
-See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a **VPS**? See **[DEPLOY.md](docs/DEPLOY.md)**.
+See **[INSTALL.md](docs/INSTALL.md)** for local setup (bare metal, Docker, LNbits). Deploying to a **VPS**? See **[DEPLOY.md](docs/DEPLOY.md)** or the quick **[LAZYDEPLOY.md](docs/LAZYDEPLOY.md)**.
 
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
@@ -42,7 +42,7 @@ Run these commands from the repository root, where `package.json` lives.
 ```bash
 npm start                        # backend only, in your terminal
 npm run nutbits                  # backend + GUI, in the background
-npm run service:mac              # macOS 24/7 backend service
+npm run service:mac              # macOS 24/7 backend + GUI service
 npm run service:linux            # Linux 24/7 backend + GUI services
 ```
 
@@ -50,7 +50,7 @@ That is the simplest mental model:
 
 - use `npm start` when you want the normal terminal experience
 - use `npm run nutbits` when you want the web GUI too
-- use `npm run service:mac` when you want the backend to keep running 24/7
+- use `npm run service:mac` when you want backend + GUI to keep running 24/7
 - use `npm run service:linux` when you want both backend and GUI kept running under systemd
 
 If you want the backend to run 24/7 under your operating system's service manager, see **[SERVICE.md](docs/SERVICE.md)**.
@@ -82,7 +82,7 @@ All settings in `.env` (see `.env.example`):
 
 | Variable | Default | Description |
 |---|---|---|
-| `NUTBITS_SEED` | _(auto-generated)_ | Deterministic wallet seed for proof recovery. Back this up. |
+| `NUTBITS_SEED` | _(auto-generated)_ | Deterministic wallet seed for proof recovery. Auto-saved to `.env` on first run. Back up your `.env` or copy the seed to a password manager. |
 | `NUTBITS_MINT_URLS` | _(optional)_ | Comma-separated mint URLs for multi-mint failover (first = primary). When set, overrides `NUTBITS_MINT_URL`. |
 | `NUTBITS_RELAYS` | `wss://nostrue.com` | Comma-separated Nostr relays for NWC |
 | `NUTBITS_STATE_BACKEND` | `file` | Storage backend: `file`, `sqlite`, or `mysql` |
@@ -335,7 +335,7 @@ Be aware that switching mints can temporarily affect users trying to pay out, si
 | [CLI.md](docs/CLI.md) | Full command reference — flags, scripting, connections |
 | [INSTALL.md](docs/INSTALL.md) | Local setup — bare metal, Docker, LNbits |
 | [DEPLOY.md](docs/DEPLOY.md) | VPS deployment with HTTPS (Caddy / nginx) |
-| [SERVICE.md](docs/SERVICE.md) | 24/7 backend service setup with launchd and systemd |
+| [SERVICE.md](docs/SERVICE.md) | 24/7 service setup (backend + GUI) with launchd and systemd |
 | [DATABASE.md](docs/DATABASE.md) | Storage backends — file, SQLite, MySQL |
 | [BACKUP.md](docs/BACKUP.md) | Backup, recovery, and encryption details |
 | [STATE.md](docs/STATE.md) | Deep dive into the encrypted state file |

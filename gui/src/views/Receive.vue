@@ -4,6 +4,7 @@ import { useBalanceStore } from '@/stores/balance.js'
 import { useStatusStore } from '@/stores/status.js'
 import { useMintsStore } from '@/stores/mints.js'
 import { useToast } from '@/composables/useToast.js'
+import { AMOUNT_PRESETS } from '@/config/nuts.js'
 import api from '@/api/client.js'
 import Spinner from '@/components/ui/Spinner.vue'
 
@@ -27,7 +28,7 @@ const isMultiMint = computed(() => (mintsStore.mints || []).length > 1)
 const mintOptions = computed(() => (mintsStore.mints || []).filter((m) => m.healthy !== false))
 
 // ── Preset amounts ──────────────────────────────────────────────────────
-const presets = [100, 500, 1000, 5000, 10000, 50000]
+const presets = AMOUNT_PRESETS
 
 function setPreset(val) { amountSats.value = val }
 

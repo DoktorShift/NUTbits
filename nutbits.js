@@ -1495,6 +1495,26 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
     if (!config.seed) {
         config.seed = crypto.randomBytes(32).toString('hex');
         seedGenerated = true;
+
+        // Auto-persist seed to .env so it survives restarts.
+        // Without this, systemd/Docker deployments silently generate
+        // a new seed every boot, making proof recovery impossible.
+        try {
+            var envPath = process.cwd() + '/.env';
+            if (fs.existsSync(envPath)) {
+                var envContent = fs.readFileSync(envPath, 'utf8');
+                if (/^#?\s*NUTBITS_SEED=/m.test(envContent)) {
+                    envContent = envContent.replace(/^#?\s*NUTBITS_SEED=.*/m, `NUTBITS_SEED=${config.seed}`);
+                } else {
+                    envContent = envContent.trimEnd() + `\nNUTBITS_SEED=${config.seed}\n`;
+                }
+                fs.writeFileSync(envPath, envContent, { mode: 0o600 });
+            } else {
+                fs.appendFileSync(envPath, `NUTBITS_SEED=${config.seed}\n`, { mode: 0o600 });
+            }
+        } catch (e) {
+            // Non-fatal — user will still see the seed in the boot output
+        }
     }
 
     // Fully suppress logs during boot - no console output from log.*
@@ -1563,7 +1583,7 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
     bootLine(
         seedGenerated ? `${c.yellow}●${c.reset}` : `${c.green}●${c.reset}`,
         'Seed',
-        seedGenerated ? 'generated (save it! see below)' : 'configured'
+        seedGenerated ? 'generated (auto-saved to .env)' : 'configured'
     );
     await bootWait(80);
 
@@ -1694,19 +1714,13 @@ var bootWait = ms => new Promise(r => setTimeout(r, ms));
         for (var w of bootWarnings) console.log(w);
     }
 
-    // ── Seed warning (critical - must read) ───────────────────────
+    // ── Seed notice ─────────────────────────────────────────────────
     if (seedGenerated) {
         console.log('');
         console.log(`  ${c.dim}${'─'.repeat(50)}${c.reset}`);
         console.log('');
-        console.log(`  ${c.yellow}${c.bold}NEW SEED GENERATED${c.reset}`);
-        console.log(`  ${c.white}Save this seed and add it to your .env file.${c.reset}`);
-        console.log(`  ${c.dim}Without it, a new seed is generated every start${c.reset}`);
-        console.log(`  ${c.dim}and you cannot recover proofs if the database is lost.${c.reset}`);
-        console.log('');
-        console.log(`  ${c.bold}${config.seed}${c.reset}`);
-        console.log('');
-        console.log(`  ${c.dim}Add to .env:${c.reset}  ${c.bold}NUTBITS_SEED=${config.seed}${c.reset}`);
+        console.log(`  ${c.yellow}${c.bold}NEW SEED GENERATED & SAVED TO .env${c.reset}`);
+        console.log(`  ${c.dim}Back it up from your .env file. It recovers your funds.${c.reset}`);
     }
 
     // ── NWC string (first run - ready to use immediately) ─────────

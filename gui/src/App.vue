@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStatusStore } from './stores/status.js'
 import { useToast } from './composables/useToast.js'
 import api from './api/client.js'
 import AppLayout from './components/layout/AppLayout.vue'
+import ConnectionHelper from './components/ui/ConnectionHelper.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,6 +14,21 @@ const { addToast } = useToast()
 
 const isConnected = computed(() => statusStore.backendConnected)
 const isLoginPage = computed(() => route.name === 'Login')
+
+// ── Connection failure popup ───────────────────────────────────
+const showHelper = ref(false)
+const helperError = ref('')
+
+function openHelper(errorMsg) {
+  helperError.value = errorMsg
+  showHelper.value = true
+}
+
+function handleLogout() {
+  showHelper.value = false
+  api.clearStoredAuth()
+  router.replace({ name: 'Login' })
+}
 
 onMounted(async () => {
   // If we're on the login page, skip bootstrap
@@ -33,13 +49,13 @@ onMounted(async () => {
           // fall through
         }
       }
-      // Token is invalid — send to login
-      api.clearStoredAuth()
-      router.replace({ name: 'Login' })
+      // Token is invalid — show helper instead of silently redirecting
+      openHelper(err.message)
       return
     }
 
-    addToast(`Could not reach the NUTbits backend: ${err?.message || 'unknown error'}`, 'error')
+    // Backend unreachable or other error — show helper
+    openHelper(err.message)
   }
 })
 
@@ -72,4 +88,12 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       </transition>
     </router-view>
   </AppLayout>
+
+  <!-- Connection failure diagnostic popup -->
+  <ConnectionHelper
+    :open="showHelper"
+    :error="helperError"
+    @close="showHelper = false"
+    @logout="handleLogout"
+  />
 </template>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useConfigStore } from '@/stores/config.js'
 import { useToast } from '@/composables/useToast.js'
 import api from '@/api/client.js'
@@ -9,6 +10,7 @@ import Modal from '@/components/ui/Modal.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import { presets as bgPresets, getSelectedPresetId, setSelectedPresetId } from '@/config/backgrounds.js'
 
+const router = useRouter()
 const configStore = useConfigStore()
 const { addToast } = useToast()
 
@@ -49,8 +51,8 @@ const settingsByTab = {
     {
       envKey: 'NUTBITS_SEED',
       label: 'Seed',
-      hint: 'Auto-generated on first run. Back this up!',
-      help: 'Deterministic wallet seed used for seed-based recovery and deterministic secret generation. Once generated, paste it here so it survives restarts.',
+      hint: 'Auto-saved to .env on first run. Back up your .env or copy this to a safe place.',
+      help: 'Your wallet seed enables proof recovery if the database is lost. NUTbits generates it automatically on first boot and writes it to your .env file — no manual step needed. Copy it to a password manager as a backup. Without this seed, funds cannot be recovered.',
       type: 'text',
       sensitive: true,
     },
@@ -416,18 +418,11 @@ async function confirmRestore() {
   }
 }
 
-// ── GUI Connection ──────────────────────────────────────────────────────
+// ── Session ────────────────────────────────────────────────────────────
 
-const apiUrl = ref(localStorage.getItem('nutbits_api_url') || '')
-const apiToken = ref(localStorage.getItem('nutbits_api_token') || '')
 const testResult = ref(null)
 const testLoading = ref(false)
-
-function saveApiConnection() {
-  localStorage.setItem('nutbits_api_url', apiUrl.value)
-  localStorage.setItem('nutbits_api_token', apiToken.value)
-  addToast('API connection saved', 'success')
-}
+const currentApiUrl = computed(() => localStorage.getItem('nutbits_api_url') || '(same-origin)')
 
 async function testConnection() {
   testLoading.value = true
@@ -444,23 +439,9 @@ async function testConnection() {
   }
 }
 
-async function autoConnectLocal() {
-  testLoading.value = true
-  testResult.value = null
-  try {
-    const result = await api.recoverAuth()
-    if (!result.ok) throw new Error(result.error || 'Local bootstrap unavailable')
-
-    apiUrl.value = localStorage.getItem('nutbits_api_url') || result.apiUrl || 'http://127.0.0.1:3338'
-    apiToken.value = localStorage.getItem('nutbits_api_token') || ''
-    testResult.value = { ok: true }
-    addToast('Connected to local NUTbits', 'success')
-  } catch (err) {
-    testResult.value = { ok: false, error: err.message }
-    addToast('Local connect failed: ' + err.message, 'error')
-  } finally {
-    testLoading.value = false
-  }
+function lockScreen() {
+  api.clearStoredAuth()
+  router.replace({ name: 'Login' })
 }
 
 // ── Lock screen background ─────────────────────────────────────────────
@@ -728,52 +709,27 @@ onMounted(async () => {
         </div>
 
         <div class="bg-nutbits-900 border border-nutbits-700 rounded-xl p-6 space-y-5">
-          <h2 class="text-lg font-semibold text-nutbits-100">GUI Connection</h2>
-          <p class="text-xs text-nutbits-400">
-            Control how this GUI connects to the local NUTbits backend.
-          </p>
+          <h2 class="text-lg font-semibold text-nutbits-100">Session</h2>
 
-          <div class="space-y-4">
+          <div class="space-y-3">
             <div>
-              <label class="block text-sm text-nutbits-400 mb-1.5">API URL</label>
-              <input
-                v-model="apiUrl"
-                type="text"
-                placeholder="http://127.0.0.1:3338 or leave empty for same-origin proxy"
-                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none text-sm"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm text-nutbits-400 mb-1.5">API Token</label>
-              <input
-                v-model="apiToken"
-                type="password"
-                placeholder="Bearer token"
-                class="w-full bg-nutbits-800 border border-nutbits-700 rounded-lg px-4 py-2.5 text-nutbits-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none text-sm"
-              />
+              <span class="text-nutbits-500 text-xs uppercase tracking-wider">API URL</span>
+              <p class="text-nutbits-100 font-mono text-sm">{{ currentApiUrl }}</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
               <button
                 class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all text-sm"
                 :disabled="testLoading"
-                @click="autoConnectLocal"
-              >
-                Use Local Backend
-              </button>
-              <button
-                class="bg-amber-500 hover:bg-amber-600 text-nutbits-950 font-medium rounded-lg px-4 py-2.5 transition-all text-sm"
-                @click="saveApiConnection"
-              >
-                Save
-              </button>
-              <button
-                class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all text-sm"
-                :disabled="testLoading"
                 @click="testConnection"
               >
                 {{ testLoading ? 'Testing...' : 'Test Connection' }}
+              </button>
+              <button
+                class="bg-nutbits-800 hover:bg-nutbits-700 text-nutbits-100 font-medium rounded-lg px-4 py-2.5 transition-all text-sm"
+                @click="lockScreen"
+              >
+                Lock Screen
               </button>
               <div v-if="testResult" class="flex items-center gap-2 text-sm">
                 <span

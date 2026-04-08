@@ -9,6 +9,7 @@
     "nutbits": "./bin/nutbits.js"
   },
   "scripts": {
+    "setup": "node scripts/nutbits-setup.js",
     "start": "node nutbits.js",
     "cli": "node bin/nutbits.js",
     "build:gui": "npm --prefix gui run build",

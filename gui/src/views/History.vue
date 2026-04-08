@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/history.js'
 import { useConnectionsStore } from '@/stores/connections.js'
 import { useToast } from '@/composables/useToast.js'
+import { usePolling } from '@/composables/usePolling.js'
 import Badge from '@/components/ui/Badge.vue'
 import BarChart from '@/components/ui/BarChart.vue'
 import Modal from '@/components/ui/Modal.vue'
@@ -112,6 +113,7 @@ function statusVariant(s) {
 function fetchTransactions() {
   historyStore.fetch({ type: typeFilter.value || undefined, connection: connectionFilter.value || undefined, limit: limitFilter.value })
 }
+const historyPolling = usePolling(() => fetchTransactions(), 15000)
 function setTypeFilter(type) { typeFilter.value = type; fetchTransactions() }
 function onConnectionChange() { fetchTransactions() }
 function onLimitChange() { fetchTransactions() }
@@ -141,7 +143,7 @@ async function handleExport(format) {
   finally { exporting.value = false }
 }
 
-onMounted(() => { fetchTransactions(); connectionsStore.fetch() })
+onMounted(() => { historyPolling.start(); connectionsStore.fetch() })
 </script>
 
 <template>

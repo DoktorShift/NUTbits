@@ -2,7 +2,7 @@
 
 # Installation (Local)
 
-> Deploying to a **VPS with HTTPS**? See **[DEPLOY.md](DEPLOY.md)** instead.
+> Deploying to a **VPS with HTTPS**? See **[DEPLOY.md](DEPLOY.md)** or the quick **[LAZYDEPLOY.md](LAZYDEPLOY.md)**.
 
 **[Requirements](#requirements) · [Bare Metal](#bare-metal) · [Docker](#docker) · [LNbits](#connect-to-lnbits) · [Funding](#funding-your-wallet) · [Upgrading](#upgrading)**
 
@@ -113,9 +113,15 @@ The GUI talks to the local backend and bootstraps the API token automatically fo
 git clone https://github.com/DoktorShift/nutbits.git
 cd nutbits
 cp .env.example .env
-# Edit .env
+# Edit .env — set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
 docker compose up -d
 ```
+
+This builds the image (backend + GUI), starts both services, and exposes:
+- API on `127.0.0.1:3338`
+- GUI on `127.0.0.1:8080`
+
+The seed is auto-generated on first run and saved back to your `.env` file.
 
 View logs:
 

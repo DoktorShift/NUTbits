@@ -5,6 +5,7 @@ import { useConnectionsStore } from '@/stores/connections.js'
 import { useStatusStore } from '@/stores/status.js'
 import { useMintsStore } from '@/stores/mints.js'
 import { useToast } from '@/composables/useToast.js'
+import { usePolling } from '@/composables/usePolling.js'
 import Badge from '@/components/ui/Badge.vue'
 import Modal from '@/components/ui/Modal.vue'
 import Spinner from '@/components/ui/Spinner.vue'
@@ -17,6 +18,7 @@ const connectionsStore = useConnectionsStore()
 const statusStore = useStatusStore()
 const mintsStore = useMintsStore()
 const { addToast } = useToast()
+const connectionsPolling = usePolling(() => connectionsStore.fetch(), 15000)
 
 // Connection list - handle both array and {connections: []} shapes
 const connectionList = computed(() => {
@@ -359,7 +361,7 @@ async function renderSuccessQr() {
 
 
 onMounted(() => {
-  connectionsStore.fetch()
+  connectionsPolling.start()
   statusStore.fetch()
   mintsStore.fetch()
 })

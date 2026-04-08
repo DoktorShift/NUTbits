@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useBalanceStore } from '@/stores/balance.js'
 import { useStatusStore } from '@/stores/status.js'
 import { useToast } from '@/composables/useToast.js'
+import { AMOUNT_PRESETS } from '@/config/nuts.js'
 import api from '@/api/client.js'
 import Badge from '@/components/ui/Badge.vue'
 import Spinner from '@/components/ui/Spinner.vue'
@@ -115,7 +116,7 @@ const amountOutOfRange = computed(() => {
 })
 
 // ── Presets ──────────────────────────────────────────────────────────────
-const presets = [100, 500, 1000, 5000, 10000, 50000]
+const presets = AMOUNT_PRESETS
 function setPreset(val) { lnAmount.value = val }
 
 // ── Actions ─────────────────────────────────────────────────────────────
@@ -147,8 +148,10 @@ function reset() {
 
 const activeMintName = computed(() => statusStore.status?.mint?.name || null)
 
-balanceStore.fetch()
-statusStore.fetch()
+onMounted(() => {
+  balanceStore.fetch()
+  statusStore.fetch()
+})
 </script>
 
 <template>

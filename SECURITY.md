@@ -42,7 +42,7 @@ We will acknowledge your report and work on a fix. Once resolved, we will credit
 ## Best Practices
 
 - Use a strong, unique `NUTBITS_STATE_PASSPHRASE`
-- Save your `NUTBITS_SEED` in a password manager
+- Back up your `NUTBITS_SEED` (auto-saved to `.env`) in a password manager
 - Use SQLite or MySQL backend for concurrent access (LNbits)
 - Only use mints you trust
 - Keep your server updated and access-controlled

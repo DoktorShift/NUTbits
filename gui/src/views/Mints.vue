@@ -22,14 +22,7 @@ const pendingRestart = ref(false)
 const showAddModal = ref(false)
 const showCapabilities = ref(false)
 
-// ── NUT labels ──────────────────────────────────────────────────────────
-const NUT_LABELS = {
-  '00': 'Cryptography', '01': 'Mint Public Keys', '02': 'Keysets',
-  '03': 'Swap', '04': 'Mint', '05': 'Melt', '06': 'Mint Info',
-  '07': 'Proof State', '08': 'Fee Return', '09': 'Signature Restore',
-  '12': 'DLEQ Proofs', '13': 'Deterministic Secrets', '15': 'Partial Multi-Path',
-  '17': 'WebSocket Subscriptions', '20': 'Signature on Mint',
-}
+import { NUT_LABELS } from '@/config/nuts.js'
 
 // ── Derived data ────────────────────────────────────────────────────────
 const envOptions = computed(() => configStore.envOptions || [])

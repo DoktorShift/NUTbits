@@ -2,29 +2,14 @@
 import { onMounted, computed } from 'vue'
 import { useMintsStore } from '@/stores/mints.js'
 import Badge from '@/components/ui/Badge.vue'
+import NutBadge from '@/components/ui/NutBadge.vue'
 import Spinner from '@/components/ui/Spinner.vue'
+
+import { NUT_LABELS, NUT_IDS } from '@/config/nuts.js'
 
 const mintsStore = useMintsStore()
 
-const NUT_LABELS = {
-  '00': 'Cryptography',
-  '01': 'Mint Public Keys',
-  '02': 'Keysets',
-  '03': 'Swap',
-  '04': 'Mint (BOLT11)',
-  '05': 'Melt (BOLT11)',
-  '06': 'Mint Info',
-  '07': 'Proof State Check',
-  '08': 'Fee Return',
-  '09': 'Signature Restore',
-  '12': 'DLEQ Proofs',
-  '13': 'Deterministic Secrets',
-  '15': 'Partial Multi-Path',
-  '17': 'WebSocket Subscriptions',
-  '20': 'Signature on Mint',
-}
-
-const nutIds = Object.keys(NUT_LABELS)
+const nutIds = NUT_IDS
 const nutsData = computed(() => mintsStore.nuts || {})
 const nutNames = computed(() => nutsData.value.nuts || NUT_LABELS)
 const mintUrls = computed(() => Object.keys(nutsData.value.mints || {}))
@@ -76,12 +61,12 @@ onMounted(() => {
 
         <!-- Compact NUT indicator row -->
         <div class="flex flex-wrap gap-1 mb-2">
-          <span
+          <NutBadge
             v-for="nid in nutIds"
             :key="nid"
-            class="inline-flex items-center justify-center w-7 h-5 rounded text-[10px] font-mono font-semibold"
-            :class="getNutSupport(url, nid) ? 'bg-emerald-500/10 text-emerald-400' : 'bg-nutbits-800 text-nutbits-600'"
-          >{{ nid }}</span>
+            :num="nid"
+            :supported="!!getNutSupport(url, nid)"
+          />
         </div>
 
         <!-- Detail list -->

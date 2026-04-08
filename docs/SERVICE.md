@@ -8,7 +8,7 @@ NUTbits ships one-command installers for both platforms:
 
 | Platform | Manager | Command | What it creates |
 |----------|---------|---------|-----------------|
-| macOS | `launchd` | `npm run service:mac` | Backend service (GUI runs separately) |
+| macOS | `launchd` | `npm run service:mac` | Backend + GUI services |
 | Linux | `systemd --user` | `npm run service:linux` | Backend + GUI services |
 
 If you **don't** need your OS to manage the process — for example, during development or quick testing — use `npm run nutbits` instead (see [INSTALL.md](INSTALL.md)).
@@ -19,30 +19,26 @@ You should have already completed the basic install from [INSTALL.md](INSTALL.md
 
 ```bash
 npm install
-cp .env.example .env
-# Edit .env: set NUTBITS_MINT_URL and NUTBITS_STATE_PASSPHRASE
+npm run setup            # or: cp .env.example .env && edit manually
 ```
 
 ## macOS: launchd
 
-Install and start the backend service:
+Install and start both services:
 
 ```bash
 npm run service:mac
 ```
 
-This installs the **backend only**. To also run the web GUI, open a second terminal:
-
-```bash
-npm run gui
-```
+This installs deps, builds the GUI, and creates two LaunchAgent services.
 
 ### Manage
 
 ```bash
-launchctl print gui/$(id -u)/dev.doktorshift.nutbits   # status
-tail -f logs/nutbits.launchd.out.log                    # stdout log
-tail -f logs/nutbits.launchd.err.log                    # stderr log
+launchctl print gui/$(id -u)/dev.doktorshift.nutbits       # backend status
+launchctl print gui/$(id -u)/dev.doktorshift.nutbits-gui   # GUI status
+tail -f logs/nutbits.launchd.out.log                       # backend log
+tail -f logs/nutbits-gui.launchd.out.log                   # GUI log
 ```
 
 ### Remove
@@ -53,14 +49,16 @@ npm run service:mac:remove
 
 ### What it does
 
-- Writes a LaunchAgent plist into `~/Library/LaunchAgents/`
-- Runs `node /absolute/path/to/nutbits.js`
-- Starts on login
-- Restarts automatically if the backend exits
+- Installs backend dependencies if needed
+- Installs GUI dependencies if needed
+- Builds the GUI
+- Writes two LaunchAgent plists into `~/Library/LaunchAgents/`
+- Starts both on login
+- Restarts automatically if either exits
 
 ## Linux: systemd
 
-Install and start both backend and GUI services:
+Install and start both services:
 
 ```bash
 npm run service:linux
@@ -104,7 +102,7 @@ systemctl --user daemon-reload
 
 ## Day-to-Day
 
-Once the service is running, you can still manage NUTbits from the terminal. The CLI and TUI connect to the same local API — the service just keeps the backend alive.
+Once the service is running, you can still manage NUTbits from the terminal. The CLI and TUI connect to the same local API — the service just keeps everything alive.
 
 ```bash
 nutbits                # interactive TUI dashboard
@@ -120,5 +118,6 @@ nutbits balance        # check balance
 
 - [INSTALL.md](INSTALL.md) — local setup (bare metal, Docker)
 - [DEPLOY.md](DEPLOY.md) — VPS deployment with HTTPS (Caddy)
+- [LAZYDEPLOY.md](LAZYDEPLOY.md) — quick deploy with setup wizard
 - [CLI.md](CLI.md) — full CLI command reference
 - [CONSOLE.md](CONSOLE.md) — day-to-day workflows and TUI usage
