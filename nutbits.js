@@ -24,7 +24,7 @@ import 'dotenv/config';
 
 var config = {
     mintUrls:        (process.env.NUTBITS_MINT_URLS || process.env.NUTBITS_MINT_URL || 'https://mint.minibits.cash/Bitcoin').split(',').map(s => s.trim()).filter(Boolean),
-    relays:          (process.env.NUTBITS_RELAYS || 'wss://nostrue.com').split(',').map(s => s.trim()).filter(Boolean),
+    relays:          (process.env.NUTBITS_RELAYS || 'wss://relay.getalby.com/v1,wss://relay.8333.space').split(',').map(s => s.trim()).filter(Boolean),
     stateFile:       process.env.NUTBITS_STATE_FILE || './nutbits_state.enc',
     statePassphrase: process.env.NUTBITS_STATE_PASSPHRASE || '',
     logLevel:        process.env.NUTBITS_LOG_LEVEL || 'info',

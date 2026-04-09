@@ -191,7 +191,7 @@ All settings in `.env` (see `.env.example`):
 |---|---|---|
 | `NUTBITS_SEED` | _(auto-generated)_ | Deterministic wallet seed for proof recovery. Back this up. |
 | `NUTBITS_MINT_URLS` | _(optional)_ | Comma-separated mint URLs for multi-mint failover (first = primary). When set, overrides `NUTBITS_MINT_URL`. |
-| `NUTBITS_RELAYS` | `wss://nostrue.com` | Comma-separated Nostr relays for NWC |
+| `NUTBITS_RELAYS` | `wss://relay.getalby.com/v1,wss://relay.8333.space` | Comma-separated Nostr relays for NWC |
 | `NUTBITS_STATE_BACKEND` | `file` | Storage backend: `file`, `sqlite`, or `mysql` |
 | `NUTBITS_STATE_FILE` | `./nutbits_state.enc` | Path to encrypted state file (file backend) |
 | `NUTBITS_SQLITE_PATH` | `./nutbits_state.db` | SQLite database path (sqlite backend) |

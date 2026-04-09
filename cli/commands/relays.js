@@ -8,7 +8,7 @@ export async function run(client, args) {
     if (d.relays.length === 0) {
         print(heading('Nostr Relays'));
         print(`  ${c.muted}No relays configured.${c.reset}`);
-        print(`  ${c.dim}Set in .env: ${c.white}NUTBITS_RELAYS=wss://relay.getalby.com${c.reset}`);
+        print(`  ${c.dim}Set in .env: ${c.white}NUTBITS_RELAYS=wss://relay.getalby.com/v1,wss://relay.8333.space${c.reset}`);
         print('');
         return;
     }

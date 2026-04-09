@@ -230,7 +230,7 @@ onMounted(async () => { await refreshAll(); start() })
         <p class="text-xs text-nutbits-500">
           Relays are stored in
           <code class="text-nutbits-400">NUTBITS_RELAYS</code>
-          <HelpTip text="NUTbits uses Nostr relays for NWC communication. Each relay maintains subscriptions for your NWC connections. More relays improve redundancy but add reconnect overhead. Use NWC-friendly relays like relay.getalby.com or nostrue.com." />
+          <HelpTip text="NUTbits uses Nostr relays for NWC communication. Each relay maintains subscriptions for your NWC connections. More relays improve redundancy but add reconnect overhead. Use NWC-friendly relays like relay.getalby.com or relay.8333.space." />
         </p>
       </div>
     </template>
@@ -252,7 +252,7 @@ onMounted(async () => { await refreshAll(); start() })
             autofocus
           />
           <p class="text-[11px] text-nutbits-600 mt-1.5">
-            NWC-friendly relays: relay.getalby.com/v1, nostrue.com, nos.lol, nostr.mom
+            NWC-friendly relays: relay.getalby.com/v1, relay.8333.space
           </p>
         </div>
 

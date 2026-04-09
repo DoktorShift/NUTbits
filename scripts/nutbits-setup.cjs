@@ -49,7 +49,7 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 
 // Graceful exit on Ctrl+C
 rl.on('close', () => {
-  console.log(`\n  ${c.dim}Setup cancelled.${c.reset}\n`)
+  console.log(`\n  ${c.dim}Setup completed.${c.reset}\n`)
   process.exit(0)
 })
 
@@ -182,8 +182,7 @@ function cleanDomain(input) {
 // Known NWC-friendly relays (for suggestions)
 const GOOD_RELAYS = [
   'wss://relay.getalby.com/v1',
-  'wss://nos.lol',
-  'wss://nostr.mom',
+  'wss://relay.8333.space',
 ]
 
 // Social relays that don't work well for NWC
@@ -330,7 +329,7 @@ async function askRelays() {
     const bad = relays.filter(r => BAD_RELAYS.some(b => r.startsWith(b)))
     if (bad.length > 0) {
       warn(`Social relays don't work well for NWC: ${bad.join(', ')}`)
-      warn('Use NWC-friendly relays like relay.getalby.com/v1')
+      warn('Use NWC-friendly relays like relay.getalby.com/v1 or relay.8333.space')
       const keep = await confirm('Keep these relays anyway?', false)
       if (!keep) continue
     }

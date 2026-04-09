@@ -51,7 +51,7 @@ NUTBITS_STATE_PASSPHRASE=replace-with-a-strong-secret
 
 NUTBITS_STATE_BACKEND=sqlite
 NUTBITS_SQLITE_PATH=./nutbits_state.db
-NUTBITS_RELAYS=wss://relay.getalby.com/v1
+NUTBITS_RELAYS=wss://relay.getalby.com/v1,wss://relay.8333.space
 
 NUTBITS_API_ENABLED=true
 NUTBITS_API_PORT=3338
