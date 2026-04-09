@@ -805,6 +805,93 @@ export async function revokePanel(client) {
     return lines;
 }
 
+// ── Panel: Fund ─────────────────────────────────────────────────────────
+
+export async function fundPanel(client) {
+    var lines = [];
+    lines.push(title('Fund Connection', null, c.green));
+    lines.push('');
+    lines.push(`  Add sats from your main wallet to a dedicated connection.`);
+    lines.push(`  Only ${c.white}dedicated${c.reset} connections can be funded — they hold`);
+    lines.push(`  their own isolated balance, separate from the main wallet.`);
+    lines.push('');
+
+    try {
+        var d = await client.get('/api/v1/connections');
+        var dedicated = d.connections.filter(cn => cn.dedicated);
+        var shared = d.connections.filter(cn => !cn.dedicated);
+
+        if (dedicated.length > 0) {
+            lines.push(`  ${c.muted}Dedicated connections:${c.reset}`);
+            lines.push('');
+            for (var conn of dedicated) {
+                var bal = Math.floor((conn.dedicated_balance_msat || 0) / 1000);
+                lines.push(`    ${c.purple}#${conn.id}${c.reset}  ${c.white}${conn.label}${c.reset}  ${c.yellow}${bal.toLocaleString()} sats${c.reset}`);
+            }
+            lines.push('');
+            lines.push(`  ${c.green}${c.bold}Press Enter to fund a connection${c.reset}`);
+        } else {
+            lines.push(`  ${c.dim}No dedicated connections found.${c.reset}`);
+            if (shared.length > 0) {
+                lines.push('');
+                lines.push(`  ${c.muted}You have ${c.white}${shared.length} shared${c.reset}${c.muted} connection(s) — these use the${c.reset}`);
+                lines.push(`  ${c.muted}main wallet balance directly and don't need funding.${c.reset}`);
+            }
+            lines.push('');
+            lines.push(`  ${c.dim}Create a dedicated connection with ${c.white}nutbits connect${c.reset}${c.dim} first.${c.reset}`);
+        }
+    } catch (e) { /* skip */ }
+
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits fund${c.reset}`);
+    return lines;
+}
+
+// ── Panel: Withdraw ─────────────────────────────────────────────────────
+
+export async function withdrawPanel(client) {
+    var lines = [];
+    lines.push(title('Withdraw', null, c.yellow));
+    lines.push('');
+    lines.push(`  Pull sats from a dedicated connection back to the main wallet.`);
+    lines.push(`  Only ${c.white}dedicated${c.reset} connections with a balance can be withdrawn from.`);
+    lines.push('');
+
+    try {
+        var d = await client.get('/api/v1/connections');
+        var dedicated = d.connections.filter(cn => cn.dedicated);
+        var withBalance = dedicated.filter(cn => (cn.dedicated_balance_msat || 0) > 0);
+        var shared = d.connections.filter(cn => !cn.dedicated);
+
+        if (withBalance.length > 0) {
+            lines.push(`  ${c.muted}Connections with balance:${c.reset}`);
+            lines.push('');
+            for (var conn of withBalance) {
+                var bal = Math.floor((conn.dedicated_balance_msat || 0) / 1000);
+                lines.push(`    ${c.purple}#${conn.id}${c.reset}  ${c.white}${conn.label}${c.reset}  ${c.yellow}${bal.toLocaleString()} sats${c.reset}`);
+            }
+            lines.push('');
+            lines.push(`  ${c.green}${c.bold}Press Enter to withdraw${c.reset}`);
+        } else if (dedicated.length > 0) {
+            lines.push(`  ${c.dim}Your dedicated connections all have 0 balance.${c.reset}`);
+            lines.push(`  ${c.dim}Nothing to withdraw.${c.reset}`);
+        } else {
+            lines.push(`  ${c.dim}No dedicated connections found.${c.reset}`);
+            if (shared.length > 0) {
+                lines.push('');
+                lines.push(`  ${c.muted}You have ${c.white}${shared.length} shared${c.reset}${c.muted} connection(s) — these use the${c.reset}`);
+                lines.push(`  ${c.muted}main wallet balance directly and don't need withdrawing.${c.reset}`);
+            }
+            lines.push('');
+            lines.push(`  ${c.dim}Create a dedicated connection with ${c.white}nutbits connect${c.reset}${c.dim} first.${c.reset}`);
+        }
+    } catch (e) { /* skip */ }
+
+    lines.push('');
+    lines.push(`  ${c.dim}Or run directly:  nutbits withdraw${c.reset}`);
+    return lines;
+}
+
 // ── Panel: Activity ──────────────────────────────────────────────────────
 
 export async function activityPanel(client) {
@@ -1013,6 +1100,8 @@ var PANELS = {
     pay:         payPanel,
     receive:     receivePanel,
     connect:     connectPanel,
+    fund:        fundPanel,
+    withdraw:    withdrawPanel,
 };
 
 export async function renderPanel(panelId, client) {
