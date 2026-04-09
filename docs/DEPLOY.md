@@ -197,10 +197,11 @@ See **[SERVICE.md](SERVICE.md#remove-1)** for details.
   ```
 - Re-enter the token in the GUI and save
 
-**Relays show 0/0 connected**
+**Relays show 0/0 or 0/N connected**
 - Check: `grep '^NUTBITS_RELAYS=' .env`
 - If empty or missing, add relays and restart the backend
 - If relays were missing during first boot, create a new NWC connection after fixing
+- **Node.js < 21:** Node.js 20 and earlier don't have a native `WebSocket` global, which the Nostr relay library requires. NUTbits includes a `ws` polyfill that handles this automatically. If you see relay failures on Node 20, make sure `ws` is installed (`npm install`).
 
 **`/connect` page fails but `/` works**
 - Caddy is sending `/connect` to the GUI instead of the backend. Check your Caddyfile `@api` matcher.

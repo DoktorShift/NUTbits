@@ -3,6 +3,11 @@
 // Inspired by https://github.com/supertestnet/bankify
 // License: AGPL-3.0 (https://www.gnu.org/licenses/agpl-3.0.html)
 
+// WebSocket polyfill for Node.js < 21 (native WebSocket unavailable)
+if (!globalThis.WebSocket) {
+    globalThis.WebSocket = (await import('ws')).default;
+}
+
 import {
     generateSecretKey, getPublicKey,
     finalizeEvent, verifyEvent,
