@@ -11,9 +11,12 @@
 ```bash
 git clone https://github.com/DoktorShift/nutbits.git && cd nutbits
 npm install
+npm link
 npm run setup
 npm start
 ```
+
+After `npm link`, the `nutbits` command is available globally — run `nutbits` to launch the TUI.
 
 The wizard asks for your mint URL and passphrase, writes `.env`, and installs the SQLite driver if needed. Done.
 
@@ -30,11 +33,13 @@ git clone https://github.com/DoktorShift/nutbits.git ~/nutbits
 cd ~/nutbits
 npm install
 npm --prefix gui install
+npm link
 
 # 3. Setup wizard (creates .env + optional Caddyfile)
 npm run setup
 
-# 4. Start services
+# 4. Build GUI + start services
+npm run build:gui
 npm run service:linux
 loginctl enable-linger "$USER"
 ```
