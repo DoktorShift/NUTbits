@@ -2,9 +2,10 @@
  * Deeplink connection page — self-contained HTML5 served by the API.
  * No Vue, no GUI dependency. Works in headless mode.
  *
- * Two-phase UX:
- *   Phase 1: Page loads instantly → "Connecting..." with bridge animation
- *   Phase 2: API call completes → "Connected" with metadata + auto-redirect
+ * Three-phase UX:
+ *   Phase 1: "Connecting..." — bridge animation, POST fires in background
+ *   Phase 2: "Connected" — metadata panel slides in, user reviews details
+ *   Phase 3: User clicks "Continue" → brief "Redirecting..." → navigates back
  *
  * The page makes a POST /connect call to create the connection,
  * so the user never sees a blank screen.
@@ -316,6 +317,19 @@ body {
 }
 .btn-retry:hover { border-color: var(--muted); }
 
+/* ━━ Continue button (shown on connected phase with callback) ━━━━ */
+
+.btn-continue {
+  display: block; width: 100%; padding: .75rem 1.5rem;
+  font-size: .9rem; font-weight: 600;
+  color: #0f0e0d; background: var(--green);
+  border: none; border-radius: .5rem;
+  cursor: pointer; margin-top: .75rem;
+  transition: background .15s ease, transform .1s ease;
+}
+.btn-continue:hover { background: var(--green2); }
+.btn-continue:active { transform: scale(.98); }
+
 /* ━━ Responsive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 @media (max-width: 480px) {
   .container { padding: 2rem 1rem 2.5rem; }
@@ -364,12 +378,12 @@ body {
       <text x="80" y="122" text-anchor="middle" fill="#625a52" font-size="11">${esc(appName.length > 14 ? appName.slice(0, 14) + '...' : appName)}</text>
       <text x="320" y="122" text-anchor="middle" fill="#625a52" font-size="11">NUTbits</text>
 
-      <!-- Center: spinner (connecting) / check (connected) / ! (error) -->
-      <g class="center-spinner-g" transform="translate(200,80)">
+      <!-- Center: spinner (connecting) / check (connected) / ! (error) — above the bridge line -->
+      <g class="center-spinner-g" transform="translate(200,48)">
         <circle class="center-spinner" r="10" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="16 48" stroke-linecap="round"/>
       </g>
-      <path class="center-check" d="M 194 81 L 198 85 L 206 76" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      <text class="center-error" x="200" y="85" text-anchor="middle" fill="#ef4444" font-size="18" font-weight="700">!</text>
+      <path class="center-check" d="M 194 49 L 198 53 L 206 44" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <text class="center-error" x="200" y="53" text-anchor="middle" fill="#ef4444" font-size="18" font-weight="700">!</text>
     </svg>
   </div>
 
@@ -381,6 +395,7 @@ body {
   <div class="result-panel" id="result-panel">
     <div class="meta-card" id="meta-card"></div>
     <div id="nwc-area"></div>
+    <div id="continue-area"></div>
   </div>
 
   <!-- Error panel (slides in) -->
@@ -440,17 +455,10 @@ function doConnect() {
     document.getElementById('title').textContent = 'Connected';
     document.getElementById('subtitle').innerHTML = 'Dedicated NWC channel established. Fund it through NUTbits to start spending.';
 
-    // Auto-redirect
+    // Show continue button (callback) or NWC copy box (no callback)
     if (CALLBACK) {
-      setTimeout(function() {
-        setPhase('redirecting');
-        document.getElementById('title').textContent = 'Redirecting';
-        document.getElementById('subtitle').innerHTML = 'Returning to <strong>' + escHtml(APP_NAME) + '</strong>...';
-        setTimeout(function() {
-          var sep = CALLBACK.indexOf('?') !== -1 ? '&' : '?';
-          window.location.href = CALLBACK + sep + 'value=' + encodeURIComponent(nwcFull);
-        }, 600);
-      }, 2000);
+      document.getElementById('continue-area').innerHTML =
+        '<button class="btn-continue" onclick="doRedirect()">Continue to ' + escHtml(APP_NAME) + '</button>';
     }
   })
   .catch(function(err) {
@@ -459,6 +467,17 @@ function doConnect() {
     document.getElementById('subtitle').textContent = '';
     document.getElementById('error-msg').textContent = err.message || 'Unknown error. Try again or connect manually.';
   });
+}
+
+function doRedirect() {
+  setPhase('redirecting');
+  document.getElementById('title').textContent = 'Redirecting';
+  document.getElementById('subtitle').innerHTML = 'Returning to <strong>' + escHtml(APP_NAME) + '</strong>...';
+  document.getElementById('continue-area').innerHTML = '';
+  setTimeout(function() {
+    var sep = CALLBACK.indexOf('?') !== -1 ? '&' : '?';
+    window.location.href = CALLBACK + sep + 'value=' + encodeURIComponent(nwcFull);
+  }, 800);
 }
 
 function metaRow(key, val) {
