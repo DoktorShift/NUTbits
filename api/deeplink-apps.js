@@ -18,7 +18,7 @@
  *   category       - social | wallet | platform | merchant | media | other
  *   permissions    - array of NWC methods the app needs
  *   budget         - { maxPaymentSats, maxDailySats }
- *   callbackScheme - the app's URI scheme (e.g. 'myapp://')
+ *   callbackScheme - URI scheme(s): string or array (e.g. 'myapp://' or ['chrome-extension://', 'moz-extension://'])
  *
  * Optional fields:
  *   links          - { web, apple, play, chrome, firefox }
@@ -53,7 +53,12 @@ export var deeplinkApps = [
     category: 'wallet',
     permissions: FULL,
     budget: BUDGET_HIGH,
-    callbackScheme: 'chrome-extension://',
+    callbackScheme: [
+      'chrome-extension://',   // Chromium (Chrome, Edge, Brave, Opera, Vivaldi, Arc)
+      'moz-extension://',      // Firefox
+      'safari-web-extension://', // Safari
+      'http://127.0.0.1:',    // Localhost fallback (browsers block web→extension redirects)
+    ],
     links: {
       web: 'https://home.mybuho.de/jump',
     },
@@ -74,10 +79,11 @@ export var deeplinkApps = [
  */
 export function validateCallback(callbackUri, appMatch) {
   if (!callbackUri) return { valid: true }
-  // Known app — callback must match registered scheme
+  // Known app — callback must match registered scheme(s)
   if (appMatch?.callbackScheme) {
-    if (callbackUri.startsWith(appMatch.callbackScheme)) return { valid: true }
-    return { valid: false, reason: `Callback must use ${appMatch.callbackScheme}` }
+    var schemes = Array.isArray(appMatch.callbackScheme) ? appMatch.callbackScheme : [appMatch.callbackScheme]
+    if (schemes.some(s => callbackUri.startsWith(s))) return { valid: true }
+    return { valid: false, reason: `Callback must use one of: ${schemes.join(', ')}` }
   }
   // Unknown app — block http(s) to prevent open redirect to arbitrary web servers
   try {
