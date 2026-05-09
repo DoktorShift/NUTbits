@@ -29,7 +29,7 @@ async function renderQr() {
   try {
     var QRModule = await import('qrcode')
     var QRCode = QRModule.default || QRModule
-    await QRCode.toCanvas(canvas, props.nwcString.toUpperCase(), {
+    await QRCode.toCanvas(canvas, props.nwcString, {
       width: 240,
       margin: 3,
       color: { dark: '#1a1a2e', light: '#f5f0e8' },

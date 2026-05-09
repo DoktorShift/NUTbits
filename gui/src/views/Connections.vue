@@ -308,7 +308,7 @@ async function renderNwcQr() {
   try {
     var QRModule = await import('qrcode')
     var QRCode = QRModule.default || QRModule
-    await QRCode.toCanvas(canvas, nwcString.toUpperCase(), {
+    await QRCode.toCanvas(canvas, nwcString, {
       width: 260,
       margin: 3,
       color: { dark: '#1a1a2e', light: '#f5f0e8' },
@@ -344,7 +344,7 @@ async function renderSuccessQr() {
   try {
     var QRModule = await import('qrcode')
     var QRCode = QRModule.default || QRModule
-    await QRCode.toCanvas(canvas, nwcString.toUpperCase(), {
+    await QRCode.toCanvas(canvas, nwcString, {
       width: 260,
       margin: 3,
       color: { dark: '#1a1a2e', light: '#f5f0e8' },
